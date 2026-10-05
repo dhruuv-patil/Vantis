@@ -65,7 +65,7 @@ public class PasswordResetMailer {
         String resetUrl = properties.appBaseUrl() + "/reset-password?token=" + plaintextToken;
 
         try {
-            transport.send(settings, recipient, "Reset your FlowOps password",
+            transport.send(settings, recipient, "Reset your Vantis password",
                     resetEmailBody(recipient, resetUrl));
             log.info("Password reset email sent for {}", recipient);
         } catch (SmtpException failure) {
@@ -83,7 +83,7 @@ public class PasswordResetMailer {
     }
 
     private static String resetEmailBody(String recipient, String resetUrl) {
-        return "We received a request to reset the password for the FlowOps account "
+        return "We received a request to reset the password for the Vantis account "
                 + recipient + ".\n\n"
                 + "Open the link below to choose a new password. The link is single-use "
                 + "and expires after 1 hour:\n\n"

@@ -38,14 +38,17 @@ public record RegisterRequest(
         @Size(min = 2, max = 100, message = "Full name must be between 2 and 100 characters.")
         String fullName,
 
-        @NotBlank(message = "Organization name is required.")
         @Size(min = 2, max = 80, message = "Organization name must be between 2 and 80 characters.")
         String organizationName) {
 
     public RegisterRequest {
         email = email == null ? null : email.strip().toLowerCase(Locale.ROOT);
         fullName = fullName == null ? null : fullName.strip();
-        organizationName = organizationName == null ? null : organizationName.strip();
+        if ((organizationName == null || organizationName.isBlank()) && fullName != null && !fullName.isBlank()) {
+            organizationName = fullName + "'s Workspace";
+        } else {
+            organizationName = organizationName == null ? null : organizationName.strip();
+        }
         // password is intentionally NOT trimmed — leading/trailing whitespace is
         // a legitimate part of a passphrase.
     }

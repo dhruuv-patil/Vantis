@@ -199,9 +199,15 @@ public class AuthService {
             throw new ApiException(ErrorCode.INVALID_CREDENTIALS);
         }
 
-        if (!passwordEncoder.matches(
+        if (user.getPasswordHash() == null || !passwordEncoder.matches(
                 request.password(),
                 user.getPasswordHash())) {
+
+            if (user.getPasswordHash() == null) {
+                passwordEncoder.matches(
+                        request.password(),
+                        timingEqualizerHash);
+            }
 
             throw new ApiException(ErrorCode.INVALID_CREDENTIALS);
         }
@@ -496,6 +502,15 @@ public class AuthService {
      * the session insert commits, the leftover session has no usable token
      * and is inert.
      */
+    public AuthResult startOAuthSession(
+            UserAccount user,
+            Organization organization,
+            Role role,
+            String userAgent,
+            String ip) {
+        return startSession(user, organization, role, userAgent, ip);
+    }
+
     private AuthResult startSession(
             UserAccount user,
             Organization organization,

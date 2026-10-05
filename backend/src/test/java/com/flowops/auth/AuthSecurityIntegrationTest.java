@@ -514,7 +514,7 @@ class AuthSecurityIntegrationTest {
         assertThat(recordingSmtp.sent).hasSize(1);
         RecordingSmtpTransport.SentMail mail = recordingSmtp.sent.get(0);
         assertThat(mail.to()).isEqualTo(email);
-        assertThat(mail.subject()).contains("FlowOps");
+        assertThat(mail.subject()).contains("Vantis");
 
         // The body carries the reset link with the plaintext (43-char base64url)
         // token — the hashed form would not fit the contract of the reset page.

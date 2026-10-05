@@ -7,8 +7,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Hermetic tests for the SSRF destination policy. No Mockito, no network: IP-literal
- * targets are checked without DNS, so every blocked case is provable in-process.
+ * Hermetic tests for the SSRF destination policy. No Mockito, no network:
+ * IP-literal
+ * targets are checked without DNS, so every blocked case is provable
+ * in-process.
  */
 class SsrfGuardTest {
 
@@ -27,7 +29,7 @@ class SsrfGuardTest {
     void blocksLoopbackAndLocalhostNames() {
         for (String target : new String[] {
                 "http://localhost/x", "http://localhost:8080/admin", "http://127.0.0.1/",
-                "http://[::1]/", "http://metadata.localhost/"}) {
+                "http://[::1]/", "http://metadata.localhost/" }) {
             assertThatThrownBy(() -> SsrfGuard.validate(target))
                     .as("target " + target)
                     .isInstanceOf(ApiException.class)
@@ -40,7 +42,7 @@ class SsrfGuardTest {
         for (String target : new String[] {
                 "http://10.0.0.5/", "http://172.16.0.1/", "http://172.31.255.255/",
                 "http://192.168.1.10/", "http://169.254.169.254/latest/meta-data/",
-                "http://0.0.0.0/"}) {
+                "http://0.0.0.0/" }) {
             assertThatThrownBy(() -> SsrfGuard.validate(target))
                     .as("target " + target)
                     .isInstanceOf(ApiException.class);
@@ -65,4 +67,97 @@ class SsrfGuardTest {
         assertThatThrownBy(() -> SsrfGuard.validate(null)).isInstanceOf(ApiException.class);
         assertThatThrownBy(() -> SsrfGuard.validate("   ")).isInstanceOf(ApiException.class);
     }
+
+    @Test
+    void blocksExtendedReservedRangesAndAlternateEncodings() {
+        for (String target : new String[] {
+                "http://100.64.0.1/",
+                "http://100.100.100.200/",
+                "http://198.18.0.1/",
+                "http://192.0.0.1/",
+                "http://240.0.0.1/",
+                "http://255.255.255.255/",
+                "http://[::ffff:127.0.0.1]/",
+                "http://[::ffff:169.254.169.254]/",
+                "http://[64:ff9b::7f00:1]/",
+                "http://[2002:7f00:1::]/",
+                "http://[fec0::1]/",
+                "http://2130706433/",
+                "http://0x7f000001/",
+                "http://127.1/"
+        }) {
+            assertThatThrownBy(() -> SsrfGuard.validate(target))
+                    .as("target " + target)
+                    .isInstanceOf(ApiException.class);
+        }
+    }
+
+    @Test
+    void validateHostBlocksComposeServiceNamesAndPrivateAddresses() {
+        for (String host : new String[] {
+                "postgres",
+                "redis",
+                "ai-service",
+                "localhost",
+                "10.0.0.5",
+                "127.0.0.1",
+                "[::1]",
+                "db.internal",
+                "cache.svc"
+        }) {
+            assertThatThrownBy(() -> SsrfGuard.validateHost(host))
+                    .as("host " + host)
+                    .isInstanceOf(ApiException.class);
+        }
+
+        SsrfGuard.validateHost("93.184.216.34");
+    }
+
+    @Test
+    void validateDatabaseNameRejectsJdbcParameterInjection() {
+        for (String name : new String[] {
+                "app?autoDeserialize=true",
+                "app&x=1",
+                "a/b",
+                "",
+                "app;x"
+        }) {
+            assertThatThrownBy(() -> SsrfGuard.validateDatabaseName(name))
+                    .as("db " + name)
+                    .isInstanceOf(ApiException.class);
+        }
+
+        SsrfGuard.validateDatabaseName("customer_db-1.prod");
+    }
+
+    @Test
+void validateMongoUriChecksEveryHostAndRefusesSrv() {
+    assertThatThrownBy(() ->
+            SsrfGuard.validateMongoUri(
+                    "mongodb://10.0.0.5:27017/db"
+            )
+    ).isInstanceOf(ApiException.class);
+
+    assertThatThrownBy(() ->
+            SsrfGuard.validateMongoUri(
+                    "mongodb://93.184.216.34,127.0.0.1/db"
+            )
+    ).isInstanceOf(ApiException.class);
+
+    assertThatThrownBy(() ->
+            SsrfGuard.validateMongoUri(
+                    "mongodb+srv://cluster.example.com/db"
+            )
+    ).isInstanceOf(ApiException.class);
+
+    assertThatThrownBy(() ->
+            SsrfGuard.validateMongoUri(
+                    "mongodb://user:pw@localhost/db"
+            )
+    ).isInstanceOf(ApiException.class);
+
+    SsrfGuard.validateMongoUri(
+            "mongodb://user:pw@93.184.216.34:27017/db?retryWrites=true"
+    );
+}
 }

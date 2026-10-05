@@ -65,7 +65,7 @@ class PasswordResetMailerTest {
         assertThat(transport.sends).hasSize(1);
         FakeTransport.SentMail sent = transport.sends.get(0);
         assertThat(sent.to()).isEqualTo("user@example.com");
-        assertThat(sent.subject()).isEqualTo("Reset your FlowOps password");
+        assertThat(sent.subject()).isEqualTo("Reset your Vantis password");
         // The reset link is its own line: the token rides only as the query
         // parameter of {appBaseUrl}/reset-password?token=…
         String linkLine = sent.body().lines()
@@ -81,7 +81,7 @@ class PasswordResetMailerTest {
         assertThat(settings.host()).isEqualTo("smtp.example.com");
         assertThat(settings.port()).isEqualTo(587);
         assertThat(settings.fromAddress()).isEqualTo("no-reply@example.com");
-        assertThat(settings.fromName()).isEqualTo("FlowOps");
+        assertThat(settings.fromName()).isEqualTo("Vantis");
         assertThat(settings.encryption()).isEqualTo(SmtpSettings.Encryption.STARTTLS);
     }
 
@@ -142,7 +142,7 @@ class PasswordResetMailerTest {
                 SMTP_PASSWORD,
                 "STARTTLS",
                 "no-reply@example.com",
-                "FlowOps",
+                "Vantis",
                 "http://localhost:3000");
     }
 }
