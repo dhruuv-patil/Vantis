@@ -52,8 +52,31 @@ export const registerSchema = z.object({
     .trim()
     .min(2, "Full name must be between 2 and 100 characters.")
     .max(100, "Full name must be between 2 and 100 characters."),
-  organizationName,
+  organizationName: organizationName.optional(),
 });
+
+export const signupSchema = z
+  .object({
+    fullName: z
+      .string()
+      .trim()
+      .min(2, "Name must be between 2 and 100 characters.")
+      .max(100, "Name must be between 2 and 100 characters."),
+    email,
+    password: z
+      .string()
+      .min(1, "Password is required.")
+      .regex(
+        PASSWORD_REGEX,
+        "Password must be 8–72 characters and include at least one letter and one number.",
+      )
+      .refine((v) => utf8Bytes(v) <= 72, "Password must be at most 72 bytes."),
+    confirmPassword: z.string().min(1, "Confirm your password."),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
 
 /**
  * Login checks presence and max length only — never the complexity rule. A

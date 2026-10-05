@@ -72,7 +72,7 @@ function ForgotPasswordPageContent() {
         </h1>
 
         <p className="mt-2 text-sm text-muted-foreground">
-          Enter your email and we'll send you a link to create a new password.
+          Enter your email and we&apos;ll send you a link to create a new password.
         </p>
       </div>
 
@@ -84,7 +84,7 @@ function ForgotPasswordPageContent() {
           </h2>
 
           <p className="mt-1.5 text-sm text-muted-foreground">
-            No problem. Enter your email address below and we'll send you a link to
+            No problem. Enter your email address below and we&apos;ll send you a link to
             reset it.
           </p>
         </div>

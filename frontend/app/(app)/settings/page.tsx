@@ -24,22 +24,26 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  PageContainer,
+  PageHeader,
+} from "@/components/app/page-primitives";
 
 export default function SettingsPage() {
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <div>
-        <p className="mono-eyebrow">Organization</p>
-        <h1 className="mt-1 text-xl font-semibold tracking-tight text-white/90">Settings</h1>
-        <p className="mt-1 text-sm text-white/44">
-          Manage your organization and your account security.
-        </p>
-      </div>
+    <PageContainer variant="narrow">
+      <PageHeader
+        eyebrow="Organization"
+        title="Settings"
+        description="Manage your organization and your account security."
+      />
 
-      <GeneralSettings />
-      <Separator className="bg-border/60" />
-      <SecuritySettings />
-    </div>
+      <div className="space-y-8">
+        <GeneralSettings />
+        <Separator className="border-white/[0.065]" />
+        <SecuritySettings />
+      </div>
+    </PageContainer>
   );
 }
 

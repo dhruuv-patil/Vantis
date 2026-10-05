@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 public class SlackProvider implements NotificationProvider {
 
     private static final String TEST_TEXT =
-            "FlowOps connection test — if you can read this, Slack notifications work.";
+            "Vantis connection test — if you can read this, Slack notifications work.";
 
     private final WebhookDeliverer deliverer;
 
@@ -54,7 +54,7 @@ public class SlackProvider implements NotificationProvider {
                         "Slack → Incoming Webhooks. Stored encrypted; never shown again."),
                 new CredentialField("channelName", "Channel name (optional)", false,
                         "#operations", "#operations",
-                        "Labels this connection in FlowOps. The webhook already decides the channel."));
+                        "Labels this connection in Vantis. The webhook already decides the channel."));
     }
 
     @Override
@@ -107,7 +107,7 @@ public class SlackProvider implements NotificationProvider {
 
     private static String text(NotificationMessage message) {
         return (message.text() == null || message.text().isBlank())
-                ? "FlowOps notification"
+                ? "Vantis notification"
                 : message.text();
     }
 }

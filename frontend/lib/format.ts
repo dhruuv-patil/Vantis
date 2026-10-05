@@ -99,3 +99,22 @@ export function formatBucketLabel(iso: string, hourly: boolean): string {
     ? d.toLocaleTimeString(undefined, { hour: "numeric" })
     : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
+
+/** Formats a trigger type code into human title format (e.g. "WEBHOOK_EVENT" -> "Webhook Event"). */
+export function formatTrigger(value?: string | null): string {
+  if (!value) return "—";
+  return value
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+export {
+  getStatusConfig,
+  getHealthTone,
+  getHealthLabel,
+  getHealthStroke,
+  type StatusTone,
+  type StatusConfig,
+} from "./status";
+

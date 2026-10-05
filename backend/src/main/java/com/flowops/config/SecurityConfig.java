@@ -51,12 +51,15 @@ public class SecurityConfig {
         "/api/auth/login",
         "/api/auth/refresh",
         "/api/auth/logout",
+        "/api/billing/plans",
         // A user who forgot their password is by definition logged out, so the
         // two reset endpoints must be reachable anonymously. Their protection is
         // the per-IP+email rate limit and the mandatory application/json content
         // type (CSRF preflight), not a bearer token.
         "/api/auth/forgot-password",
         "/api/auth/reset-password",
+        "/oauth2/**",
+        "/login/oauth2/**",
         "/v3/api-docs",
         "/v3/api-docs/**",
         "/swagger-ui.html",
@@ -66,17 +69,32 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final ApiErrorWriter errorWriter;
     private final String[] allowedOrigins;
+    private final com.flowops.security.oauth2.HttpCookieOAuth2AuthorizationRequestRepository authorizationRequestRepository;
+    private final com.flowops.security.oauth2.CustomOAuth2UserService customOAuth2UserService;
+    private final com.flowops.security.oauth2.CustomOidcUserService customOidcUserService;
+    private final com.flowops.security.oauth2.OAuth2AuthenticationSuccessHandler oauth2SuccessHandler;
+    private final com.flowops.security.oauth2.OAuth2AuthenticationFailureHandler oauth2FailureHandler;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
             ApiErrorWriter errorWriter,
-            @Value("${flowops.cors.allowed-origins}") String allowedOrigins) {
+            @Value("${flowops.cors.allowed-origins}") String allowedOrigins,
+            com.flowops.security.oauth2.HttpCookieOAuth2AuthorizationRequestRepository authorizationRequestRepository,
+            com.flowops.security.oauth2.CustomOAuth2UserService customOAuth2UserService,
+            com.flowops.security.oauth2.CustomOidcUserService customOidcUserService,
+            com.flowops.security.oauth2.OAuth2AuthenticationSuccessHandler oauth2SuccessHandler,
+            com.flowops.security.oauth2.OAuth2AuthenticationFailureHandler oauth2FailureHandler) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.errorWriter = errorWriter;
         this.allowedOrigins = Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim)
                 .filter(origin -> !origin.isEmpty())
                 .toArray(String[]::new);
+        this.authorizationRequestRepository = authorizationRequestRepository;
+        this.customOAuth2UserService = customOAuth2UserService;
+        this.customOidcUserService = customOidcUserService;
+        this.oauth2SuccessHandler = oauth2SuccessHandler;
+        this.oauth2FailureHandler = oauth2FailureHandler;
     }
 
     @Bean
@@ -104,6 +122,17 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/webhooks/*/*").permitAll()
                         .requestMatchers(PUBLIC_PATHS).permitAll()
                         .anyRequest().authenticated())
+                .oauth2Login(oauth2 -> oauth2
+                        .authorizationEndpoint(authorization -> authorization
+                                .baseUri("/oauth2/authorization")
+                                .authorizationRequestRepository(authorizationRequestRepository))
+                        .redirectionEndpoint(redirection -> redirection
+                                .baseUri("/login/oauth2/code/*"))
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                                .oidcUserService(customOidcUserService))
+                        .successHandler(oauth2SuccessHandler)
+                        .failureHandler(oauth2FailureHandler))
                 .exceptionHandling(handling -> handling
                         .authenticationEntryPoint(authenticationEntryPoint())
                         .accessDeniedHandler(accessDeniedHandler()))
@@ -157,14 +186,5 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;
-    }
-
-    /**
-     * BCrypt at the configured strength (default 12). Strength is a property so it
-     * can be lowered in tests, where a dozen 250 ms hashes would dominate runtime.
-     */
-    @Bean
-    PasswordEncoder passwordEncoder(AuthProperties properties) {
-        return new BCryptPasswordEncoder(properties.bcryptStrength());
     }
 }

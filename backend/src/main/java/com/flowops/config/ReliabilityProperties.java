@@ -50,4 +50,19 @@ public record ReliabilityProperties(
             sensitivity = 0.5;
         }
     }
+
+    public static ReliabilityProperties defaults() {
+        return new ReliabilityProperties(
+                Duration.ofHours(24),
+                Duration.ofMinutes(5),
+                30,
+                Duration.ofHours(1),
+                2.5,
+                3.0,
+                1.5,
+                Duration.ofMinutes(15),
+                0.15,
+                0.2,
+                Duration.ofMinutes(30));
+    }
 }

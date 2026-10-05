@@ -184,9 +184,9 @@ export function InviteMemberDialog({
                 </div>
               </div>
 
-              <p className="text-xs leading-5 text-white/30">
+              <p className="text-xs leading-5 text-white/50">
                 Grants the{" "}
-                <strong className="text-white/50">
+                <strong className="text-white/80">
                   {secret.role}
                 </strong>{" "}
                 role. Expires{" "}

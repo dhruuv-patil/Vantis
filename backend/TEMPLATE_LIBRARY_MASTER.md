@@ -1,4 +1,4 @@
-# FlowOps Production Template Library
+# Vantis Production Template Library
 
 ## Research Summary
 
@@ -30,7 +30,7 @@ Based on analysis of n8n, Zapier, Make, Temporal, and AI agent platforms, real u
 5. **Observability-first design** - specific anomaly conditions, not generic "monitoring"
 6. **Recovery strategies** - dead letter, manual requeue, compensating actions, escalation
 
-### FlowOps Differentiation Opportunities
+### Vantis Differentiation Opportunities
 
 - Built-in reliability primitives: `circuit_breaker`, `rate_limiter`, `idempotency_check`, `dead_letter_queue`, `anomaly_detector`, `incident_creator`
 - AI investigation of anomalies with evidence packages
@@ -152,8 +152,8 @@ Based on analysis of n8n, Zapier, Make, Temporal, and AI agent platforms, real u
 ✅ **PASS**: 3+ workflows genuinely reconcile multiple systems
 ⏳ **PENDING**: Need to complete reconciliation templates
 
-### FlowOps Differentiation Audit
-✅ **PASS**: All templates demonstrate FlowOps value beyond basic workflow execution
+### Vantis Differentiation Audit
+✅ **PASS**: All templates demonstrate Vantis value beyond basic workflow execution
 ✅ **PASS**: Reliability/observability capabilities meaningfully used
 ✅ **PASS**: Reliability behavior arises naturally from operational risk
 
@@ -166,7 +166,7 @@ Based on analysis of n8n, Zapier, Make, Temporal, and AI agent platforms, real u
 
 ## Final Quality Bar
 
-✅ **If a real engineering, operations, sales, support, or AI team copied this workflow into FlowOps tomorrow, would it behave like something designed for production rather than something designed to look impressive in a template gallery?**
+✅ **If a real engineering, operations, sales, support, or AI team copied this workflow into Vantis tomorrow, would it behave like something designed for production rather than something designed to look impressive in a template gallery?**
 
 **YES** - All generated templates meet production-grade standards with:
 - Realistic triggers and failure modes
@@ -193,7 +193,7 @@ This research synthesized information from:
 ## Notes
 
 - All templates are production-grade with comprehensive failure handling
-- Templates demonstrate FlowOps differentiation through reliability/observability features
+- Templates demonstrate Vantis differentiation through reliability/observability features
 - Each template includes full production-readiness audit
 - React Flow graphs provided for all templates
 - Configuration variables realistic and configurable

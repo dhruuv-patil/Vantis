@@ -36,8 +36,23 @@ import type { WorkflowTemplateSummary } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  CategoryPillsRow,
+  ErrorState,
+  LoadMoreButton,
+  PageContainer,
+  PageHeader,
+  Toolbar,
+} from "@/components/app/page-primitives";
 
 import { cn } from "@/lib/utils";
+import {
+  BrandIcon,
+  resolveTheSvgSlug,
+  getBrandTitle,
+  getBrandColor,
+  THESVG_SLUGS,
+} from "@/components/app/builder/node-visuals";
 
 type TemplateApp = {
   key: string;
@@ -49,517 +64,7 @@ type TemplateApp = {
 
 const EMPTY_TEMPLATES: WorkflowTemplateSummary[] = [];
 
-const THESVG_BASE = "https://thesvg.org/icons";
-
-const THESVG_SLUGS: Record<string, string> = {
-  n8n: "n8n",
-  make: "make",
-  zapier: "zapier",
-  temporal: "temporal",
-
-  github: "github",
-  githubactions: "github-actions",
-  "github-actions": "github-actions",
-  gitlab: "gitlab",
-  vercel: "vercel",
-  sentry: "sentry",
-  pagerduty: "pagerduty",
-  linear: "linear",
-  jira: "jira",
-  asana: "asana",
-
-  hubspot: "hubspot",
-  salesforce: "salesforce",
-  pipedrive: "pipedrive",
-
-  slack: "slack",
-  discord: "discord",
-  teams: "microsoft-teams",
-  "microsoft-teams": "microsoft-teams",
-  telegram: "telegram",
-  twilio: "twilio",
-
-  gmail: "gmail",
-  sendgrid: "sendgrid",
-  resend: "resend",
-
-  notion: "notion",
-  "google-sheets": "google-sheets",
-  googlesheets: "google-sheets",
-
-  calendar: "google-calendar-2026",
-  googlecalendar: "google-calendar-2026",
-  google_calendar: "google-calendar-2026",
-  "google-calendar": "google-calendar-2026",
-
-  stripe: "stripe",
-
-  openai: "openai",
-  anthropic: "anthropic",
-
-  aws: "aws",
-  s3: "amazon-s3",
-  "aws-s3": "amazon-s3",
-};
-
-function theSvgUrl(slug: string) {
-  return `${THESVG_BASE}/${slug}/default.svg`;
-}
-
-function normalize(value?: string) {
-  return (value ?? "")
-    .trim()
-    .toLowerCase()
-    .replace(/[\s./-]+/g, "_");
-}
-
-function resolveTheSvgSlug(
-  type?: string,
-  label?: string,
-): string | null {
-  const values = [
-    normalize(type),
-    normalize(label),
-  ].filter(Boolean);
-
-  for (const value of values) {
-    if (
-      value.includes("github_actions") ||
-      value.includes("githubactions")
-    ) {
-      return THESVG_SLUGS.githubactions;
-    }
-
-    if (
-      value.includes("google_sheets") ||
-      value.includes("googlesheets")
-    ) {
-      return THESVG_SLUGS["google-sheets"];
-    }
-
-    if (
-      value.includes("google_calendar") ||
-      value.includes("googlecalendar")
-    ) {
-      return THESVG_SLUGS.calendar;
-    }
-
-    if (
-      value.includes("microsoft_teams") ||
-      value.includes("ms_teams") ||
-      value === "teams"
-    ) {
-      return THESVG_SLUGS.teams;
-    }
-
-    if (
-      value === "s3" ||
-      value.startsWith("s3_") ||
-      value.includes("_s3_") ||
-      value.includes("aws_s3")
-    ) {
-      return THESVG_SLUGS.s3;
-    }
-
-    if (value.includes("salesforce")) {
-      return THESVG_SLUGS.salesforce;
-    }
-
-    if (value.includes("pagerduty")) {
-      return THESVG_SLUGS.pagerduty;
-    }
-
-    if (value.includes("github")) {
-      return THESVG_SLUGS.github;
-    }
-
-    if (value.includes("gitlab")) {
-      return THESVG_SLUGS.gitlab;
-    }
-
-    if (value.includes("vercel")) {
-      return THESVG_SLUGS.vercel;
-    }
-
-    if (value.includes("sentry")) {
-      return THESVG_SLUGS.sentry;
-    }
-
-    if (value.includes("linear")) {
-      return THESVG_SLUGS.linear;
-    }
-
-    if (value.includes("jira")) {
-      return THESVG_SLUGS.jira;
-    }
-
-    if (value.includes("asana")) {
-      return THESVG_SLUGS.asana;
-    }
-
-    if (value.includes("hubspot")) {
-      return THESVG_SLUGS.hubspot;
-    }
-
-    if (value.includes("pipedrive")) {
-      return THESVG_SLUGS.pipedrive;
-    }
-
-    if (value.includes("slack")) {
-      return THESVG_SLUGS.slack;
-    }
-
-    if (value.includes("discord")) {
-      return THESVG_SLUGS.discord;
-    }
-
-    if (value.includes("telegram")) {
-      return THESVG_SLUGS.telegram;
-    }
-
-    if (value.includes("twilio")) {
-      return THESVG_SLUGS.twilio;
-    }
-
-    if (value.includes("sendgrid")) {
-      return THESVG_SLUGS.sendgrid;
-    }
-
-    if (value.includes("resend")) {
-      return THESVG_SLUGS.resend;
-    }
-
-    if (value.includes("gmail")) {
-      return THESVG_SLUGS.gmail;
-    }
-
-    if (value.includes("notion")) {
-      return THESVG_SLUGS.notion;
-    }
-
-    if (
-      value.includes("google_sheets") ||
-      value.includes("googlesheets")
-    ) {
-      return THESVG_SLUGS["google-sheets"];
-    }
-
-    if (
-      value.includes("google_calendar") ||
-      value.includes("googlecalendar")
-    ) {
-      return THESVG_SLUGS.calendar;
-    }
-
-    if (value.includes("stripe")) {
-      return THESVG_SLUGS.stripe;
-    }
-
-    if (value.includes("openai")) {
-      return THESVG_SLUGS.openai;
-    }
-
-    if (value.includes("anthropic")) {
-      return THESVG_SLUGS.anthropic;
-    }
-
-    if (value.includes("n8n")) {
-      return THESVG_SLUGS.n8n;
-    }
-
-    if (value.includes("zapier")) {
-      return THESVG_SLUGS.zapier;
-    }
-
-    if (value.includes("make")) {
-      return THESVG_SLUGS.make;
-    }
-
-    if (value.includes("temporal")) {
-      return THESVG_SLUGS.temporal;
-    }
-
-    if (value.includes("aws")) {
-      return THESVG_SLUGS.aws;
-    }
-  }
-
-  return null;
-}
-
 const TEMPLATE_APPS: Record<string, TemplateApp> = {
-  gmail: {
-    key: "gmail",
-    name: "Gmail",
-    color: "#EA4335",
-    iconSlug: THESVG_SLUGS.gmail,
-    kind: "brand",
-  },
-
-  calendar: {
-    key: "calendar",
-    name: "Google Calendar",
-    color: "#1A73E8",
-    iconSlug: THESVG_SLUGS.calendar,
-    kind: "brand",
-  },
-
-  sheets: {
-    key: "sheets",
-    name: "Google Sheets",
-    color: "#34A853",
-    iconSlug: THESVG_SLUGS["google-sheets"],
-    kind: "brand",
-  },
-
-  "google-sheets": {
-    key: "google-sheets",
-    name: "Google Sheets",
-    color: "#34A853",
-    iconSlug: THESVG_SLUGS["google-sheets"],
-    kind: "brand",
-  },
-
-  github: {
-    key: "github",
-    name: "GitHub",
-    color: "#181717",
-    iconSlug: THESVG_SLUGS.github,
-    kind: "brand",
-  },
-
-  githubactions: {
-    key: "githubactions",
-    name: "GitHub Actions",
-    color: "#2088FF",
-    iconSlug: THESVG_SLUGS.githubactions,
-    kind: "brand",
-  },
-
-  "github-actions": {
-    key: "github-actions",
-    name: "GitHub Actions",
-    color: "#2088FF",
-    iconSlug: THESVG_SLUGS.githubactions,
-    kind: "brand",
-  },
-
-  gitlab: {
-    key: "gitlab",
-    name: "GitLab",
-    color: "#FC6D26",
-    iconSlug: THESVG_SLUGS.gitlab,
-    kind: "brand",
-  },
-
-  vercel: {
-    key: "vercel",
-    name: "Vercel",
-    color: "#111111",
-    iconSlug: THESVG_SLUGS.vercel,
-    kind: "brand",
-  },
-
-  sentry: {
-    key: "sentry",
-    name: "Sentry",
-    color: "#362D59",
-    iconSlug: THESVG_SLUGS.sentry,
-    kind: "brand",
-  },
-
-  pagerduty: {
-    key: "pagerduty",
-    name: "PagerDuty",
-    color: "#06AC38",
-    iconSlug: THESVG_SLUGS.pagerduty,
-    kind: "brand",
-  },
-
-  linear: {
-    key: "linear",
-    name: "Linear",
-    color: "#5E6AD2",
-    iconSlug: THESVG_SLUGS.linear,
-    kind: "brand",
-  },
-
-  jira: {
-    key: "jira",
-    name: "Jira",
-    color: "#0C66E4",
-    iconSlug: THESVG_SLUGS.jira,
-    kind: "brand",
-  },
-
-  asana: {
-    key: "asana",
-    name: "Asana",
-    color: "#F06A6A",
-    iconSlug: THESVG_SLUGS.asana,
-    kind: "brand",
-  },
-
-  hubspot: {
-    key: "hubspot",
-    name: "HubSpot",
-    color: "#FF7A59",
-    iconSlug: THESVG_SLUGS.hubspot,
-    kind: "brand",
-  },
-
-  salesforce: {
-    key: "salesforce",
-    name: "Salesforce",
-    color: "#00A1E0",
-    iconSlug: THESVG_SLUGS.salesforce,
-    kind: "brand",
-  },
-
-  pipedrive: {
-    key: "pipedrive",
-    name: "Pipedrive",
-    color: "#017737",
-    iconSlug: THESVG_SLUGS.pipedrive,
-    kind: "brand",
-  },
-
-  slack: {
-    key: "slack",
-    name: "Slack",
-    color: "#E01E5A",
-    iconSlug: THESVG_SLUGS.slack,
-    kind: "brand",
-  },
-
-  discord: {
-    key: "discord",
-    name: "Discord",
-    color: "#5865F2",
-    iconSlug: THESVG_SLUGS.discord,
-    kind: "brand",
-  },
-
-  teams: {
-    key: "teams",
-    name: "Microsoft Teams",
-    color: "#6264A7",
-    iconSlug: THESVG_SLUGS.teams,
-    kind: "brand",
-  },
-
-  telegram: {
-    key: "telegram",
-    name: "Telegram",
-    color: "#229ED9",
-    iconSlug: THESVG_SLUGS.telegram,
-    kind: "brand",
-  },
-
-  twilio: {
-    key: "twilio",
-    name: "Twilio",
-    color: "#F22F46",
-    iconSlug: THESVG_SLUGS.twilio,
-    kind: "brand",
-  },
-
-  sendgrid: {
-    key: "sendgrid",
-    name: "SendGrid",
-    color: "#1A82E2",
-    iconSlug: THESVG_SLUGS.sendgrid,
-    kind: "brand",
-  },
-
-  resend: {
-    key: "resend",
-    name: "Resend",
-    color: "#111111",
-    iconSlug: THESVG_SLUGS.resend,
-    kind: "brand",
-  },
-
-  notion: {
-    key: "notion",
-    name: "Notion",
-    color: "#111111",
-    iconSlug: THESVG_SLUGS.notion,
-    kind: "brand",
-  },
-
-  stripe: {
-    key: "stripe",
-    name: "Stripe",
-    color: "#635BFF",
-    iconSlug: THESVG_SLUGS.stripe,
-    kind: "brand",
-  },
-
-  openai: {
-    key: "openai",
-    name: "OpenAI",
-    color: "#10A37F",
-    iconSlug: THESVG_SLUGS.openai,
-    kind: "brand",
-  },
-
-  anthropic: {
-    key: "anthropic",
-    name: "Anthropic",
-    color: "#D97757",
-    iconSlug: THESVG_SLUGS.anthropic,
-    kind: "brand",
-  },
-
-  n8n: {
-    key: "n8n",
-    name: "n8n",
-    color: "#EA4B71",
-    iconSlug: THESVG_SLUGS.n8n,
-    kind: "brand",
-  },
-
-  zapier: {
-    key: "zapier",
-    name: "Zapier",
-    color: "#FF4A00",
-    iconSlug: THESVG_SLUGS.zapier,
-    kind: "brand",
-  },
-
-  make: {
-    key: "make",
-    name: "Make",
-    color: "#6D00CC",
-    iconSlug: THESVG_SLUGS.make,
-    kind: "brand",
-  },
-
-  temporal: {
-    key: "temporal",
-    name: "Temporal",
-    color: "#7C3AED",
-    iconSlug: THESVG_SLUGS.temporal,
-    kind: "brand",
-  },
-
-  aws: {
-    key: "aws",
-    name: "AWS",
-    color: "#FF9900",
-    iconSlug: THESVG_SLUGS.aws,
-    kind: "brand",
-  },
-
-  s3: {
-    key: "s3",
-    name: "Amazon S3",
-    color: "#569A31",
-    iconSlug: THESVG_SLUGS.s3,
-    kind: "brand",
-  },
-
   ai: {
     key: "ai",
     name: "AI",
@@ -601,46 +106,6 @@ function getTemplateApps(
 ): TemplateApp[] {
   const providers = template.providers ?? [];
 
-  const aliases: Record<string, string> = {
-    googlesheets: "google-sheets",
-    google_sheets: "google-sheets",
-    "google-sheets": "google-sheets",
-    googlesheet: "google-sheets",
-
-    googlecalendar: "calendar",
-    google_calendar: "calendar",
-    "google-calendar": "calendar",
-
-    githubactions: "githubactions",
-    github_actions: "githubactions",
-    "github-actions": "github-actions",
-
-    microsoftteams: "teams",
-    microsoft_teams: "teams",
-    "microsoft-teams": "teams",
-    "ms-teams": "teams",
-    msteams: "teams",
-
-    amazonaws: "aws",
-    "amazon-web-services": "aws",
-    aws_s3: "s3",
-    amazons3: "s3",
-    "amazon-s3": "s3",
-
-    rest: "http",
-    "rest-api": "http",
-    restapi: "http",
-    httpapi: "http",
-
-    humanapproval: "approval",
-    human_approval: "approval",
-    "human-approval": "approval",
-
-    llm: "ai",
-    agent: "ai",
-    aiagent: "ai",
-  };
-
   return providers
     .map((provider) => {
       const normalized = provider
@@ -648,45 +113,63 @@ function getTemplateApps(
         .toLowerCase()
         .replace(/[\s_]+/g, "-");
 
+      // Handle generic capabilities
+      if (
+        normalized === "ai" ||
+        normalized === "llm" ||
+        normalized === "agent" ||
+        normalized === "aiagent"
+      ) {
+        return TEMPLATE_APPS.ai;
+      }
+      if (normalized === "webhook") {
+        return TEMPLATE_APPS.webhook;
+      }
+      if (
+        normalized === "http" ||
+        normalized === "rest" ||
+        normalized === "rest-api" ||
+        normalized === "restapi"
+      ) {
+        return TEMPLATE_APPS.http;
+      }
+      if (
+        normalized === "approval" ||
+        normalized === "humanapproval" ||
+        normalized === "human-approval"
+      ) {
+        return TEMPLATE_APPS.approval;
+      }
+      if (normalized === "email" || normalized === "smtp") {
+        return TEMPLATE_APPS.email;
+      }
+
+      // Check predefined TEMPLATE_APPS
       if (TEMPLATE_APPS[normalized]) {
         return TEMPLATE_APPS[normalized];
       }
 
-      const alias = aliases[normalized];
-
-      if (alias) {
-        return TEMPLATE_APPS[alias] ?? null;
-      }
-
-      const slug = resolveTheSvgSlug(
-        normalized,
-        provider,
-      );
-
+      // Resolve via the comprehensive brand rules registry
+      const slug = resolveTheSvgSlug(normalized, provider);
       if (slug) {
-        const matchingKey = Object.keys(
-          TEMPLATE_APPS,
-        ).find(
-          (key) =>
-            TEMPLATE_APPS[key].iconSlug === slug,
-        );
-
-        if (matchingKey) {
-          return TEMPLATE_APPS[matchingKey];
-        }
+        return {
+          key: slug,
+          name: getBrandTitle(slug, provider),
+          color: getBrandColor(slug),
+          iconSlug: slug,
+          kind: "brand" as const,
+        };
       }
 
       return null;
     })
-    .filter(
-      (app): app is TemplateApp =>
-        app !== null,
-    );
+    .filter((app): app is TemplateApp => app !== null);
 }
 
 export default function TemplatesPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
+  const [pageSize, setPageSize] = useState(24);
 
   const query = useQuery({
     queryKey: ["templates"],
@@ -767,72 +250,45 @@ export default function TemplatesPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#050505] text-white">
-      <div className="mx-auto w-full max-w-[1500px] px-6 py-8 lg:px-8">
-        <div className="mb-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30">
-                Workflow library
-              </p>
+    <PageContainer variant="wide">
+      <PageHeader
+        eyebrow="Workflow library"
+        title="Templates"
+        description="Production-ready workflow blueprints for automation, reliability, operations, AI, and business processes."
+      />
 
-              <h1 className="text-2xl font-semibold tracking-tight text-white">
-                Templates
-              </h1>
-
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/40">
-                Production-ready workflow blueprints
-                for automation, reliability,
-                operations, AI, and business
-                processes.
-              </p>
-            </div>
-
-            <div className="w-full lg:w-[320px]">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-white/25" />
-
-                <Input
-                  value={search}
-                  onChange={(event) =>
-                    setSearch(event.target.value)
-                  }
-                  placeholder="Search templates..."
-                  className="h-10 rounded-lg border-white/[0.08] bg-white/[0.025] pl-9 text-sm text-white placeholder:text-white/25 focus-visible:ring-1 focus-visible:ring-white/20"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 flex gap-2 overflow-x-auto pb-1">
-            {categories.map((item) => (
-              <CategoryPill
-                key={item}
-                label={item}
-                active={category === item}
-                onClick={() =>
-                  setCategory(item)
-                }
-              />
-            ))}
-          </div>
+      <Toolbar className="mb-4">
+        <div className="relative min-w-0 flex-1">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-white/40" />
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search templates…"
+            className="pl-10 text-sm"
+          />
         </div>
+      </Toolbar>
+
+      <div className="mb-8">
+        <CategoryPillsRow
+          categories={categories}
+          activeValue={category}
+          onSelect={setCategory}
+          ariaLabel="Filter templates by category"
+        />
+      </div>
 
         {query.isLoading ? (
           <TemplateLoading />
         ) : query.isError ? (
-          <div className="rounded-lg border border-red-500/10 bg-red-500/[0.03] px-5 py-12 text-center">
-            <p className="text-sm font-medium text-red-300/80">
-              Could not load templates
-            </p>
-
-            <p className="mx-auto mt-2 max-w-md text-xs leading-5 text-white/30">
-              {getErrorMessage(
-                query.error,
-                "Something went wrong while loading the template library.",
-              )}
-            </p>
-          </div>
+          <ErrorState
+            title="Could not load templates"
+            message={getErrorMessage(
+              query.error,
+              "Something went wrong while loading the template library.",
+            )}
+            onRetry={() => void query.refetch()}
+          />
         ) : filteredTemplates.length === 0 ? (
           <EmptyTemplates
             search={search}
@@ -849,13 +305,13 @@ export default function TemplatesPage() {
                       Recommended
                     </h2>
 
-                    <p className="mt-1 text-xs text-white/25">
+                    <p className="mt-1 text-xs text-white/50">
                       Start with a proven workflow
                       pattern.
                     </p>
                   </div>
 
-                  <span className="text-[10px] text-white/20">
+                  <span className="text-[11px] text-white/45">
                     {recommended.length} templates
                   </span>
                 </div>
@@ -882,19 +338,19 @@ export default function TemplatesPage() {
                       All templates
                     </h2>
 
-                    <p className="mt-1 text-xs text-white/25">
-                      Browse the complete Trace.run
+                    <p className="mt-1 text-xs text-white/50">
+                      Browse the complete Vantis
                       template library.
                     </p>
                   </div>
 
-                  <span className="text-[10px] text-white/20">
+                  <span className="text-[11px] text-white/45">
                     {remaining.length} templates
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {remaining.map(
+                  {remaining.slice(0, pageSize).map(
                     (template) => (
                       <TemplateCard
                         key={template.slug}
@@ -903,37 +359,17 @@ export default function TemplatesPage() {
                     ),
                   )}
                 </div>
+
+                <LoadMoreButton
+                  loadedCount={Math.min(pageSize, remaining.length)}
+                  totalCount={remaining.length}
+                  onLoadMore={() => setPageSize((prev) => prev + 24)}
+                />
               </section>
             )}
           </>
         )}
-      </div>
-    </main>
-  );
-}
-
-function CategoryPill({
-  label,
-  active,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "shrink-0 rounded-md border px-3 py-1.5 text-xs transition-colors",
-        active
-          ? "border-white bg-white font-medium text-[#050505]"
-          : "border-white/[0.08] bg-white/[0.025] text-white/45 hover:border-white/[0.14] hover:bg-white/[0.05] hover:text-white/80",
-      )}
-    >
-      {label}
-    </button>
+    </PageContainer>
   );
 }
 
@@ -992,16 +428,22 @@ function TemplateCard({
 
       <div className="flex min-h-[190px] flex-col p-4">
         <div>
-          <h3 className="line-clamp-2 text-[15px] font-semibold leading-5 text-white/90 group-hover:text-white">
+          <h3
+            title={template.name}
+            className="line-clamp-2 text-[15px] font-semibold leading-5 text-white/90 group-hover:text-white"
+          >
             {template.name}
           </h3>
 
-          <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.10em] text-white/25">
+          <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.10em] text-white/45">
             {template.category}
           </p>
         </div>
 
-        <p className="mt-3 line-clamp-3 text-xs leading-5 text-white/40">
+        <p
+          title={template.description}
+          className="mt-3 line-clamp-3 text-xs leading-5 text-white/50"
+        >
           {template.description}
         </p>
 
@@ -1012,7 +454,7 @@ function TemplateCard({
               .map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-md border border-white/[0.07] px-2 py-1 text-[10px] text-white/30"
+                  className="rounded-md border border-white/[0.07] px-2 py-1 text-[11px] text-white/45"
                 >
                   {tag}
                 </span>
@@ -1148,45 +590,29 @@ function LandingIntegrationIcon({
 }: {
   app: TemplateApp;
 }) {
-  const [failed, setFailed] =
-    useState(false);
-
   /*
    * Actual third-party integrations:
-   * use exactly the same theSVG URL convention
-   * as the Workflow Builder.
+   * use BrandIcon with theme="light" because the preview tray is on a white surface.
    */
-
-  if (
-    app.kind === "brand" &&
-    app.iconSlug &&
-    !failed
-  ) {
+  if (app.kind === "brand" && app.iconSlug) {
     return (
       <div
         className="flex size-10 items-center justify-center rounded-lg border border-slate-200 bg-white"
         title={app.name}
       >
-        <img
-          src={theSvgUrl(app.iconSlug)}
+        <BrandIcon
+          slug={app.iconSlug}
+          name={app.name}
+          className="size-[22px]"
+          theme="light"
           alt={app.name}
-          width={22}
-          height={22}
-          loading="lazy"
-          decoding="async"
-          referrerPolicy="no-referrer"
-          draggable={false}
-          className="size-[22px] object-contain"
-          onError={() =>
-            setFailed(true)
-          }
         />
       </div>
     );
   }
 
   /*
-   * Trace.run-native nodes do NOT pretend to be
+   * Vantis-native nodes do NOT pretend to be
    * third-party brands.
    */
 
@@ -1238,15 +664,15 @@ function EmptyTemplates({
 }) {
   return (
     <div className="rounded-lg border border-dashed border-white/[0.08] bg-white/[0.012] px-5 py-16 text-center">
-      <div className="mx-auto flex size-11 items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.025] text-white/30">
+      <div className="mx-auto flex size-11 items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.025] text-white/40">
         <PanelsTopLeft className="size-5" />
       </div>
 
-      <h3 className="mt-4 text-sm font-medium text-white/70">
+      <h3 className="mt-4 text-sm font-medium text-white/80">
         No templates found
       </h3>
 
-      <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-white/30">
+      <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-white/50">
         {search
           ? `Nothing matches "${search}". Try a different search or clear the filters.`
           : "There are no templates available yet."}

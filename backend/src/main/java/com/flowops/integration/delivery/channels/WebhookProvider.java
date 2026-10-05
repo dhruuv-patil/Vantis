@@ -64,7 +64,7 @@ public class WebhookProvider implements NotificationProvider {
 
     @Override
     public String description() {
-        return "Deliver FlowOps events to any HTTPS endpoint with retries, signing, "
+        return "Deliver Vantis events to any HTTPS endpoint with retries, signing, "
                 + "and per-event delivery status.";
     }
 
@@ -72,9 +72,9 @@ public class WebhookProvider implements NotificationProvider {
     public List<CredentialField> credentialFields() {
         return List.of(
                 new CredentialField("url", "Endpoint URL", false,
-                        "https://example.com/hooks/flowops",
-                        "https://example.com/hooks/flowops",
-                        "FlowOps POSTs JSON events here"),
+                        "https://example.com/hooks/vantis",
+                        "https://example.com/hooks/vantis",
+                        "Vantis POSTs JSON events here"),
                 new CredentialField("method", "Method", false, "POST", "POST",
                         "Only POST is supported (JSON body)"),
                 new CredentialField("headers", "Custom headers (JSON)", true,
@@ -116,7 +116,7 @@ public class WebhookProvider implements NotificationProvider {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("event", TEST_EVENT_TYPE);
         payload.put("source", "flowops");
-        payload.put("message", "FlowOps connection test — if you can read this, "
+        payload.put("message", "Vantis connection test — if you can read this, "
                 + "your webhook integration works.");
         DeliveryResult result = send(context, payload, timeoutMillis(timeout));
         if (result.success()) {
@@ -148,13 +148,13 @@ public class WebhookProvider implements NotificationProvider {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("event", TEST_EVENT_TYPE);
         payload.put("source", "flowops");
-        payload.put("message", "FlowOps test event");
+        payload.put("message", "Vantis test event");
         Long timeout = timeoutSeconds(context);
         return send(context, payload, timeoutMillis(timeout));
     }
 
     /**
-     * Dispatches a FlowOps event to the configured endpoint (used by
+     * Dispatches a Vantis event to the configured endpoint (used by
      * {@code WebhookEventDispatcher}). The envelope always carries {@code event},
      * {@code timestamp}, and {@code source}, and is HMAC-signed when a secret is set.
      */

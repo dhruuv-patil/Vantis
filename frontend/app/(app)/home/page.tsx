@@ -34,13 +34,13 @@ import { Skeleton } from "@/components/ui/skeleton";
    ========================================================================== */
 
 /**
- * Trace.run uses a left-to-right React Flow canvas:
+ * Vantis uses a left-to-right React Flow canvas:
  *
  *   Trigger → Step → Step → Step
  *
  * AI providers can return nodes with their own positions, often stacked
  * vertically. Before saving an AI-generated graph, normalize its positions
- * into the same horizontal layout used by the Trace.run workflow builder.
+ * into the same horizontal layout used by the Vantis workflow builder.
  */
 function layoutGraphHorizontally(graph: any) {
   if (
@@ -59,7 +59,7 @@ function layoutGraphHorizontally(graph: any) {
 
   /*
    * These values are intentionally close to the spacing used by the
-   * Trace.run horizontal builder.
+   * Vantis horizontal builder.
    */
   const NODE_X_GAP = 220;
   const NODE_Y_GAP = 150;
@@ -581,7 +581,7 @@ export default function HomePage() {
          * IMPORTANT:
          *
          * The AI service can return nodes with vertical positions.
-         * The Trace.run builder uses a horizontal left-to-right layout.
+         * The Vantis builder uses a horizontal left-to-right layout.
          *
          * Normalize the graph BEFORE saving it so the workflow opens
          * horizontally in the existing builder.
@@ -601,7 +601,7 @@ export default function HomePage() {
         );
       } catch {
         setError(
-          "The workflow was generated, but Trace.run could not open it in the builder.",
+          "The workflow was generated, but Vantis could not open it in the builder.",
         );
       } finally {
         setOpeningBuilder(false);
@@ -667,7 +667,7 @@ export default function HomePage() {
         </h1>
 
         <p className="mt-2 max-w-xl text-sm leading-6 text-white/40">
-          Describe what you want to automate and Trace.run will turn it into a
+          Describe what you want to automate and Vantis will turn it into a
           workflow.
         </p>
       </section>
@@ -734,7 +734,7 @@ export default function HomePage() {
                 "px-4 py-3.5",
                 "text-sm leading-6 text-white",
                 "outline-none",
-                "placeholder:text-white/25",
+                "placeholder:text-white/40",
                 "transition-colors",
                 "focus:border-white/[0.16]",
                 "focus:bg-white/[0.03]",
@@ -743,7 +743,7 @@ export default function HomePage() {
 
             <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-2">
-                <span className="hidden text-[10px] font-medium uppercase tracking-[0.12em] text-white/25 sm:block">
+                <span className="hidden text-[11px] font-medium uppercase tracking-[0.12em] text-white/45 sm:block">
                   Try
                 </span>
 
@@ -754,7 +754,7 @@ export default function HomePage() {
                       "When a critical GitHub issue is created, analyze it with AI and notify Slack.",
                     )
                   }
-                  className="truncate rounded-md border border-white/[0.07] bg-white/[0.02] px-2.5 py-1.5 text-xs text-white/40 transition-colors hover:border-white/[0.14] hover:bg-white/[0.04] hover:text-white/70"
+                  className="truncate rounded-md border border-white/[0.07] bg-white/[0.02] px-2.5 py-1.5 text-xs text-white/50 transition-colors hover:border-white/[0.14] hover:bg-white/[0.04] hover:text-white/80"
                 >
                   GitHub → AI → Slack
                 </button>
@@ -766,14 +766,14 @@ export default function HomePage() {
                       "When a workflow fails, investigate the failure and notify the engineering team.",
                     )
                   }
-                  className="hidden truncate rounded-md border border-white/[0.07] bg-white/[0.02] px-2.5 py-1.5 text-xs text-white/40 transition-colors hover:border-white/[0.14] hover:bg-white/[0.04] hover:text-white/70 sm:block"
+                  className="hidden truncate rounded-md border border-white/[0.07] bg-white/[0.02] px-2.5 py-1.5 text-xs text-white/50 transition-colors hover:border-white/[0.14] hover:bg-white/[0.04] hover:text-white/80 sm:block"
                 >
                   Failure investigation
                 </button>
               </div>
 
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[10px] text-white/25">
+                <span className="text-[11px] text-white/45">
                   ⌘/Ctrl + Enter
                 </span>
 
@@ -877,7 +877,7 @@ export default function HomePage() {
 
       <section className="mx-auto mt-11 w-full max-w-[1100px]">
         <div className="mb-3">
-          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-white/30">
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/45">
             Start building
           </p>
         </div>
@@ -904,12 +904,12 @@ export default function HomePage() {
                         {action.title}
                       </p>
 
-                      <p className="mt-1 text-xs text-white/30">
+                      <p className="mt-1 text-xs text-white/50">
                         {action.description}
                       </p>
                     </div>
 
-                    <ArrowRight className="ml-auto size-3.5 text-white/20 transition-all group-hover:translate-x-0.5 group-hover:text-white/60" />
+                    <ArrowRight className="ml-auto size-3.5 text-white/30 transition-all group-hover:translate-x-0.5 group-hover:text-white/70" />
                   </div>
                 </Link>
               );
@@ -924,13 +924,13 @@ export default function HomePage() {
 
       <section className="mx-auto mt-11 w-full max-w-[1100px]">
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-[10px] font-medium uppercase tracking-[0.14em] text-white/30">
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/45">
             Recent workflows
           </p>
 
           <Link
             href="/workflows"
-            className="flex items-center gap-1 text-xs text-white/35 transition-colors hover:text-white/70"
+            className="flex items-center gap-1 text-xs text-white/45 transition-colors hover:text-white/80"
           >
             View all
 
@@ -951,19 +951,19 @@ export default function HomePage() {
           </div>
         ) : workflowsQ.isError ? (
           <div className="rounded-lg border border-white/[0.075] bg-[#0a0a0a] px-5 py-10 text-center">
-            <p className="text-sm text-white/35">
+            <p className="text-sm text-white/50">
               Unable to load recent workflows.
             </p>
           </div>
         ) : workflows.length === 0 ? (
           <div className="rounded-lg border border-dashed border-white/[0.09] bg-[#0a0a0a] px-5 py-12 text-center">
-            <p className="text-sm text-white/40">
+            <p className="text-sm text-white/60">
               No workflows yet.
             </p>
 
             <Link
               href="/workflows/new"
-              className="mt-2 inline-flex items-center text-xs text-white/55 hover:text-white"
+              className="mt-2 inline-flex items-center text-xs text-white/60 hover:text-white"
             >
               Create your first workflow
 
@@ -993,7 +993,7 @@ export default function HomePage() {
                       {workflow.name}
                     </p>
 
-                    <p className="mt-1 truncate text-xs text-white/25">
+                    <p className="mt-1 truncate text-xs text-white/50">
                       {workflow.description ||
                         "No description"}
                     </p>
@@ -1007,7 +1007,7 @@ export default function HomePage() {
                     />
                   </div>
 
-                  <span className="hidden text-[11px] text-white/25 md:block">
+                  <span className="hidden text-[11px] text-white/45 md:block">
                     {workflow.updatedAt
                       ? new Date(
                           workflow.updatedAt,
@@ -1015,7 +1015,7 @@ export default function HomePage() {
                       : "—"}
                   </span>
 
-                  <ArrowRight className="size-3.5 shrink-0 text-white/20 transition-all group-hover:translate-x-0.5 group-hover:text-white/60" />
+                  <ArrowRight className="size-3.5 shrink-0 text-white/30 transition-all group-hover:translate-x-0.5 group-hover:text-white/70" />
                 </Link>
               ),
             )}

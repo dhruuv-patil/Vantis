@@ -18,25 +18,96 @@ const config: Config = {
           600: "#6366f1",
           700: "#4f46e5",
         },
-        /* Surface palette */
-        "surface-0": "#09090b",
-        "surface-1": "#0f1114",
-        "surface-2": "#16191d",
-        "surface-3": "#1c2025",
+
+        /* Surface tokens (Single source of truth) */
+        surface: {
+          page: "#000000",
+          shell: "#050505",
+          card: "#0a0a0c",
+          inset: "#111114",
+          hover: "rgba(255, 255, 255, 0.04)",
+          active: "rgba(255, 255, 255, 0.07)",
+        },
+
+        /* Legacy surface aliases */
+        "surface-0": "#000000",
+        "surface-1": "#050505",
+        "surface-2": "#0a0a0c",
+        "surface-3": "#111114",
         "bone-white": "#fafafa",
         "off-white": "#e4e4e7",
         "mute-gray": "#71717a",
         "wire-gray": "#27272a",
         "ghost-gray": "#18181b",
-        "console-charcoal": "#09090b",
+        "console-charcoal": "#0a0a0c",
         "true-black": "#000000",
-        "nav-ink": "#09090b",
-        "recess-black": "#0f1114",
-        smoke: "#1c2025",
-        ash: "#52525b",
+        "nav-ink": "#050505",
+        "recess-black": "#0a0a0c",
+        smoke: "#111114",
+        ash: "#71717a",
+
+        /* Text contrast tokens */
+        txt: {
+          primary: "rgba(255, 255, 255, 0.90)",
+          body: "rgba(255, 255, 255, 0.65)",
+          secondary: "rgba(255, 255, 255, 0.45)",
+          muted: "rgba(255, 255, 255, 0.45)",
+          faint: "rgba(255, 255, 255, 0.35)",
+        },
+
+        /* Status colors */
+        status: {
+          success: {
+            DEFAULT: "#34d399",
+            text: "#34d399",
+            bg: "rgba(16, 185, 129, 0.08)",
+            border: "rgba(16, 185, 129, 0.20)",
+            dot: "#34d399",
+          },
+          warning: {
+            DEFAULT: "#fbbf24",
+            text: "#fbbf24",
+            bg: "rgba(245, 158, 11, 0.08)",
+            border: "rgba(245, 158, 11, 0.20)",
+            dot: "#fbbf24",
+          },
+          danger: {
+            DEFAULT: "#f87171",
+            text: "#f87171",
+            bg: "rgba(239, 68, 68, 0.08)",
+            border: "rgba(239, 68, 68, 0.20)",
+            dot: "#f87171",
+          },
+          info: {
+            DEFAULT: "#60a5fa",
+            text: "#60a5fa",
+            bg: "rgba(59, 130, 246, 0.08)",
+            border: "rgba(59, 130, 246, 0.20)",
+            dot: "#60a5fa",
+          },
+          active: {
+            DEFAULT: "#34d399",
+            text: "#34d399",
+            bg: "rgba(16, 185, 129, 0.08)",
+            border: "rgba(16, 185, 129, 0.20)",
+            dot: "#34d399",
+          },
+          neutral: {
+            DEFAULT: "#a1a1aa",
+            text: "#a1a1aa",
+            bg: "rgba(255, 255, 255, 0.04)",
+            border: "rgba(255, 255, 255, 0.08)",
+            dot: "#a1a1aa",
+          },
+        },
 
         /* shadcn/ui HSL mappings */
-        border: "hsl(var(--border))",
+        border: {
+          DEFAULT: "hsl(var(--border))",
+          subtle: "rgba(255, 255, 255, 0.065)",
+          strong: "rgba(255, 255, 255, 0.12)",
+          hover: "rgba(255, 255, 255, 0.16)",
+        },
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
@@ -70,11 +141,11 @@ const config: Config = {
           foreground: "hsl(var(--card-foreground))",
         },
         success: {
-          DEFAULT: "#22c55e",
+          DEFAULT: "#34d399",
           foreground: "#ffffff",
         },
         warning: {
-          DEFAULT: "#f59e0b",
+          DEFAULT: "#fbbf24",
           foreground: "#ffffff",
         },
       },
@@ -84,16 +155,18 @@ const config: Config = {
         "aurora": "radial-gradient(40% 50% at 20% 20%, rgba(129,140,248,0.18), transparent 70%), radial-gradient(40% 50% at 80% 30%, rgba(167,139,250,0.16), transparent 70%), radial-gradient(50% 50% at 60% 80%, rgba(99,102,241,0.14), transparent 70%)",
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-        tags: "var(--radius-tags)",
-        cards: "var(--radius-cards)",
-        xl: "var(--radius-xl)",
-        icons: "var(--radius-icons)",
-        inputs: "var(--radius-inputs)",
-        buttons: "var(--radius-buttons)",
-        "large-buttons": "var(--radius-large-buttons)",
+        lg: "0.5rem", // 8px (controls)
+        md: "0.375rem", // 6px (chips)
+        sm: "0.25rem", // 4px
+        xl: "0.75rem", // 12px (cards)
+        tags: "0.375rem",
+        cards: "0.75rem",
+        controls: "0.5rem",
+        chips: "0.375rem",
+        icons: "0.5rem",
+        inputs: "0.5rem",
+        buttons: "0.5rem",
+        "large-buttons": "0.5rem",
       },
       fontFamily: {
         sans: ["var(--font-geistsans)", "system-ui", "sans-serif"],
@@ -102,14 +175,17 @@ const config: Config = {
         geistmono: ["var(--font-geistmono)", "ui-monospace", "monospace"],
       },
       fontSize: {
-        caption: ["var(--text-caption)", { lineHeight: "var(--leading-caption)", letterSpacing: "var(--tracking-caption)" }],
-        "body-sm": ["var(--text-body-sm)", { lineHeight: "var(--leading-body-sm)", letterSpacing: "var(--tracking-body-sm)" }],
-        body: ["var(--text-body)", { lineHeight: "var(--leading-body)", letterSpacing: "var(--tracking-body)" }],
-        subheading: ["var(--text-subheading)", { lineHeight: "var(--leading-subheading)", letterSpacing: "var(--tracking-subheading)" }],
-        heading: ["var(--text-heading)", { lineHeight: "var(--leading-heading)", letterSpacing: "var(--tracking-heading)" }],
-        "heading-lg": ["var(--text-heading-lg)", { lineHeight: "var(--leading-heading-lg)", letterSpacing: "var(--tracking-heading-lg)" }],
-        display: ["var(--text-display)", { lineHeight: "var(--leading-display)", letterSpacing: "var(--tracking-display)" }],
-        "display-xl": ["var(--text-display-xl)", { lineHeight: "var(--leading-display-xl)", letterSpacing: "var(--tracking-display-xl)" }],
+        "page-title": ["24px", { lineHeight: "32px", letterSpacing: "-0.03em", fontWeight: "600" }],
+        "section-title": ["14px", { lineHeight: "20px", letterSpacing: "-0.01em", fontWeight: "500" }],
+        body: ["13px", { lineHeight: "19px", letterSpacing: "-0.01em" }],
+        caption: ["11px", { lineHeight: "15px", letterSpacing: "0em" }],
+        eyebrow: ["10px", { lineHeight: "14px", letterSpacing: "0.18em", fontWeight: "600" }],
+        "body-sm": ["13px", { lineHeight: "19px", letterSpacing: "-0.01em" }],
+        subheading: ["16px", { lineHeight: "24px", letterSpacing: "-0.02em" }],
+        heading: ["20px", { lineHeight: "28px", letterSpacing: "-0.03em" }],
+        "heading-lg": ["24px", { lineHeight: "32px", letterSpacing: "-0.03em" }],
+        display: ["30px", { lineHeight: "38px", letterSpacing: "-0.04em" }],
+        "display-xl": ["36px", { lineHeight: "44px", letterSpacing: "-0.04em" }],
       },
       spacing: {
         /* Only override sizes that Tailwind doesn't provide by default */

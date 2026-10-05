@@ -1,7 +1,7 @@
 .PHONY: up down logs ps db-shell psql shell-backend shell-ai shell-frontend \
         test test-backend test-frontend test-ai clean help
 
-# FlowOps single-node deploy — the short, safe commands. Everything else lives
+# Vantis single-node deploy — the short, safe commands. Everything else lives
 # in the README. The deploy defaults to "prod" profile; switch to "dev" in
 # the .env file (set SPRING_PROFILES_ACTIVE= or APP_ENV=development).
 
@@ -31,7 +31,7 @@ down-v: ## Stop and remove containers AND the postgres volume (DESTROYS DATA)
 logs: ## Tail logs from every service
 	$(COMPOSE) logs -f --tail=200
 
-ps: ## List running FlowOps containers
+ps: ## List running Vantis containers
 	$(COMPOSE) ps
 
 psql: ## Open a psql shell to the postgres container

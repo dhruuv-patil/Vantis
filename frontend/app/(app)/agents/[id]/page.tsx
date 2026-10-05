@@ -21,7 +21,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +29,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  ErrorState,
+  PageContainer,
+  PageHeader,
+  TableSkeleton,
+} from "@/components/app/page-primitives";
 
 /* ================================================================ page shell */
 
@@ -45,35 +50,29 @@ export default function AgentEditorPage() {
 
   if (query.isPending) {
     return (
-      <div className="mx-auto max-w-5xl space-y-4">
-        <Skeleton className="h-8 w-64 rounded-xl border border-white/[0.08]" />
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Skeleton className="h-[70vh] w-full rounded-xl border border-white/[0.08]" />
-          <Skeleton className="h-[70vh] w-full rounded-xl border border-white/[0.08]" />
-        </div>
-      </div>
+      <PageContainer variant="narrow">
+        <TableSkeleton rows={4} />
+      </PageContainer>
     );
   }
 
   if (query.isError) {
     return (
-      <div className="mx-auto flex max-w-5xl flex-col items-center justify-center gap-3 py-24 text-center">
-        <p className="text-sm text-destructive">
-          {getErrorMessage(query.error)}
-        </p>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => query.refetch()}>
-            Retry
-          </Button>
-          <Button variant="ghost" asChild>
-            <Link href="/agents">Back to agents</Link>
-          </Button>
-        </div>
-      </div>
+      <PageContainer variant="narrow">
+        <ErrorState
+          title="Could not load agent"
+          message={getErrorMessage(query.error)}
+          onRetry={() => query.refetch()}
+        />
+      </PageContainer>
     );
   }
 
-  return <AgentEditor agent={query.data} />;
+  return (
+    <PageContainer variant="narrow">
+      <AgentEditor agent={query.data} />
+    </PageContainer>
+  );
 }
 
 /* ==================================================================== editor */
@@ -167,45 +166,37 @@ function AgentEditor({ agent }: { agent: AiAgentDetail }) {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-center gap-3">
-        <Button variant="ghost" size="icon" asChild aria-label="Back to agents">
-          <Link href="/agents">
-            <ArrowLeft className="size-4" />
-          </Link>
-        </Button>
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-white/[0.04] text-white/60">
-          <Bot className="size-4" />
-        </span>
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-semibold tracking-tight text-white/90">
-            {baseline.name}
-          </h1>
-          <p className="text-xs text-white/44">
-            Edit the agent, then try it in the console.
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          className="text-destructive hover:text-destructive"
-          onClick={() => setConfirmDelete(true)}
-        >
-          <Trash2 className="size-4" /> Delete
-        </Button>
-        <Button onClick={onSave} disabled={saveMutation.isPending || !dirty}>
-          {saveMutation.isPending ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Save className="size-4" />
-          )}
-          Save
-        </Button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        backLink={{ href: "/agents", label: "Back to agents" }}
+        eyebrow="Agent Control Plane"
+        title={baseline.name}
+        description="Edit the agent, then try it in the console."
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="border-red-500/20 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+              onClick={() => setConfirmDelete(true)}
+            >
+              <Trash2 className="size-4" />
+              <span>Delete</span>
+            </Button>
+            <Button onClick={onSave} disabled={saveMutation.isPending || !dirty}>
+              {saveMutation.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Save className="size-4" />
+              )}
+              <span>Save</span>
+            </Button>
+          </div>
+        }
+      />
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Editor pane */}
-        <div className="space-y-4 rounded-xl border bg-[#0a0a0a] border-white/[0.08] p-5">
+        <div className="space-y-4 rounded-xl border border-white/[0.065] bg-[#0a0a0c] p-5">
           <h2 className="text-sm font-semibold text-white/90">Configuration</h2>
 
           <div className="space-y-1.5">
@@ -340,7 +331,7 @@ function TestConsole({ agentId }: { agentId: string }) {
   });
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border bg-[#0a0a0a] border-white/[0.08] p-5">
+    <div className="flex flex-col gap-4 rounded-xl border border-white/[0.065] bg-[#0a0a0c] p-5">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-white/90">Test console</h2>
         <Button
@@ -449,7 +440,7 @@ function DeleteAgentDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="border-white/[0.08] bg-[#0a0a0c] text-white">
         <DialogHeader>
           <DialogTitle>Delete agent</DialogTitle>
           <DialogDescription>

@@ -1,10 +1,10 @@
-# FlowOps Production Template Library - Complete Summary
+# Vantis Production Template Library - Complete Summary
 
 ## 📋 Overview
 
-**32 production-grade workflow templates** designed specifically for FlowOps' reliability-focused automation platform.
+**32 production-grade workflow templates** designed specifically for Vantis' reliability-focused automation platform.
 
-**Core philosophy**: Each template demonstrates why FlowOps exists - not just automation, but observable, reliable, recoverable, and safer-to-operate workflows.
+**Core philosophy**: Each template demonstrates why Vantis exists - not just automation, but observable, reliable, recoverable, and safer-to-operate workflows.
 
 ## ✅ Generated Templates
 
@@ -63,7 +63,7 @@
 ✅ **Recovery** - Dead letter queues, escalations, rollbacks
 ✅ **Configuration** - Realistic variables, no hardcoded values
 
-### FlowOps Differentiation
+### Vantis Differentiation
 
 ✅ **Reliability primitives used**:
 - `circuit_breaker`, `rate_limiter`, `idempotency_check`
@@ -158,7 +158,7 @@
 ✅ AI audit - AI not artificially added
 ✅ Reliability audit - 5 reliability-primary templates
 ✅ Reconciliation audit - 3+ genuine reconciliation workflows
-✅ FlowOps differentiation - All demonstrate platform value
+✅ Vantis differentiation - All demonstrate platform value
 ✅ Graph audit - Valid React Flow JSON
 
 ## 🚀 Next Steps
@@ -167,10 +167,10 @@ To complete the full library:
 
 1. **Generate remaining templates** (22 templates)
 2. **Final cross-library audit** with detailed reports
-3. **Template validation** against FlowOps actual capabilities
+3. **Template validation** against Vantis actual capabilities
 4. **Documentation** for each template with setup instructions
 5. **Visual rendering** of React Flow graphs
-6. **Integration testing** with actual FlowOps workflows
+6. **Integration testing** with actual Vantis workflows
 
 ## 📝 Template Output Format
 
@@ -199,7 +199,7 @@ Each template follows the exact 20-section format:
 
 ## 🎓 Key Takeaways
 
-**FlowOps templates are different** because they:
+**Vantis templates are different** because they:
 - Focus on operational safety, not just automation
 - Use reliability primitives meaningfully
 - Handle partial failures with compensation
@@ -209,7 +209,7 @@ Each template follows the exact 20-section format:
 - Make reliability a first-class concern
 
 **The library communicates**: 
-> "FlowOps doesn't just automate workflows. It makes production workflows observable, reliable, recoverable, and safer to operate."
+> "Vantis doesn't just automate workflows. It makes production workflows observable, reliable, recoverable, and safer to operate."
 
 ## 📚 Research Sources
 

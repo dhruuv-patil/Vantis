@@ -11,17 +11,30 @@ import { loginSchema, toFieldErrors } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { OAuthButtons } from "@/components/auth/oauth-buttons";
 
 function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const status = useAuthStore((s) => s.status);
   const next = searchParams.get("next") ?? "/dashboard";
+  const urlError = searchParams.get("error");
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(() => {
+    if (urlError === "oauth_failed") {
+      return "OAuth authentication could not be completed. Please try again.";
+    }
+    if (urlError === "email_not_verified") {
+      return "Your OAuth account must have a verified email address to sign in.";
+    }
+    if (urlError) {
+      return "Authentication failed. Please check your credentials and try again.";
+    }
+    return null;
+  });
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -68,7 +81,7 @@ function LoginPageContent() {
       {/* Page title */}
       <div className="mb-9 text-center">
         <h1 className="text-[30px] font-semibold tracking-[-0.035em] text-foreground">
-          Sign in to Trace.run
+          Sign in to Vantis
         </h1>
 
         <p className="mt-2 text-sm text-muted-foreground">
@@ -189,10 +202,10 @@ function LoginPageContent() {
             {submitting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
-                Signing in
+                Logging in
               </>
             ) : (
-              "Sign in"
+              "Log in"
             )}
           </Button>
         </form>
@@ -206,14 +219,17 @@ function LoginPageContent() {
           <div className="h-px flex-1 bg-white/[0.08]" />
         </div>
 
-        {/* Register */}
-        <div className="text-center text-sm text-muted-foreground">
-          Need an account?{" "}
+        {/* OAuth Buttons */}
+        <OAuthButtons next={next} disabled={submitting} />
+
+        {/* Switch to Signup */}
+        <div className="mt-6 text-center text-sm text-muted-foreground">
+          Don&apos;t have an account?{" "}
           <Link
-            href="/register"
+            href="/signup"
             className="font-medium text-foreground hover:underline"
           >
-            Create a new account
+            Sign up
           </Link>
         </div>
       </div>

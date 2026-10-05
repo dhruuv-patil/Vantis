@@ -11,6 +11,17 @@
 # startup if either is missing or weak. A successful boot in this profile is
 # proof the deployment is correctly configured.
 
+spring:
+  datasource:
+    # Production PostgreSQL connections require TLS encryption (sslmode=require minimum).
+    # Default URL enforces sslmode=require; operators can supply a full URL
+    # or configure stronger verification (e.g. sslmode=verify-full&sslrootcert=/path/to/ca.crt).
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/flowops?sslmode=require}
+    hikari:
+      data-source-properties:
+        sslmode: ${POSTGRES_SSL_MODE:require}
+        ssl: ${POSTGRES_SSL:true}
+
 server:
   # No error whitelabel; the GlobalExceptionHandler is the only error surface.
   error:
@@ -29,6 +40,8 @@ management:
     health:
       probes:
         enabled: true
+      show-details: never
+      show-components: never
   info:
     env:
       enabled: false

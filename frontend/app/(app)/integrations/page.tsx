@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useMemo, useState } from "react";
 
 import {
@@ -36,6 +35,7 @@ import {
 } from "@/lib/api";
 
 import { hasRole, useAuthStore } from "@/lib/auth-store";
+import { initialsFrom } from "@/lib/utils";
 
 import {
   getProviderCategory,
@@ -47,10 +47,17 @@ import type {
   ProviderInfo,
 } from "@/types";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  CardGridSkeleton,
+  CategoryPillsRow,
+  EmptyState,
+  ErrorState,
+  PageContainer,
+  PageHeader,
+  Toolbar,
+} from "@/components/app/page-primitives";
 
 import {
   Dialog,
@@ -82,117 +89,6 @@ const CATEGORIES = [
   { label: "Automation", value: "AUTOMATION" },
   { label: "Universal", value: "UNIVERSAL" },
 ];
-
-/**
- * Local theSVG assets.
- *
- * These files live in:
- *
- * frontend/public/integrations/
- *
- * Example:
- * /integrations/google-sheets.svg
- */
-const LOCAL_PROVIDER_ICONS: Record<string, string> = {
-  github: "github",
-
-  githubactions: "githubactions",
-
-  gitlab: "gitlab",
-
-  "google-sheets": "google-sheets",
-  googlesheets: "google-sheets",
-  google_sheets: "google-sheets",
-  sheets: "google-sheets",
-
-  aws: "aws",
-  amazonaws: "aws",
-  "amazon-web-services": "aws",
-
-  s3: "s3",
-  "aws-s3": "s3",
-  aws_s3: "s3",
-  amazons3: "s3",
-  "amazon-s3": "s3",
-
-  sendgrid: "sendgrid",
-
-  slack: "slack",
-  discord: "discord",
-  telegram: "telegram",
-  twilio: "twilio",
-
-  notion: "notion",
-  stripe: "stripe",
-
-  openai: "openai",
-  anthropic: "anthropic",
-
-  hubspot: "hubspot",
-  salesforce: "salesforce",
-  pipedrive: "pipedrive",
-
-  jira: "jira",
-  linear: "linear",
-  asana: "asana",
-
-  sentry: "sentry",
-  pagerduty: "pagerduty",
-
-  resend: "resend",
-
-  n8n: "n8n",
-  make: "make",
-  zapier: "zapier",
-  temporal: "temporal",
-
-  vercel: "vercel",
-};
-
-function normalizeProviderType(type: string): string {
-  return type
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "-");
-}
-
-function LocalProviderIcon({
-  providerType,
-  fallbackIcon,
-  className = "size-6",
-}: {
-  providerType: string;
-  fallbackIcon?: string;
-  className?: string;
-}) {
-  const normalized = normalizeProviderType(providerType);
-
-  const iconName =
-    LOCAL_PROVIDER_ICONS[normalized];
-
-  if (iconName) {
-    return (
-      <Image
-        src={`/integrations/${iconName}.svg`}
-        alt=""
-        width={24}
-        height={24}
-        className={`${className} object-contain`}
-        unoptimized
-      />
-    );
-  }
-
-  return (
-    <ProviderIcon
-      icon={
-        fallbackIcon ??
-        getProviderIcon(providerType)
-      }
-      className={className}
-    />
-  );
-}
 
 function SyncStatus({
   integrationId,
@@ -409,6 +305,15 @@ function ProviderCard({
       },
     });
 
+  const syncQuery = useQuery({
+    queryKey: ["integrations", connected?.id, "sync"],
+    queryFn: () => fetchSyncStatus(connected!.id),
+    enabled: !!connected && isWorkflowProvider,
+    refetchInterval: 60_000,
+  });
+
+  const needsAttention = syncQuery.data?.status === "FAILED";
+
   const adminTitle = isAdmin
     ? undefined
     : "Requires an admin";
@@ -417,12 +322,13 @@ function ProviderCard({
     <>
       <article
         className="
-          group relative flex min-h-[270px] flex-col
-          overflow-hidden rounded-lg
-          border border-white/[0.075]
-          bg-[#0a0a0a]
+          group relative flex h-full min-h-[270px] flex-col
+          overflow-hidden rounded-xl
+          border border-white/[0.065]
+          bg-[#0a0a0c]
           transition-colors duration-200
-          hover:border-white/[0.15]
+          hover:border-white/[0.12]
+          hover:bg-[#111114]
         "
       >
         {/* Subtle background detail */}
@@ -431,45 +337,54 @@ function ProviderCard({
         <div className="relative flex flex-1 flex-col p-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex size-12 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04]">
-              <LocalProviderIcon
-                providerType={
-                  provider.type
-                }
-                fallbackIcon={
-                  resolvedIcon
-                }
+              <ProviderIcon
+                provider={provider.type}
+                name={provider.name}
+                icon={provider.icon || resolvedIcon}
                 className="size-6"
+                theme="dark"
+                fallbackInitials
               />
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="rounded-md border border-white/[0.07] bg-white/[0.025] px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-white/35">
+              <span className="rounded-md border border-white/[0.07] bg-white/[0.025] px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-white/45">
                 {category.replaceAll(
                   "_",
                   " ",
                 )}
               </span>
 
-              {connected ? (
+              {needsAttention ? (
+                <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-[11px] font-medium text-amber-300">
+                  <span className="size-1.5 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.7)]" />
+                  Needs attention
+                </span>
+              ) : connected ? (
                 <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-400/20 bg-emerald-400/10 px-2.5 py-1 text-[11px] font-medium text-emerald-300">
                   <span className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]" />
-
                   Connected
                 </span>
-              ) : (
-                <span className="rounded-md border border-white/[0.07] bg-white/[0.025] px-2.5 py-1 text-[11px] font-medium text-white/35">
-                  Available
+              ) : !provider.available ? (
+                <span className="inline-flex items-center rounded-md border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[11px] font-medium text-white/45">
+                  Coming soon
                 </span>
-              )}
+              ) : null}
             </div>
           </div>
 
           <div className="mt-5">
-            <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-white/90">
+            <h3
+              title={provider.name}
+              className="text-[15px] font-semibold tracking-[-0.01em] text-white/90"
+            >
               {provider.name}
             </h3>
 
-            <p className="mt-2 min-h-[42px] text-[13px] leading-5 text-white/45">
+            <p
+              title={provider.description}
+              className="mt-2 min-h-[42px] text-[13px] leading-5 text-white/45"
+            >
               {provider.description}
             </p>
 
@@ -510,10 +425,11 @@ function ProviderCard({
         </div>
 
         {/* Footer */}
-        <div className="relative border-t border-white/[0.07] bg-[#080808] p-4">
+        <div className="relative mt-auto border-t border-white/[0.065] bg-white/[0.015] p-4">
           {!connected ? (
             <Button
-              className="h-9 w-full rounded-md bg-white text-black shadow-none hover:bg-white/90"
+              variant="outline"
+              className="h-9 w-full rounded-md border-white/[0.08] bg-white/[0.025] text-xs font-medium text-white/80 hover:bg-white/[0.07] hover:text-white"
               disabled={!isAdmin}
               title={adminTitle}
               onClick={onConnect}
@@ -522,7 +438,7 @@ function ProviderCard({
 
               Connect
 
-              <ArrowUpRight className="ml-auto size-3.5 opacity-40" />
+              <ArrowUpRight className="ml-auto size-3.5 text-white/40" />
             </Button>
           ) : isDeliveryChannel ? (
             <div className="grid grid-cols-3 gap-2">
@@ -720,7 +636,7 @@ function DisconnectDialog({
       open={!!integration}
       onOpenChange={onOpenChange}
     >
-      <DialogContent className="border-white/[0.08] bg-[#0d0d0d]">
+      <DialogContent className="border-white/[0.08] bg-[#0a0a0c]">
         <DialogHeader>
           <DialogTitle>
             Disconnect{" "}
@@ -855,9 +771,10 @@ export default function IntegrationsPage() {
       ],
     );
 
-  const allProviders =
-    providersQuery.data
-      ?.providers ?? [];
+  const allProviders = useMemo(
+    () => providersQuery.data?.providers ?? [],
+    [providersQuery.data?.providers],
+  );
 
   const filteredProviders =
     useMemo(() => {
@@ -961,88 +878,57 @@ export default function IntegrationsPage() {
   }
 
   return (
-    <div className="relative min-h-full overflow-hidden">
-      
+    <PageContainer variant="wide">
+      {/* Header */}
+      <PageHeader
+        eyebrow="Automation"
+        title="Integrations"
+        description="Connect the services your workflows monitor and deliver to."
+      />
 
-      <div className="relative mx-auto max-w-[1400px] space-y-7 px-5 py-7 sm:px-7 lg:px-8 lg:py-9">
-        {/* Header */}
-        <div className="space-y-1">
-          <h1 className="text-3xl font-semibold tracking-tight text-white/90">
-            Integrations
-          </h1>
+      {/* Search toolbar */}
+      <Toolbar className="mb-4">
+        <div className="relative min-w-0 flex-1">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-white/40" />
 
-          <p className="text-white/44">
-            Connect the services
-            your workflows monitor
-            and deliver to.
-          </p>
+          <Input
+            placeholder="Search integrations…"
+            value={search}
+            onChange={(e) =>
+              setSearch(
+                e.target.value,
+              )
+            }
+            className="pl-10 text-sm"
+          />
         </div>
+      </Toolbar>
 
-        {/* Search + filters */}
-        <div className="sticky top-0 z-20 -mx-2 rounded-lg border border-white/[0.06] bg-[#080808]/90 p-2 shadow-[0_10px_40px_rgba(0,0,0,0.22)] backdrop-blur-xl sm:mx-0">
-          <div className="flex flex-col gap-2 lg:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-white/30" />
+      {/* Category filters */}
+      <div className="mb-6">
+        <CategoryPillsRow
+          categories={CATEGORIES}
+          activeValue={selectedCategory}
+          onSelect={setSelectedCategory}
+          ariaLabel="Filter integrations by category"
+        />
+      </div>
 
-              <Input
-                placeholder="Search integrations..."
-                value={search}
-                onChange={(e) =>
-                  setSearch(
-                    e.target.value,
-                  )
-                }
-                className="h-10 rounded-md border-white/[0.08] bg-[#0a0a0a] pl-10 text-sm text-white placeholder:text-white/25 focus-visible:border-white/[0.16] focus-visible:ring-0"
-              />
-            </div>
+      {isError && (
+        <ErrorState
+          title="Could not load integrations"
+          message="Please check your connection and try again."
+          onRetry={() => {
+            void integrationsQuery.refetch();
+            void providersQuery.refetch();
+          }}
+          className="mb-6"
+        />
+      )}
 
-            <div className="flex gap-1.5 overflow-x-auto pb-0.5 lg:max-w-[70%]">
-              {CATEGORIES.map(
-                (c) => (
-                  <button
-                    key={c.value}
-                    type="button"
-                    onClick={() =>
-                      setSelectedCategory(
-                        c.value,
-                      )
-                    }
-                    className={`shrink-0 rounded-md border px-3 py-2 text-xs font-medium transition-colors ${
-                      selectedCategory ===
-                      c.value
-                        ? "border-white bg-white text-black"
-                        : "border-white/[0.08] bg-white/[0.025] text-white/40 hover:border-white/[0.14] hover:bg-white/[0.05] hover:text-white/70"
-                    }`}
-                  >
-                    {c.label}
-                  </button>
-                ),
-              )}
-            </div>
-          </div>
-        </div>
-
-        {isError && (
-          <div className="rounded-lg border border-red-400/15 bg-red-400/[0.04] p-4 text-sm text-red-300">
-            Could not load
-            integrations. Please
-            refresh and try again.
-          </div>
-        )}
-
-        {isLoading &&
-          !isError && (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {Array.from({
-                length: 6,
-              }).map((_, i) => (
-                <Skeleton
-                  key={i}
-                  className="h-[270px] w-full rounded-lg bg-white/[0.035]"
-                />
-              ))}
-            </div>
-          )}
+      {isLoading && !isError && (
+        <CardGridSkeleton count={6} />
+      )}
 
         {!isLoading &&
           !isError && (
@@ -1064,7 +950,7 @@ export default function IntegrationsPage() {
                         </span>
                       </div>
 
-                      <p className="mt-1 text-xs text-white/30">
+                      <p className="mt-1 text-xs text-white/45">
                         Active connections
                         in this workspace.
                       </p>
@@ -1110,14 +996,14 @@ export default function IntegrationsPage() {
                           : "Integration catalog"}
                       </h2>
 
-                      <span className="rounded-md bg-white/[0.05] px-2 py-0.5 text-[10px] font-medium text-white/35">
+                      <span className="rounded-md bg-white/[0.05] px-2 py-0.5 text-[10px] font-medium text-white/45">
                         {
                           availableProviders.length
                         }
                       </span>
                     </div>
 
-                    <p className="mt-1 text-xs text-white/30">
+                    <p className="mt-1 text-xs text-white/45">
                       Connect a service
                       and make it
                       available to your
@@ -1126,24 +1012,36 @@ export default function IntegrationsPage() {
                   </div>
                 </div>
 
-                {availableProviders.length ===
-                0 ? (
-                  <div className="rounded-lg border border-dashed border-white/[0.08] bg-white/[0.012] py-16 text-center">
-                    <div className="mx-auto flex size-11 items-center justify-center rounded-lg bg-white/[0.04] text-white/30">
-                      <Search className="size-5" />
-                    </div>
-
-                    <p className="mt-4 text-sm font-medium text-white/60">
-                      No integrations
-                      found
-                    </p>
-
-                    <p className="mt-1 text-xs text-white/30">
-                      {search
+                {availableProviders.length === 0 ? (
+                  <EmptyState
+                    icon={Search}
+                    title={
+                      search || selectedCategory !== "All"
+                        ? "No integrations found"
+                        : "No available integrations"
+                    }
+                    description={
+                      search
                         ? `Nothing matches “${search}”.`
-                        : "Everything in this category is already connected."}
-                    </p>
-                  </div>
+                        : selectedCategory !== "All"
+                          ? "No available integrations in this category."
+                          : "Everything in this category is already connected."
+                    }
+                    actions={
+                      search || selectedCategory !== "All" ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSearch("");
+                            setSelectedCategory("All");
+                          }}
+                        >
+                          Clear filters
+                        </Button>
+                      ) : undefined
+                    }
+                  />
                 ) : (
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {availableProviders.map(
@@ -1170,7 +1068,7 @@ export default function IntegrationsPage() {
                 )}
               </section>
 
-              <div className="flex items-center justify-center gap-2 pb-3 text-[11px] text-white/25">
+              <div className="flex items-center justify-center gap-2 pb-3 text-[11px] text-white/45">
                 <CheckCircle2 className="size-3.5" />
 
                 Connections are
@@ -1180,7 +1078,6 @@ export default function IntegrationsPage() {
               </div>
             </div>
           )}
-      </div>
 
       <ConnectIntegrationDialog
         open={connectOpen}
@@ -1202,6 +1099,6 @@ export default function IntegrationsPage() {
           }
         }}
       />
-    </div>
+    </PageContainer>
   );
 }

@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 /**
- * FlowOps notification inbox.
+ * Vantis notification inbox.
  *
  * Notifications are entirely server-backed. The client only renders the current
  * signed-in member's inbox and performs mark-read mutations.
@@ -97,7 +97,7 @@ export function NotificationsMenu() {
       <DropdownMenuContent
         align="end"
         sideOffset={8}
-        className="w-[min(92vw,380px)] overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a0a]/[0.98] p-0 text-white shadow-2xl shadow-black/40 backdrop-blur-xl"
+        className="w-[min(92vw,380px)] overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a0c]/[0.98] p-0 text-white shadow-2xl shadow-black/40 backdrop-blur-xl"
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/[0.07] px-3.5 py-3">
@@ -108,13 +108,13 @@ export function NotificationsMenu() {
               </span>
 
               {unread > 0 && (
-                <span className="rounded-full border border-white/[0.07] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[9px] text-white/40">
+                <span className="rounded-full border border-white/[0.07] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-white/50">
                   {unread} unread
                 </span>
               )}
             </div>
 
-            <p className="mt-0.5 text-[10px] text-white/25">
+            <p className="mt-0.5 text-[11px] text-white/45">
               Run failures and workflow actions
             </p>
           </div>
@@ -124,7 +124,7 @@ export function NotificationsMenu() {
               type="button"
               onClick={() => readAll.mutate()}
               disabled={readAll.isPending}
-              className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-[10px] text-white/35 transition hover:bg-white/[0.05] hover:text-white/75 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] text-white/45 transition hover:bg-white/[0.05] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
             >
               <CheckCheck className="size-3.5" />
               {readAll.isPending ? "Marking..." : "Mark all read"}
@@ -167,7 +167,7 @@ export function NotificationsMenu() {
           <div className="border-t border-white/[0.06] px-3.5 py-2.5">
             <Link
               href="/notifications"
-              className="flex items-center justify-center rounded-md py-1.5 text-[10px] font-medium text-white/30 transition hover:bg-white/[0.035] hover:text-white/65"
+              className="flex items-center justify-center rounded-md py-1.5 text-[11px] font-medium text-white/50 transition hover:bg-white/[0.035] hover:text-white"
             >
               Open notification center
             </Link>
@@ -209,12 +209,12 @@ function NotificationRow({
       </span>
 
       {notification.body && (
-        <span className="mt-0.5 block line-clamp-2 text-[11px] leading-4 text-white/35">
+        <span className="mt-0.5 block line-clamp-2 text-[11px] leading-4 text-white/50">
           {notification.body}
         </span>
       )}
 
-      <span className="mt-1.5 flex items-center gap-1.5 text-[10px] text-white/22">
+      <span className="mt-1.5 flex items-center gap-1.5 text-[11px] text-white/45">
         <span>{formatRelativeTime(notification.createdAt)}</span>
 
         {unread && (
@@ -224,10 +224,10 @@ function NotificationRow({
               className={cn(
                 "uppercase tracking-wider",
                 notification.level === "ERROR"
-                  ? "text-red-300/55"
+                  ? "text-red-300/65"
                   : notification.level === "WARN"
-                    ? "text-amber-200/55"
-                    : "text-white/30",
+                    ? "text-amber-200/65"
+                    : "text-white/45",
               )}
             >
               {notification.level.toLowerCase()}
@@ -277,7 +277,7 @@ function NotificationRow({
             onRead();
           }}
           disabled={isReading}
-          className="mt-0.5 shrink-0 rounded-md px-1.5 py-1 text-[9px] text-white/25 opacity-0 transition hover:bg-white/[0.05] hover:text-white/65 group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50 sm:opacity-100"
+          className="mt-0.5 shrink-0 rounded-md px-1.5 py-1 text-[11px] text-white/45 opacity-0 transition hover:bg-white/[0.05] hover:text-white group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50 sm:opacity-100"
         >
           {isReading ? "..." : "Read"}
         </button>
@@ -289,15 +289,15 @@ function NotificationRow({
 function NotificationEmpty() {
   return (
     <div className="flex flex-col items-center justify-center px-5 py-12 text-center">
-      <span className="flex size-9 items-center justify-center rounded-lg bg-white/[0.04] text-white/25">
+      <span className="flex size-9 items-center justify-center rounded-lg bg-white/[0.04] text-white/40">
         <Bell className="size-4" />
       </span>
 
-      <p className="mt-3 text-xs font-medium text-white/55">
-        You're all caught up
+      <p className="mt-3 text-xs font-medium text-white/70">
+        You&apos;re all caught up
       </p>
 
-      <p className="mt-1 max-w-[230px] text-[10px] leading-4 text-white/25">
+      <p className="mt-1 max-w-[230px] text-[11px] leading-4 text-white/45">
         Failed runs, approvals, and important workflow events will appear here.
       </p>
     </div>
@@ -315,11 +315,11 @@ function NotificationError({
 }) {
   return (
     <div className="px-4 py-8 text-center">
-      <p className="text-xs font-medium text-red-300/75">
+      <p className="text-xs font-medium text-red-300/80">
         Could not load notifications
       </p>
 
-      <p className="mt-1 text-[10px] leading-4 text-white/25">
+      <p className="mt-1 text-[11px] leading-4 text-white/45">
         {message}
       </p>
 
@@ -327,7 +327,7 @@ function NotificationError({
         type="button"
         onClick={onRetry}
         disabled={retrying}
-        className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-white/[0.07] bg-white/[0.025] px-2.5 py-1.5 text-[10px] text-white/45 transition hover:bg-white/[0.05] hover:text-white/75 disabled:opacity-50"
+        className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-white/[0.07] bg-white/[0.025] px-2.5 py-1.5 text-[11px] text-white/50 transition hover:bg-white/[0.05] hover:text-white disabled:opacity-50"
       >
         <RefreshCw
           className={cn(

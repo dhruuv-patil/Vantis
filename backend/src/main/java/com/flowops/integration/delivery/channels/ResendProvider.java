@@ -361,14 +361,14 @@ public class ResendProvider implements NotificationProvider {
                 context,
                 new NotificationMessage(
                         "resend-test",
-                        "FlowOps Resend integration test.",
+                        "Vantis Resend integration test.",
                         Map.of(
                                 "to",
                                 getCredential(
                                         context,
                                         "fromEmail"),
                                 "subject",
-                                "FlowOps Resend Test")));
+                                "Vantis Resend Test")));
     }
 
     private String resolveRecipient(
@@ -407,7 +407,7 @@ public class ResendProvider implements NotificationProvider {
             }
         }
 
-        return "FlowOps Notification";
+        return "Vantis Notification";
     }
 
     private boolean hasResponseId(

@@ -31,7 +31,7 @@ public class UserAccount {
     private String email;
 
     @JsonIgnore
-    @Column(name = "password_hash", nullable = false, length = 72)
+    @Column(name = "password_hash", length = 72)
     private String passwordHash;
 
     @Column(name = "full_name", nullable = false, length = 100)
@@ -71,6 +71,24 @@ public class UserAccount {
         return user;
     }
 
+    /**
+     * Factory for users registering via an external OAuth2 provider (Google, GitHub).
+     * Has no initial password hash; password authentication is disabled until a
+     * password is set via password reset.
+     */
+    public static UserAccount createOAuthUser(String email, String fullName, String avatarUrl) {
+        UserAccount user = new UserAccount();
+        user.id = UUID.randomUUID();
+        user.email = email.toLowerCase(Locale.ROOT);
+        user.passwordHash = null;
+        user.fullName = fullName != null && !fullName.isBlank() ? fullName : email.split("@")[0];
+        user.avatarUrl = avatarUrl;
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        user.createdAt = now;
+        user.updatedAt = now;
+        return user;
+    }
+
     public UUID getId() {
         return id;
     }
@@ -98,6 +116,17 @@ public class UserAccount {
 
     public String getAvatarUrl() {
         return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        if (avatarUrl != null && !avatarUrl.isBlank() && this.avatarUrl == null) {
+            this.avatarUrl = avatarUrl;
+            this.updatedAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        }
+    }
+
+    public boolean hasPassword() {
+        return passwordHash != null && !passwordHash.isBlank();
     }
 
     public Instant getCreatedAt() {

@@ -96,7 +96,7 @@ public class TelegramProvider implements NotificationProvider {
 
         try {
             URI uri = URI.create("https://api.telegram.org/bot" + token.trim() + "/sendMessage");
-            String text = message.text() != null ? message.text() : "FlowOps notification";
+            String text = message.text() != null ? message.text() : "Vantis notification";
             String body = "{\"chat_id\":\"" + escape(chatId) + "\",\"text\":\"" + escape(text) + "\"}";
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(uri)
@@ -121,7 +121,7 @@ public class TelegramProvider implements NotificationProvider {
     public DeliveryResult sendTest(DeliveryContext context) {
         return deliver(context, new NotificationMessage(
                 "telegram",
-                "FlowOps test notification — if you see this, Telegram is connected.",
+                "Vantis test notification — if you see this, Telegram is connected.",
                 null));
     }
 

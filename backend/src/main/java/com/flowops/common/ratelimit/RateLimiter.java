@@ -3,35 +3,126 @@ package com.flowops.common.ratelimit;
 import com.flowops.common.error.ApiException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Component;
 
 /**
- * In-memory fixed-window throttling (API contract §8).
+ * Distributed rate limiter backed by Redis with atomic Lua scripting.
  *
- * <p>Per-instance and deliberately so for M1 — a Redis-backed limiter is opt-in
- * later. Keys are built from the <em>normalized</em> email so casing tricks cannot
- * reset a window, and from {@code getRemoteAddr()} only: honouring
- * {@code X-Forwarded-For} without a trusted proxy in front would make the limit a
- * one-header bypass.
+ * <p>When a Redis connection is present, rate-limiting windows and counters are
+ * maintained in Redis across all running backend instances. If Redis is unavailable
+ * or not configured (e.g. standalone test mode), the limiter safely handles the failure
+ * according to endpoint security classification:
+ * <ul>
+ *   <li>Security-sensitive endpoints (login, register, forgot-password, reset-password, refresh,
+ *       invite-accept) fail closed (throwing {@code 429 RATE_LIMITED}) to prevent
+ *       brute-force attacks during Redis outages.</li>
+ *   <li>Operational/data-plane endpoints (webhooks, workflow runs, AI generation)
+ *       fail open to preserve platform availability for ingestion and execution.</li>
+ * </ul>
+ *
+ * <p>Redis keys are namespaced under {@code ratelimit:}, sanitized to prevent CRLF
+ * command injection, normalized to prevent casing bypasses, and have explicit TTLs
+ * ensuring automatic expiration without unbounded key growth.
  */
 @Component
 public class RateLimiter {
 
-    /** Above this many live windows, expired entries are swept before inserting. */
-    private static final int SWEEP_THRESHOLD = 10_000;
+    private static final Logger log = LoggerFactory.getLogger(RateLimiter.class);
 
-    private final Map<String, Window> windows = new ConcurrentHashMap<>();
+    public static final String KEY_PREFIX = "ratelimit:";
 
-    /** A test seam: {@code flowops.ratelimit.enabled: false} turns the limiter off
-     *  (integration tests would otherwise trip the tight per-IP windows). */
+    private static final Set<String> SECURITY_SENSITIVE_PREFIXES = Set.of(
+            "login:",
+            "register:",
+            "forgot-password:",
+            "reset-password:",
+            "refresh:",
+            "invite-accept:"
+    );
+
+    /**
+     * Atomic Lua script that implements a fixed-window rate limiter in Redis.
+     *
+     * <p>KEYS[1]: The rate limit key (e.g. {@code ratelimit:login:127.0.0.1:alice@example.com})
+     * <br>ARGV[1]: Max allowed requests in window
+     * <br>ARGV[2]: Window size in milliseconds
+     *
+     * <p>Returns:
+     * <ul>
+     *   <li>{@code 0}: Within limit, request allowed.</li>
+     *   <li>{@code > 0}: Exceeded limit, value is remaining retry-after duration in seconds.</li>
+     * </ul>
+     */
+    private static final String LUA_SCRIPT = """
+            local key = KEYS[1]
+            local limit = tonumber(ARGV[1])
+            local windowMillis = tonumber(ARGV[2])
+
+            local current = redis.call('INCR', key)
+            if current == 1 then
+                redis.call('PEXPIRE', key, windowMillis)
+            else
+                local pttl = redis.call('PTTL', key)
+                if pttl == -1 then
+                    redis.call('PEXPIRE', key, windowMillis)
+                end
+            end
+
+            if current > limit then
+                local pttl = redis.call('PTTL', key)
+                if pttl < 0 then
+                    pttl = windowMillis
+                end
+                local remaining = math.floor((pttl + 999) / 1000)
+                if remaining < 1 then
+                    remaining = 1
+                end
+                return remaining
+            end
+
+            return 0
+            """;
+
+    private static final RedisScript<Long> RATE_LIMIT_SCRIPT =
+            new DefaultRedisScript<>(LUA_SCRIPT, Long.class);
+
+    private final StringRedisTemplate redisTemplate;
     private final boolean enabled;
+    private final boolean failClosedForSecurity;
 
-    public RateLimiter(@Value("${flowops.ratelimit.enabled:true}") boolean enabled) {
+    /** In-memory fallback windows when running in standalone mode without Redis. */
+    private static final int SWEEP_THRESHOLD = 10_000;
+    private final Map<String, Window> localWindows = new ConcurrentHashMap<>();
+
+    @Autowired
+    public RateLimiter(
+            @Autowired(required = false) StringRedisTemplate redisTemplate,
+            @Value("${flowops.ratelimit.enabled:true}") boolean enabled,
+            @Value("${flowops.ratelimit.fail-closed-for-security:true}") boolean failClosedForSecurity) {
+        this.redisTemplate = redisTemplate;
         this.enabled = enabled;
+        this.failClosedForSecurity = failClosedForSecurity;
+    }
+
+    public RateLimiter(StringRedisTemplate redisTemplate, boolean enabled) {
+        this(redisTemplate, enabled, true);
+    }
+
+    public RateLimiter(boolean enabled) {
+        this(null, enabled, true);
     }
 
     /**
@@ -42,14 +133,68 @@ public class RateLimiter {
         if (!enabled) {
             return;
         }
+
+        String formattedKey = formatKey(key);
+
+        if (redisTemplate != null) {
+            checkDistributed(formattedKey, limit, window);
+        } else {
+            checkLocal(formattedKey, limit, window);
+        }
+    }
+
+    /**
+     * Distributed rate limit check using Redis atomic Lua script.
+     */
+    private void checkDistributed(String formattedKey, int limit, Duration window) {
+        long windowMillis = window.toMillis();
+        try {
+            Long retryAfterSeconds = redisTemplate.execute(
+                    RATE_LIMIT_SCRIPT,
+                    Collections.singletonList(formattedKey),
+                    String.valueOf(limit),
+                    String.valueOf(windowMillis)
+            );
+
+            if (retryAfterSeconds != null && retryAfterSeconds > 0) {
+                throw ApiException.rateLimited(retryAfterSeconds);
+            }
+        } catch (ApiException e) {
+            // Re-throw rate limit rejection directly
+            throw e;
+        } catch (Exception ex) {
+            handleRedisFailure(formattedKey, window, ex);
+        }
+    }
+
+    /**
+     * Safe handling for Redis infrastructure failures.
+     */
+    private void handleRedisFailure(String formattedKey, Duration window, Exception ex) {
+        log.error("Redis rate limiter failure for key '{}': {}", formattedKey, ex.getMessage());
+
+        if (failClosedForSecurity && isSecuritySensitive(formattedKey)) {
+            // Fail closed: reject request to maintain security boundary on auth/credential flows
+            long fallbackRetryAfter = Math.max(1, (window.toMillis() + 999) / 1000);
+            throw ApiException.rateLimited(fallbackRetryAfter);
+        }
+
+        // Fail open: allow request for operational/data-plane endpoints (e.g. webhooks, workflow runs)
+        log.warn("Failing open for non-security key '{}' during Redis failure", formattedKey);
+    }
+
+    /**
+     * In-memory fixed-window fallback when no RedisTemplate is wired.
+     */
+    private void checkLocal(String key, int limit, Duration window) {
         long now = System.currentTimeMillis();
         long windowMillis = window.toMillis();
 
-        if (windows.size() > SWEEP_THRESHOLD) {
+        if (localWindows.size() > SWEEP_THRESHOLD) {
             sweep(now, windowMillis);
         }
 
-        Window counter = windows.computeIfAbsent(key, k -> new Window(now));
+        Window counter = localWindows.computeIfAbsent(key, k -> new Window(now));
         synchronized (counter) {
             if (now - counter.startedAt >= windowMillis) {
                 counter.startedAt = now;
@@ -63,6 +208,36 @@ public class RateLimiter {
         }
     }
 
+    /**
+     * Checks if the key corresponds to a security-sensitive endpoint.
+     */
+    public static boolean isSecuritySensitive(String key) {
+        if (key == null) {
+            return false;
+        }
+        String clean = key.startsWith(KEY_PREFIX) ? key.substring(KEY_PREFIX.length()) : key;
+        clean = clean.toLowerCase(Locale.ROOT);
+        for (String prefix : SECURITY_SENSITIVE_PREFIXES) {
+            if (clean.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Formats and sanitizes a rate limit key.
+     * Prevents CRLF injection and normalizes casing to prevent bypass tricks.
+     */
+    public static String formatKey(String rawKey) {
+        if (rawKey == null || rawKey.isBlank()) {
+            return KEY_PREFIX + "unknown";
+        }
+        String sanitized = rawKey.replaceAll("[\\r\\n]", "").trim();
+        sanitized = sanitized.toLowerCase(Locale.ROOT);
+        return sanitized.startsWith(KEY_PREFIX) ? sanitized : KEY_PREFIX + sanitized;
+    }
+
     /** The client address, never a client-supplied forwarding header. */
     public static String clientIp(HttpServletRequest request) {
         String remote = request.getRemoteAddr();
@@ -70,7 +245,7 @@ public class RateLimiter {
     }
 
     private void sweep(long now, long windowMillis) {
-        Iterator<Map.Entry<String, Window>> it = windows.entrySet().iterator();
+        Iterator<Map.Entry<String, Window>> it = localWindows.entrySet().iterator();
         while (it.hasNext()) {
             Window candidate = it.next().getValue();
             synchronized (candidate) {

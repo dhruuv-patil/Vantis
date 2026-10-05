@@ -44,4 +44,17 @@ public interface WorkflowRepository extends JpaRepository<Workflow, UUID> {
             @Param("organizationId") UUID organizationId,
             @Param("search") String search,
             @Param("status") WorkflowStatus status);
+
+    /**
+     * Active workflows count for billing quota calculations.
+     * Defined as all non-archived workflows (DRAFT and PUBLISHED) belonging to the organization.
+     * ARCHIVED workflows are excluded from the quota count.
+     */
+    @Query("""
+            SELECT COUNT(w) FROM Workflow w
+            WHERE w.organizationId = :organizationId
+              AND w.status <> com.flowops.domain.WorkflowStatus.ARCHIVED
+            """)
+    long countActiveByOrganizationId(@Param("organizationId") UUID organizationId);
 }
+

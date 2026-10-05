@@ -48,7 +48,7 @@ export function OrgSwitcher({ collapsed }: { collapsed?: boolean }) {
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
-          "flex w-full items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2 py-1.5 text-left text-[13px] transition-colors duration-[180ms] hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/[0.15]",
+          "flex w-full items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-2 py-1.5 text-left text-[13px] transition-colors duration-200 hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/[0.15]",
           collapsed && "justify-center px-0",
         )}
       >
@@ -64,7 +64,7 @@ export function OrgSwitcher({ collapsed }: { collapsed?: boolean }) {
           </>
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64">
+      <DropdownMenuContent align="start" className="w-64 border-white/[0.08] bg-[#0a0a0c]">
         <DropdownMenuLabel className="text-white/50">Organizations</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {memberships.map((m) => (
@@ -91,7 +91,7 @@ export function OrgSwitcher({ collapsed }: { collapsed?: boolean }) {
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        <DropdownMenuItem disabled className="gap-2 text-white/25">
+        <DropdownMenuItem disabled className="gap-2 text-white/45">
           <Plus className="size-4" />
           New organization
           <span className="ml-auto text-xs">Soon</span>

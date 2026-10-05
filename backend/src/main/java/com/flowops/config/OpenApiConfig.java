@@ -14,10 +14,10 @@ public class OpenApiConfig {
     @Bean
     public OpenAPI flowOpsOpenAPI() {
         return new OpenAPI().info(new Info()
-                .title("FlowOps API")
-                .description("AI workflow automation platform — build workflows, let AI run the work.")
+                .title("Vantis API")
+                .description("Vantis is reliability infrastructure for automation — helping teams build, monitor, detect abnormal behavior, and investigate workflow failures.")
                 .version("0.1.0")
-                .contact(new Contact().name("FlowOps"))
+                .contact(new Contact().name("Vantis").url("https://vantis.run"))
                 .license(new License().name("Proprietary")));
     }
 }

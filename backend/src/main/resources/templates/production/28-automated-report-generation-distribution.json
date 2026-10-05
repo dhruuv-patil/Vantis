@@ -109,7 +109,7 @@
           "label": "Distribute report",
           "config": {
             "to": "{{REPORT_RECIPIENTS}}",
-            "subject": "Weekly FlowOps Report {{trigger.timestamp}}",
+            "subject": "Weekly Vantis Report {{trigger.timestamp}}",
             "body": "{{format.output}}"
           }
         }

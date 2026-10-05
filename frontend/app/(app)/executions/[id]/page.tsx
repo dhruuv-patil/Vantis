@@ -57,7 +57,13 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  ErrorState,
+  PageContainer,
+  PageHeader,
+  StatusBadge,
+  TableSkeleton,
+} from "@/components/app/page-primitives";
 
 import {
   Card,
@@ -67,7 +73,19 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import { ExecutionGraph } from "@/components/app/execution/ExecutionGraph";
+import dynamic from "next/dynamic";
+
+const ExecutionGraph = dynamic(
+  () => import("@/components/app/execution/ExecutionGraph").then((mod) => mod.ExecutionGraph),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-[420px] w-full items-center justify-center rounded-xl border border-white/[0.08] bg-[#0a0a0c]">
+        <div className="size-6 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+      </div>
+    ),
+  },
+);
 import { ExecutionInspector } from "@/components/app/execution/ExecutionInspector";
 import { ExecutionSummaryStrip } from "@/components/app/execution/ExecutionSummaryStrip";
 import { TimelineNodeRow } from "@/components/app/execution/TimelineNodeRow";
@@ -641,74 +659,34 @@ export default function ExecutionDetailPage() {
     !seeded ||
     workflowVersionQuery.isPending
   ) {
-    if (
-      detailQuery.isError
-    ) {
+    if (detailQuery.isError) {
       return (
-        <div className="mx-auto flex max-w-5xl flex-col items-center justify-center gap-3 py-24 text-center">
-          <p className="text-sm text-destructive">
-            {getErrorMessage(
-              detailQuery.error,
-            )}
-          </p>
-
-          <Button
-            variant="outline"
-            onClick={() =>
-              detailQuery.refetch()
-            }
-          >
-            Retry
-          </Button>
-
-          <Link
-            href="/executions"
-            className="text-sm text-white/44 hover:underline"
-          >
-            Back to executions
-          </Link>
-        </div>
+        <PageContainer variant="narrow">
+          <ErrorState
+            title="Could not load execution"
+            message={getErrorMessage(detailQuery.error)}
+            onRetry={() => detailQuery.refetch()}
+          />
+        </PageContainer>
       );
     }
 
-    if (
-      workflowVersionQuery.isError
-    ) {
+    if (workflowVersionQuery.isError) {
       return (
-        <div className="mx-auto flex max-w-5xl flex-col items-center justify-center gap-3 py-24 text-center">
-          <p className="text-sm text-destructive">
-            {getErrorMessage(
-              workflowVersionQuery.error,
-            )}
-          </p>
-
-          <Button
-            variant="outline"
-            onClick={() =>
-              workflowVersionQuery.refetch()
-            }
-          >
-            Retry
-          </Button>
-
-          <Link
-            href="/executions"
-            className="text-sm text-white/44 hover:underline"
-          >
-            Back to executions
-          </Link>
-        </div>
+        <PageContainer variant="narrow">
+          <ErrorState
+            title="Could not load workflow version"
+            message={getErrorMessage(workflowVersionQuery.error)}
+            onRetry={() => workflowVersionQuery.refetch()}
+          />
+        </PageContainer>
       );
     }
 
     return (
-      <div className="mx-auto max-w-5xl space-y-4">
-        <Skeleton className="h-8 w-64 rounded-xl border border-white/[0.08]" />
-
-        <Skeleton className="h-24 w-full rounded-xl border border-white/[0.08]" />
-
-        <Skeleton className="h-64 w-full rounded-xl border border-white/[0.08]" />
-      </div>
+      <PageContainer variant="narrow">
+        <TableSkeleton rows={6} />
+      </PageContainer>
     );
   }
 
@@ -755,129 +733,66 @@ export default function ExecutionDetailPage() {
    * ---------------------------------------------------------------------- */
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
-      {/* header */}
-
-      <div className="space-y-3">
-        <Link
-          href="/executions"
-          className="inline-flex items-center gap-1 text-sm text-white/44 hover:text-white/90"
-        >
-          <ArrowLeft className="size-4" />
-
-          Executions
-        </Link>
-
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0 space-y-1">
-            <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight text-white/90">
-              <Link
-                href={`/workflows/${meta.workflowId}`}
-                className="truncate hover:underline"
+    <PageContainer variant="narrow">
+      <PageHeader
+        backLink={{ href: "/executions", label: "Executions" }}
+        eyebrow="Execution Control Plane"
+        title={
+          <Link
+            href={`/workflows/${meta.workflowId}`}
+            className="truncate hover:underline"
+          >
+            {meta.workflowName ?? "Untitled workflow"}
+          </Link>
+        }
+        description={
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/50">
+            <StatusBadge status={state.status} />
+            <span>v{meta.versionNumber}</span>
+            <span>{meta.triggerType.toLowerCase()} trigger</span>
+            <span title={formatDateTime(meta.createdAt)}>
+              started {formatRelativeTime(meta.startedAt ?? meta.createdAt)}
+            </span>
+            <span>·</span>
+            <span>{formatDuration(state.durationMs)}</span>
+            {connected && live && (
+              <span className="inline-flex items-center gap-1 text-emerald-400">
+                <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
+                Live
+              </span>
+            )}
+          </span>
+        }
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            {state.status === "FAILED" && (
+              <Button
+                onClick={() => retryMutation.mutate()}
+                disabled={retryMutation.isPending}
               >
-                {meta.workflowName ??
-                  "Untitled workflow"}
-              </Link>
-            </h1>
+                <RefreshCw
+                  className={cn(
+                    "size-4",
+                    retryMutation.isPending && "animate-spin",
+                  )}
+                />
+                {retryMutation.isPending ? "Retrying…" : "Retry run"}
+              </Button>
+            )}
 
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/44">
-              <Badge
-                variant={executionStatusVariant(
-                  state.status,
-                )}
-                className={cn(
-                  live &&
-                    "animate-pulse",
-                )}
+            {(state.status === "QUEUED" || state.status === "RUNNING") && (
+              <Button
+                variant="outline"
+                onClick={() => cancelMutation.mutate()}
+                disabled={cancelMutation.isPending}
               >
-                {state.status.toLowerCase()}
-              </Badge>
-
-              <span>
-                v{meta.versionNumber}
-              </span>
-
-              <span>
-                {meta.triggerType.toLowerCase()} trigger
-              </span>
-
-              <span
-                title={formatDateTime(
-                  meta.createdAt,
-                )}
-              >
-                started{" "}
-                {formatRelativeTime(
-                  meta.startedAt ??
-                    meta.createdAt,
-                )}
-              </span>
-
-              <span>·</span>
-
-              <span>
-                {formatDuration(
-                  state.durationMs,
-                )}
-              </span>
-
-              {connected &&
-                live && (
-                  <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                    <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
-
-                    Live
-                  </span>
-                )}
-            </div>
+                <X className="size-4" />
+                {cancelMutation.isPending ? "Canceling…" : "Cancel run"}
+              </Button>
+            )}
           </div>
-
-          {state.status ===
-            "FAILED" && (
-            <Button
-              onClick={() =>
-                retryMutation.mutate()
-              }
-              disabled={
-                retryMutation.isPending
-              }
-            >
-              <RefreshCw
-                className={cn(
-                  "size-4",
-                  retryMutation.isPending &&
-                    "animate-spin",
-                )}
-              />
-
-              {retryMutation.isPending
-                ? "Retrying…"
-                : "Retry run"}
-            </Button>
-          )}
-
-          {(state.status ===
-            "QUEUED" ||
-            state.status ===
-              "RUNNING") && (
-            <Button
-              variant="outline"
-              onClick={() =>
-                cancelMutation.mutate()
-              }
-              disabled={
-                cancelMutation.isPending
-              }
-            >
-              <X className="size-4" />
-
-              {cancelMutation.isPending
-                ? "Canceling…"
-                : "Cancel run"}
-            </Button>
-          )}
-        </div>
-      </div>
+        }
+      />
 
       {/* disconnected banner */}
 
@@ -1107,7 +1022,7 @@ export default function ExecutionDetailPage() {
           />
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }
 
@@ -1231,10 +1146,10 @@ function logLevelClass(
       return "text-amber-400";
 
     case "DEBUG":
-      return "text-white/30";
+      return "text-white/45";
 
     default:
-      return "text-white/44";
+      return "text-white/60";
   }
 }
 

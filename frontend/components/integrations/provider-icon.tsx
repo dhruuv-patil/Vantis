@@ -1,151 +1,70 @@
 "use client";
 
-import Image from "next/image";
-
+import * as React from "react";
 import {
-  Mail,
-  MessageSquare,
-  Plug,
-  Webhook,
-  Bot,
-  Code,
-  Database,
-  Cloud,
-  HardDrive,
-  Briefcase,
-  Sheet,
-  CreditCard,
-  Globe,
-  MoreHorizontal,
-  type LucideIcon,
-} from "lucide-react";
+  BrandIcon,
+  resolveTheSvgSlug,
+} from "@/components/app/builder/node-visuals";
+import { resolveIcon } from "@/components/app/builder/shared";
+import { Plug } from "lucide-react";
+import { cn, initialsFrom } from "@/lib/utils";
 
-interface ProviderIconProps {
-  icon: string;
+export interface ProviderIconProps {
+  /** Lucide icon name, wire type, or provider slug */
+  icon?: string;
+  /** Integration wire type, e.g. "github", "postgresql", "slack" */
+  provider?: string;
+  /** Human-readable provider name, e.g. "GitHub", "PostgreSQL" */
+  name?: string;
   className?: string;
+  theme?: "dark" | "light" | "auto";
+  fallbackInitials?: boolean;
 }
-
-/**
- * Brand SVGs available in:
- *
- * public/integrations/
- *
- * The value must match the SVG filename
- * without the ".svg" extension.
- */
-const brandIcons = new Set([
-  // Workflow automation
-  "n8n",
-  "make",
-  "zapier",
-  "temporal",
-
-  // Developer
-  "github",
-  "githubactions",
-  "gitlab",
-  "vercel",
-  "sentry",
-  "pagerduty",
-  "linear",
-  "jira",
-  "asana",
-
-  // CRM
-  "hubspot",
-  "salesforce",
-  "pipedrive",
-
-  // Communication
-  "slack",
-  "discord",
-  "telegram",
-  "twilio",
-
-  // Email
-  "sendgrid",
-  "resend",
-
-  // Productivity
-  "notion",
-  "google-sheets",
-
-  // Payments
-  "stripe",
-
-  // AI
-  "anthropic",
-  "openai",
-
-  // Cloud / Storage
-  "aws",
-  "s3",
-]);
-
-const lucideIconMap: Record<
-  string,
-  LucideIcon
-> = {
-  Mail,
-  MessageSquare,
-  Webhook,
-  Globe,
-  Plug,
-  Bot,
-
-  Code2: Code,
-
-  Cloud,
-  HardDrive,
-  Briefcase,
-  Sheet,
-  CreditCard,
-  Database,
-  MoreHorizontal,
-};
 
 export function ProviderIcon({
   icon,
+  provider,
+  name,
   className = "size-6",
+  theme = "auto",
+  fallbackInitials = false,
 }: ProviderIconProps) {
-  const normalizedIcon =
-    icon.trim().toLowerCase();
+  const slug = React.useMemo(
+    () => resolveTheSvgSlug(provider, name, icon),
+    [provider, name, icon],
+  );
 
-  /**
-   * Use the actual local brand SVG
-   * whenever one exists.
-   */
-  if (
-    brandIcons.has(
-      normalizedIcon,
-    )
-  ) {
+  if (slug) {
     return (
-      <Image
-        src={`/integrations/${normalizedIcon}.svg`}
-        alt=""
-        width={24}
-        height={24}
-        className={`object-contain ${className}`}
-        aria-hidden="true"
-        unoptimized
+      <BrandIcon
+        slug={slug}
+        name={name}
+        className={className}
+        theme={theme}
+        fallbackIcon={resolveIcon(icon)}
       />
     );
   }
 
-  /**
-   * Generic integrations continue
-   * using Lucide icons.
-   */
-  const IconComponent =
-    lucideIconMap[icon] ??
-    lucideIconMap[normalizedIcon] ??
-    Plug;
+  // Generic or capability-based icon (e.g., Mail, Webhook, Database)
+  if (icon) {
+    const IconComponent = resolveIcon(icon);
+    return <IconComponent className={className} aria-hidden="true" />;
+  }
 
-  return (
-    <IconComponent
-      className={className}
-      aria-hidden="true"
-    />
-  );
+  if (fallbackInitials && (name || provider)) {
+    return (
+      <div
+        className={cn(
+          className,
+          "flex items-center justify-center rounded bg-zinc-100 font-mono text-[11px] font-semibold text-zinc-700 select-none dark:bg-white/[0.08] dark:text-white/80",
+        )}
+        aria-hidden="true"
+      >
+        {initialsFrom(name || provider || "?")}
+      </div>
+    );
+  }
+
+  return <Plug className={className} aria-hidden="true" />;
 }

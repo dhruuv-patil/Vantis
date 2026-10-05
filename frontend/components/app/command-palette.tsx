@@ -6,6 +6,7 @@ import { Command } from "cmdk";
 import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
+  AlertTriangle,
   Bot,
   FileText,
   LayoutDashboard,
@@ -54,6 +55,7 @@ const NAV: Destination[] = [
   { id: "nav-workflows", label: "Workflows", icon: Workflow, href: "/workflows" },
   { id: "nav-executions", label: "Executions", icon: Activity, href: "/executions", keywords: ["runs"] },
   { id: "nav-templates", label: "Templates", icon: PanelsTopLeft, href: "/templates" },
+  { id: "nav-reliability", label: "Anomalies", icon: AlertTriangle, href: "/reliability", keywords: ["reliability", "incidents", "alerts"] },
   { id: "nav-agents", label: "AI Agents", icon: Bot, href: "/agents", keywords: ["ai"] },
   { id: "nav-integrations", label: "Integrations", icon: Plug, href: "/integrations", keywords: ["slack"] },
   { id: "nav-logs", label: "Logs", icon: FileText, href: "/logs", keywords: ["audit"] },
@@ -103,7 +105,7 @@ export function CommandPalette({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="overflow-hidden p-0 sm:max-w-lg"
+        className="overflow-hidden p-0 sm:max-w-lg border-white/[0.08] bg-[#0a0a0c]"
         // The command input is the first focusable element; let cmdk own arrow keys.
       >
         <DialogTitle className="sr-only">Command palette</DialogTitle>
@@ -127,7 +129,7 @@ export function CommandPalette({
     bg-transparent
     text-sm
     text-white/80
-    placeholder:text-white/30
+    placeholder:text-white/45
     outline-none
     ring-0
     shadow-none
@@ -246,4 +248,4 @@ const GROUP =
   "px-1 py-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-white/40";
 
 const ITEM =
-  "flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-[13px] text-white/60 outline-none transition-colors duration-[180ms] data-[selected=true]:bg-white/[0.06] data-[selected=true]:text-white/90";
+  "flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-[13px] text-white/60 outline-none transition-colors duration-200 data-[selected=true]:bg-white/[0.06] data-[selected=true]:text-white/90";

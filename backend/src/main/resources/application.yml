@@ -2,6 +2,26 @@ spring:
   application:
     name: flowops-api
 
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:google-client-id-placeholder}
+            client-secret: ${GOOGLE_CLIENT_SECRET:google-client-secret-placeholder}
+            scope:
+              - openid
+              - profile
+              - email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+          github:
+            client-id: ${GITHUB_CLIENT_ID:github-client-id-placeholder}
+            client-secret: ${GITHUB_CLIENT_SECRET:github-client-secret-placeholder}
+            scope:
+              - read:user
+              - user:email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+
   jackson:
     serialization:
       # Instant -> "2026-08-24T10:15:30.123Z", never a numeric epoch. The shared
@@ -16,6 +36,13 @@ spring:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/flowops}
     username: ${SPRING_DATASOURCE_USERNAME:flowops}
     password: ${SPRING_DATASOURCE_PASSWORD:flowops}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
 
   jpa:
     hibernate:
@@ -36,6 +63,10 @@ server:
       enabled: false
 
 flowops:
+  ratelimit:
+    enabled: ${FLOWOPS_RATELIMIT_ENABLED:true}
+    fail-closed-for-security: ${FLOWOPS_RATELIMIT_FAIL_CLOSED_FOR_SECURITY:true}
+
   cors:
     # Comma-separated list of allowed frontend origins
     allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
@@ -68,7 +99,7 @@ flowops:
     password: ${SMTP_PASSWORD:}
     encryption: ${SMTP_ENCRYPTION:STARTTLS}
     from-address: ${SMTP_FROM_ADDRESS:}
-    from-name: ${SMTP_FROM_NAME:FlowOps}
+    from-name: ${SMTP_FROM_NAME:Vantis}
     # Frontend origin used to compose the reset link ({origin}/reset-password?token=…).
     # This is the *frontend* origin, not the backend PUBLIC_BASE_URL (webhook URLs).
     app-base-url: ${FRONTEND_PUBLIC_URL:http://localhost:3000}
@@ -133,6 +164,9 @@ management:
     health:
       probes:
         enabled: true
+  health:
+    redis:
+      enabled: false
 
 springdoc:
   swagger-ui:

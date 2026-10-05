@@ -101,6 +101,12 @@ public enum ErrorCode {
 
     EMAIL_ALREADY_REGISTERED(HttpStatus.CONFLICT, "That email address is already registered."),
     RATE_LIMITED(HttpStatus.TOO_MANY_REQUESTS, "Too many attempts. Please try again later."),
+    CONCURRENCY_LIMIT_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "Concurrent execution limit reached. Please wait for active runs to finish."),
+    CIRCUIT_BREAKER_OPEN(HttpStatus.SERVICE_UNAVAILABLE, "Dependency circuit breaker is open. Requests temporarily paused."),
+    DEAD_LETTER_NOT_FOUND(HttpStatus.NOT_FOUND, "Dead letter record not found."),
+    INCIDENT_NOT_FOUND(HttpStatus.NOT_FOUND, "Incident not found."),
+    PLAN_LIMIT_EXCEEDED(HttpStatus.FORBIDDEN, "Plan limit reached for this billing period."),
+    BILLING_DISABLED(HttpStatus.FORBIDDEN, "Billing will be available after the private beta."),
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Something went wrong. Please try again.");
 
     private final HttpStatus status;

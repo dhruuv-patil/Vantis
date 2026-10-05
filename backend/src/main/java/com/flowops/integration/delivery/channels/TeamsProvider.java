@@ -22,7 +22,7 @@ import org.springframework.stereotype.Component;
 public class TeamsProvider implements NotificationProvider {
 
     private static final String TEST_TEXT =
-            "FlowOps connection test — if you can read this, Teams notifications work.";
+            "Vantis connection test — if you can read this, Teams notifications work.";
 
     private final WebhookDeliverer deliverer;
 
@@ -55,7 +55,7 @@ public class TeamsProvider implements NotificationProvider {
                                 + "Stored encrypted; never shown again."),
                 new CredentialField("channelName", "Channel name (optional)", false,
                         "#operations", "#operations",
-                        "Labels this connection in FlowOps."));
+                        "Labels this connection in Vantis."));
     }
 
     @Override
@@ -103,7 +103,7 @@ public class TeamsProvider implements NotificationProvider {
 
     private static String text(NotificationMessage message) {
         return message.text() == null || message.text().isBlank()
-                ? "FlowOps notification"
+                ? "Vantis notification"
                 : message.text();
     }
 }

@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DiscordProvider implements NotificationProvider {
 
-    private static final String TEST_TEXT = "FlowOps connection test ✔";
+    private static final String TEST_TEXT = "Vantis connection test ✔";
     private static final String DISCORD_HOST = "discord.com";
 
     private final WebhookDeliverer deliverer;
@@ -52,7 +52,7 @@ public class DiscordProvider implements NotificationProvider {
                         "https://discord.com/api/webhooks/…",
                         "Channel → Integrations → Webhooks. Stored encrypted and masked in the UI."),
                 new CredentialField("channelName", "Webhook name (optional)", false,
-                        "flowops-bot", "flowops-bot",
+                        "vantis-bot", "vantis-bot",
                         "Shown as the sender in Discord."));
     }
 
@@ -101,7 +101,7 @@ public class DiscordProvider implements NotificationProvider {
 
     private static String text(NotificationMessage message) {
         String text = message.text() == null || message.text().isBlank()
-                ? "FlowOps notification"
+                ? "Vantis notification"
                 : message.text();
         return text.length() > 2000 ? text.substring(0, 2000) : text;
     }

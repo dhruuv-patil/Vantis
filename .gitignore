@@ -1,7 +1,12 @@
-# Environment
+# Environment and secrets
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.crt
 
 # ── Java / Spring Boot (backend) ─────────────────────────────
 target/
@@ -64,4 +69,3 @@ frontend/components/brand/Executive Summary.pdf
 smtp-tls-test/
 # Machine-specific Claude Code tooling config
 .claude/
-.env.example

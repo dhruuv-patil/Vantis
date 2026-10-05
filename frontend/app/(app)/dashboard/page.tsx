@@ -10,10 +10,14 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
   ArrowRight,
-  Clock3,
   Plus,
-  Play,
 } from "lucide-react";
+import {
+  PageContainer,
+  PageHeader,
+  KpiStrip,
+  StatusBadge,
+} from "@/components/app/page-primitives";
 
 import {
   fetchAnomalies,
@@ -27,6 +31,11 @@ import {
   formatRelativeTime,
   isLiveStatus,
 } from "@/lib/format";
+import {
+  getHealthLabel,
+  getHealthTone,
+  getHealthStroke,
+} from "@/lib/status";
 
 import type {
   ExecutionStatus,
@@ -173,9 +182,10 @@ export default function DashboardPage() {
      DATA
   ------------------------------------------------------------------------ */
 
-  const executions =
-    executionsQuery.data
-      ?.executions ?? [];
+  const executions = useMemo(
+    () => executionsQuery.data?.executions ?? [],
+    [executionsQuery.data?.executions],
+  );
 
   const stats =
     statsQuery.data;
@@ -183,8 +193,10 @@ export default function DashboardPage() {
   const totals =
     stats?.totals;
 
-  const series =
-    stats?.series ?? [];
+  const series = useMemo(
+    () => statsQuery.data?.series ?? [],
+    [statsQuery.data?.series],
+  );
 
   const openAnomalies =
     anomaliesQuery.data
@@ -286,151 +298,146 @@ export default function DashboardPage() {
      RENDER
   ------------------------------------------------------------------------ */
 
+  const hasAnyRuns =
+    series.some(point => (point.total ?? 0) > 0 || (point.failed ?? 0) > 0);
+
   return (
-    <main className="min-h-full bg-black text-white">
-      <div className="mx-auto max-w-7xl px-4 pb-10 pt-5 sm:px-6 lg:px-8">
+    <PageContainer variant="wide">
+      <PageHeader
+        eyebrow="Execution Control Plane"
+        title="Dashboard"
+        description={`Monitor workflow health and reliability across ${organizationName}.`}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex h-10 items-center gap-1 rounded-lg border border-white/[0.08] bg-[#0a0a0c] p-1">
+              {RANGE_OPTIONS.map((value) => {
+                const active = range === value;
 
-        {/* ================================================================
-            HEADER
-        ================================================================ */}
-
-        <Reveal>
-          <div className="flex flex-col gap-4 border-b border-white/[0.055] pb-5 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <div className="flex size-7 items-center justify-center rounded-lg border border-white/[0.07] bg-[#111114]">
-                  <Activity className="size-3.5 text-white/50" />
-                </div>
-                <span className="mono-eyebrow">Execution Control Plane</span>
-              </div>
-
-              <h1 className="mt-3 text-[24px] font-semibold tracking-[-0.04em] text-white">
-                Overview
-              </h1>
-
-              <p className="mt-1 text-xs text-white/35">
-                Monitor workflow health and reliability across {organizationName}.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-                <div className="flex h-10 items-center gap-1 rounded-lg border border-white/[0.075] bg-[#0A0A0C] p-1">
-                  {RANGE_OPTIONS.map(
-                    value => {
-                      const active =
-                        range ===
-                        value;
-
-                      return (
-                        <button
-                          key={
-                            value
-                          }
-                          type="button"
-                          onClick={() =>
-                            setRange(
-                              value,
-                            )
-                          }
-                          className={cn(
-                            "h-8 rounded-md px-3 text-[11px] font-medium transition-colors",
-                            active
-                              ? "bg-white/[0.09] text-white"
-                              : "text-white/30 hover:bg-white/[0.035] hover:text-white/65",
-                          )}
-                        >
-                          {getRangeLabel(
-                            value,
-                          )}
-                        </button>
-                      );
-                    },
-                  )}
-                </div>
-
-                <Link href="/workflows">
-                  <Button className="h-10 gap-2 rounded-lg bg-white px-4 text-sm font-medium text-black shadow-none hover:bg-white/90">
-                    <Plus className="size-4" />
-                    New workflow
-                  </Button>
-                </Link>
-            </div>
-          </div>
-        </Reveal>
-
-        {/* ================================================================
-            KPI STRIP
-        ================================================================ */}
-
-        <Reveal
-          delay={0.04}
-          distance={8}
-        >
-          <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-white/[0.065] bg-[#0D0D10] sm:grid-cols-3 lg:grid-cols-5">
-            {[
-              {
-                label: "Workflow runs",
-                value: initialLoading ? "—" : totalRuns.toLocaleString(),
-                detail: initialLoading ? "Loading" : rangeLabel,
-                tone: "neutral",
-              },
-              {
-                label: "Success rate",
-                value: initialLoading ? "—" : `${successRate.toFixed(2)}%`,
-                detail: initialLoading ? "Loading" : getHealthLabel(successRate),
-                tone: getHealthTone(successRate),
-              },
-              {
-                label: "Failed runs",
-                value: initialLoading ? "—" : failedRuns.toLocaleString(),
-                detail: initialLoading ? "Loading" : failedRuns > 0 ? "Needs attention" : "No failures",
-                tone: failedRuns > 0 ? "danger" : "success",
-              },
-              {
-                label: "Active anomalies",
-                value: anomaliesQuery.isPending ? "—" : activeAnomalies.toLocaleString(),
-                detail: anomaliesQuery.isPending ? "Loading" : highPriorityAnomalies > 0 ? `${highPriorityAnomalies} high priority` : "Baseline monitoring",
-                tone: activeAnomalies > 0 ? "warning" : "neutral",
-              },
-              {
-                label: "Mean execution",
-                value: initialLoading ? "—" : avgDurationMs !== null ? formatDuration(avgDurationMs) : "—",
-                detail: avgDurationMs !== null ? "Average duration" : "No completed runs",
-                tone: "neutral",
-              },
-            ].map((item, index) => (
-              <div
-                key={item.label}
-                className={`min-h-[104px] px-5 py-4 ${
-                  index > 0 ? "border-l border-white/[0.05]" : ""
-                }`}
-              >
-                <p className="text-[10px] font-medium text-white/35">
-                  {item.label}
-                </p>
-
-                <p className="mt-3 text-[28px] font-semibold leading-none tracking-[-0.05em] tabular-nums text-white/95">
-                  {item.value}
-                </p>
-
-                <div className="mt-3 flex items-center gap-1.5">
-                  <span
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setRange(value)}
                     className={cn(
-                      "size-1.5 rounded-full",
-                      item.tone === "success" && "bg-emerald-400/75",
-                      item.tone === "warning" && "bg-amber-400/75",
-                      item.tone === "danger" && "bg-red-400/70",
-                      item.tone === "neutral" && "bg-white/20",
+                      "h-8 rounded-md px-3 text-xs font-medium transition-colors",
+                      active
+                        ? "bg-white text-black font-semibold shadow-sm"
+                        : "text-white/45 hover:text-white/80 hover:bg-white/[0.04]",
                     )}
-                  />
-                  <span className="truncate text-[10px] text-white/22">
-                    {item.detail}
-                  </span>
-                </div>
-              </div>
-            ))}
+                  >
+                    {getRangeLabel(value)}
+                  </button>
+                );
+              })}
+            </div>
+
+            <Link href="/workflows">
+              <Button className="gap-2">
+                <Plus className="size-4" />
+                <span>New workflow</span>
+              </Button>
+            </Link>
           </div>
-        </Reveal>
+        }
+      />
+
+      <KpiStrip
+        items={[
+          {
+            label: "Workflow runs",
+            value: initialLoading ? (
+              <Skeleton className="h-7 w-20" />
+            ) : (
+              totalRuns.toLocaleString()
+            ),
+            detail: initialLoading
+              ? "Loading"
+              : totalRuns === 0
+                ? "No runs yet"
+                : rangeLabel,
+            tone: "neutral",
+          },
+          {
+            label: "Success rate",
+            value: initialLoading ? (
+              <Skeleton className="h-7 w-20" />
+            ) : totalRuns === 0 ? (
+              "—"
+            ) : (
+              `${successRate.toFixed(2)}%`
+            ),
+            detail:
+              initialLoading
+                ? "Loading"
+                : totalRuns === 0
+                  ? "No runs yet"
+                  : getHealthLabel(successRate),
+            tone:
+              initialLoading || totalRuns === 0
+                ? "neutral"
+                : getHealthTone(successRate),
+          },
+          {
+            label: "Failed runs",
+            value: initialLoading ? (
+              <Skeleton className="h-7 w-14" />
+            ) : (
+              failedRuns.toLocaleString()
+            ),
+            detail:
+              initialLoading
+                ? "Loading"
+                : totalRuns === 0
+                  ? "No runs yet"
+                  : failedRuns > 0
+                    ? "Needs attention"
+                    : "No failures",
+            tone:
+              initialLoading || totalRuns === 0
+                ? "neutral"
+                : failedRuns > 0
+                  ? "danger"
+                  : "success",
+          },
+          {
+            label: "Active anomalies",
+            value: anomaliesQuery.isPending ? (
+              <Skeleton className="h-7 w-14" />
+            ) : (
+              activeAnomalies.toLocaleString()
+            ),
+            detail:
+              anomaliesQuery.isPending
+                ? "Loading"
+                : activeAnomalies === 0
+                  ? "All systems normal"
+                  : highPriorityAnomalies > 0
+                    ? `${highPriorityAnomalies} critical / high priority`
+                    : "Under investigation",
+            tone:
+              activeAnomalies > 0
+                ? highPriorityAnomalies > 0
+                  ? "danger"
+                  : "warning"
+                : "success",
+          },
+          {
+            label: "Mean execution",
+            value: initialLoading ? (
+              <Skeleton className="h-7 w-20" />
+            ) : avgDurationMs !== null ? (
+              formatDuration(avgDurationMs)
+            ) : (
+              "—"
+            ),
+            detail:
+              avgDurationMs !== null
+                ? "Average duration"
+                : "No completed runs",
+            tone: "neutral",
+          },
+        ]}
+      />
 
         {/* ================================================================
             HEALTH / RELIABILITY
@@ -443,7 +450,7 @@ export default function DashboardPage() {
           ============================================================== */}
 
           <Reveal delay={0.06} distance={10}>
-  <Card className="flex h-full flex-col overflow-hidden rounded-xl border-white/[0.065] bg-[#0D0D10] shadow-none">
+  <Card className="flex h-full flex-col overflow-hidden rounded-xl border-white/[0.065] bg-[#0a0a0c] shadow-none">
     <CardContent className="flex flex-1 flex-col p-0">
 
       <div className="flex items-center justify-between border-b border-white/[0.055] px-5 py-4">
@@ -451,7 +458,7 @@ export default function DashboardPage() {
           <h2 className="text-sm font-medium text-white/80">
             Workflow health
           </h2>
-          <p className="mt-1 text-[11px] text-white/28">
+          <p className="mt-1 text-[11px] text-white/45">
             Executions and failures over time
           </p>
         </div>
@@ -466,7 +473,7 @@ export default function DashboardPage() {
       <div className="relative min-h-[300px] flex-1 px-4 pb-5 pt-5 sm:px-5">
         {statsQuery.isPending ? (
           <ChartSkeleton />
-        ) : series.length === 0 ? (
+        ) : series.length === 0 || !hasAnyRuns || totalRuns === 0 ? (
           <EmptyChart />
         ) : (
           <ExecutionChart chart={chart} />
@@ -499,6 +506,9 @@ export default function DashboardPage() {
               anomalies={
                 activeAnomalies
               }
+              totalRuns={
+                totalRuns
+              }
             />
           </Reveal>
         </div>
@@ -519,7 +529,7 @@ export default function DashboardPage() {
                   Recent executions
                 </h2>
 
-                <p className="mt-1 text-[11px] text-white/28">
+                <p className="mt-1 text-[11px] text-white/45">
                   Latest workflow activity
                   across your workspace
                 </p>
@@ -527,7 +537,7 @@ export default function DashboardPage() {
 
               <Link
                 href="/executions"
-                className="flex items-center gap-1.5 text-[11px] text-white/35 transition-colors hover:text-white/75"
+                className="flex items-center gap-1.5 text-[11px] text-white/45 transition-colors hover:text-white/85"
               >
                 View all
                 <ArrowRight className="size-3" />
@@ -594,78 +604,15 @@ export default function DashboardPage() {
         ================================================================ */}
 
         <div className="mt-6 flex items-center justify-between border-t border-white/[0.045] pt-3">
-          <span className="text-[9px] text-white/18">
+          <span className="text-caption text-white/40">
             {rangeLabel}
           </span>
 
-          <span className="font-mono text-[9px] uppercase tracking-[0.13em] text-white/12">
-            Trace.run / EXECUTION CONTROL
+          <span className="font-mono text-caption uppercase tracking-[0.13em] text-white/45">
+            Vantis / EXECUTION CONTROL
           </span>
         </div>
-      </div>
-    </main>
-  );
-}
-
-/* ==========================================================================
-   DASHBOARD METRIC
-============================================================================ */
-
-function DashboardMetric({
-  label,
-  value,
-  sublabel,
-  icon,
-  tone = "neutral",
-}: {
-  label: string;
-  value: string;
-  sublabel: string;
-  icon?: ReactNode;
-  tone?:
-    | "neutral"
-    | "success"
-    | "warning"
-    | "danger";
-}) {
-  return (
-    <div className="min-h-[142px] border-r border-white/[0.05] px-5 py-4 last:border-r-0">
-      <div className="flex items-center gap-1.5">
-        {icon && (
-          <span className="text-white/25">
-            {icon}
-          </span>
-        )}
-
-        <span className="text-[10px] font-medium text-white/35">
-          {label}
-        </span>
-      </div>
-
-      <div className="mt-4 text-[30px] font-semibold leading-none tracking-[-0.05em] tabular-nums text-white/95">
-        {value}
-      </div>
-
-      <div className="mt-3 flex items-center gap-1.5">
-        <span
-          className={cn(
-            "size-1.5 rounded-full",
-            tone === "success" &&
-              "bg-emerald-400/75",
-            tone === "warning" &&
-              "bg-amber-400/75",
-            tone === "danger" &&
-              "bg-red-400/70",
-            tone === "neutral" &&
-              "bg-white/20",
-          )}
-        />
-
-        <span className="truncate text-[10px] text-white/22">
-          {sublabel}
-        </span>
-      </div>
-    </div>
+    </PageContainer>
   );
 }
 
@@ -694,13 +641,18 @@ function buildChart(
   const paddingBottom = 12;
 
   if (!series.length) {
-    return {
-      width,
-      height,
-      points: [] as ChartPoint[],
-      max: 1,
-    };
-  }
+  return {
+    width,
+    height,
+    points: [] as ChartPoint[],
+    max: 1,
+    paddingTop,
+    usableHeight:
+      height -
+      paddingTop -
+      paddingBottom,
+  };
+}
 
   const max = Math.max(
     ...series.map(point =>
@@ -716,9 +668,9 @@ function buildChart(
     width - paddingX * 2;
 
   const usableHeight =
-    height -
-    paddingTop -
-    paddingBottom;
+  height -
+  paddingTop -
+  paddingBottom;
 
   const points: ChartPoint[] =
     series.map(
@@ -756,9 +708,7 @@ function buildChart(
 function ExecutionChart({
   chart,
 }: {
-  chart: ReturnType<
-    typeof buildChart
-  >;
+  chart: ReturnType<typeof buildChart>;
 }) {
   const {
     width,
@@ -769,173 +719,183 @@ function ExecutionChart({
     usableHeight,
   } = chart;
 
-  const totalPoints =
-    points.map(point => ({
-      x: point.x,
-      y:
-        height -
-        12 -
-        (point.total / max) *
-          usableHeight,
-    }));
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
-  const failedPoints =
-    points.map(point => ({
-      x: point.x,
-      y:
-        height -
-        12 -
-        (point.failed / max) *
-          usableHeight,
-    }));
+  const totalPoints = points.map((point) => ({
+    x: point.x,
+    y: height - 12 - (point.total / max) * usableHeight,
+  }));
 
-  const totalPath =
-    createLinePath(totalPoints);
+  const failedPoints = points.map((point) => ({
+    x: point.x,
+    y: height - 12 - (point.failed / max) * usableHeight,
+  }));
 
-  const failedPath =
-    createLinePath(
-      failedPoints,
+  const totalPath = createLinePath(totalPoints);
+  const failedPath = createLinePath(failedPoints);
+
+  const totalArea = totalPoints.length
+    ? `${totalPath} L ${totalPoints[totalPoints.length - 1].x} ${height - 12} L ${totalPoints[0].x} ${height - 12} Z`
+    : "";
+
+  const activePoint = hoveredIndex !== null ? points[hoveredIndex] : null;
+  const activeTotalPoint = hoveredIndex !== null ? totalPoints[hoveredIndex] : null;
+  const activeFailedPoint = hoveredIndex !== null ? failedPoints[hoveredIndex] : null;
+
+  const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
+    if (points.length === 0) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const xRatio = (e.clientX - rect.left) / rect.width;
+    const closestIndex = Math.min(
+      points.length - 1,
+      Math.max(0, Math.round(xRatio * (points.length - 1))),
     );
+    setHoveredIndex(closestIndex);
+  };
 
-  const totalArea =
-    totalPoints.length
-      ? `${totalPath} L ${
-          totalPoints[
-            totalPoints.length - 1
-          ].x
-        } ${height - 12} L ${
-          totalPoints[0].x
-        } ${height - 12} Z`
-      : "";
+  const hasAnyFailures = points.some((point) => point.failed > 0);
 
   return (
-    <svg
-      viewBox={`0 0 ${width} ${height}`}
-      preserveAspectRatio="none"
-      className="h-full w-full"
-    >
-      <defs>
-        <linearGradient
-          id="runs-area"
-          x1="0"
-          y1="0"
-          x2="0"
-          y2="1"
+    <div className="relative flex h-full flex-col justify-between">
+      {/* Floating Hover Tooltip */}
+      {activePoint && (
+        <div
+          className="pointer-events-none absolute -top-2 z-20 rounded-lg border border-white/[0.12] bg-[#0a0a0c] px-3 py-2 shadow-2xl backdrop-blur-md transition-all duration-75"
+          style={{
+            left: `${(activePoint.x / width) * 100}%`,
+            transform:
+              activePoint.x > width * 0.75
+                ? "translateX(-100%)"
+                : activePoint.x < width * 0.25
+                ? "translateX(0%)"
+                : "translateX(-50%)",
+          }}
         >
-          <stop
-            offset="0%"
-            stopColor="rgb(99 102 241)"
-            stopOpacity="0.12"
-          />
+          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">
+            {activePoint.label}
+          </p>
+          <div className="mt-1 flex items-center gap-3 text-xs">
+            <span className="flex items-center gap-1.5 font-medium text-white/90">
+              <span className="size-1.5 rounded-full bg-indigo-400" />
+              {activePoint.total.toLocaleString()} runs
+            </span>
+            <span className="flex items-center gap-1.5 font-medium text-red-400">
+              <span className="size-1.5 rounded-full bg-red-400" />
+              {activePoint.failed.toLocaleString()} failed
+            </span>
+          </div>
+        </div>
+      )}
 
-          <stop
-            offset="100%"
-            stopColor="rgb(99 102 241)"
-            stopOpacity="0"
-          />
-        </linearGradient>
-      </defs>
+      {/* Responsive SVG Chart */}
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="h-full w-full cursor-crosshair overflow-visible"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHoveredIndex(null)}
+      >
+        <defs>
+          <linearGradient id="runs-area" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgb(99 102 241)" stopOpacity="0.14" />
+            <stop offset="100%" stopColor="rgb(99 102 241)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
 
-      {/* GRID */}
-
-      {[0, 1, 2, 3, 4].map(
-        index => {
-          const y =
-            paddingTop +
-            (index *
-              usableHeight) /
-              4;
-
+        {/* Horizontal grid lines */}
+        {[0, 1, 2, 3, 4].map((index) => {
+          const y = paddingTop + (index * usableHeight) / 4;
           return (
             <line
               key={index}
               x1="12"
-              x2="748"
+              x2={width - 12}
               y1={y}
               y2={y}
-              stroke="rgba(255,255,255,0.045)"
+              stroke="rgba(255,255,255,0.04)"
               strokeWidth="1"
+              vectorEffect="non-scaling-stroke"
             />
           );
-        },
-      )}
+        })}
 
-      {/* AREA */}
+        {/* Area fill */}
+        {totalArea && (
+          <path d={totalArea} fill="url(#runs-area)" />
+        )}
 
-      {totalArea && (
-        <path
-          d={totalArea}
-          fill="url(#runs-area)"
-        />
-      )}
+        {/* Total runs line */}
+        {totalPath && (
+          <path
+            d={totalPath}
+            fill="none"
+            stroke="rgb(129 140 248)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
 
-      {/* RUNS */}
+        {/* Failed runs line */}
+        {hasAnyFailures && failedPath && (
+          <path
+            d={failedPath}
+            fill="none"
+            stroke="rgb(248 113 113)"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
 
-      {totalPath && (
-        <path
-          d={totalPath}
-          fill="none"
-          stroke="rgb(129 140 248)"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      )}
+        {/* Vertical hover indicator line */}
+        {activePoint && (
+          <line
+            x1={activePoint.x}
+            x2={activePoint.x}
+            y1={paddingTop}
+            y2={height - 12}
+            stroke="rgba(255,255,255,0.2)"
+            strokeDasharray="3 3"
+            strokeWidth="1"
+            vectorEffect="non-scaling-stroke"
+          />
+        )}
 
-      {/* FAILED */}
-
-      {failedPath && (
-        <path
-          d={failedPath}
-          fill="none"
-          stroke="rgb(248 113 113)"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      )}
-
-      {/* RUN POINTS */}
-
-      {totalPoints.map(
-        (point, index) => (
+        {/* Points or active highlighted point */}
+        {activeTotalPoint && (
           <circle
-            key={`total-${index}`}
-            cx={point.x}
-            cy={point.y}
-            r="2.25"
+            cx={activeTotalPoint.x}
+            cy={activeTotalPoint.y}
+            r="4"
             fill="rgb(129 140 248)"
-            stroke="#0D0D10"
+            stroke="#0a0a0c"
             strokeWidth="2"
           />
-        ),
+        )}
+
+        {activeFailedPoint && activePoint && activePoint.failed > 0 && (
+          <circle
+            cx={activeFailedPoint.x}
+            cy={activeFailedPoint.y}
+            r="3.5"
+            fill="rgb(248 113 113)"
+            stroke="#0a0a0c"
+            strokeWidth="2"
+          />
+        )}
+      </svg>
+
+      {/* Axis Labels: First, Middle, and Last bucket */}
+      {points.length > 0 && (
+        <div className="mt-2 flex items-center justify-between border-t border-white/[0.045] pt-2 text-[10px] font-mono uppercase tracking-wider text-white/40">
+          <span>{points[0]?.label ?? "—"}</span>
+          <span>{points[Math.floor((points.length - 1) / 2)]?.label ?? ""}</span>
+          <span>{points[points.length - 1]?.label ?? "—"}</span>
+        </div>
       )}
-
-      {/* FAILED POINTS */}
-
-      {failedPoints.map(
-        (point, index) => {
-          if (
-            points[index]
-              .failed === 0
-          ) {
-            return null;
-          }
-
-          return (
-            <circle
-              key={`failed-${index}`}
-              cx={point.x}
-              cy={point.y}
-              r="2"
-              fill="rgb(248 113 113)"
-              stroke="#0D0D10"
-              strokeWidth="2"
-            />
-          );
-        },
-      )}
-    </svg>
+    </div>
   );
 }
 
@@ -967,34 +927,40 @@ function ReliabilityCard({
   failedRuns,
   activeRuns,
   anomalies,
+  totalRuns,
 }: {
   loading: boolean;
   successRate: number;
   failedRuns: number;
   activeRuns: number;
   anomalies: number;
+  totalRuns: number;
 }) {
-  const clamped =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        successRate,
-      ),
-    );
+  const hasNoRuns = totalRuns === 0;
+
+  const clamped = hasNoRuns
+    ? 0
+    : Math.max(
+        0,
+        Math.min(
+          100,
+          successRate,
+        ),
+      );
 
   const radius = 42;
 
   const circumference =
     2 * Math.PI * radius;
 
-  const offset =
-    circumference -
-    (clamped / 100) *
-      circumference;
+  const offset = hasNoRuns
+    ? circumference
+    : circumference -
+      (clamped / 100) *
+        circumference;
 
   return (
-    <Card className="h-full overflow-hidden rounded-xl border-white/[0.065] bg-[#0D0D10] shadow-none">
+    <Card className="h-full overflow-hidden rounded-xl border-white/[0.065] bg-[#0a0a0c] shadow-none">
       <CardContent className="p-0">
 
         <div className="border-b border-white/[0.055] px-5 py-4">
@@ -1002,7 +968,7 @@ function ReliabilityCard({
             Reliability
           </h2>
 
-          <p className="mt-1 text-[11px] text-white/28">
+          <p className="mt-1 text-[11px] text-white/45">
             Execution health
           </p>
         </div>
@@ -1030,9 +996,11 @@ function ReliabilityCard({
                     cy="56"
                     r={radius}
                     fill="none"
-                    stroke={getHealthStroke(
-                      successRate,
-                    )}
+                    stroke={
+                      hasNoRuns
+                        ? "rgba(255,255,255,0.12)"
+                        : getHealthStroke(successRate)
+                    }
                     strokeWidth="9"
                     strokeLinecap="round"
                     strokeDasharray={
@@ -1048,15 +1016,15 @@ function ReliabilityCard({
 
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-[19px] font-semibold tracking-[-0.04em] text-white">
-                  {loading
+                  {loading || hasNoRuns
                     ? "—"
                     : `${successRate.toFixed(
                         1,
                       )}%`}
                 </span>
 
-                <span className="mt-0.5 font-mono text-[7px] uppercase tracking-[0.12em] text-white/20">
-                  success
+                <span className="mt-0.5 font-mono text-[7px] uppercase tracking-[0.12em] text-white/35">
+                  {hasNoRuns ? "no data" : "success"}
                 </span>
               </div>
             </div>
@@ -1065,14 +1033,17 @@ function ReliabilityCard({
               <p className="text-sm font-medium text-white/70">
                 {loading
                   ? "Loading"
-                  : getHealthLabel(
-                      successRate,
-                    )}
+                  : hasNoRuns
+                    ? "No data"
+                    : getHealthLabel(
+                        successRate,
+                      )}
               </p>
 
-              <p className="mt-1 text-[11px] leading-5 text-white/25">
-                Workflow execution
-                reliability
+              <p className="mt-1 text-[11px] leading-5 text-white/40">
+                {hasNoRuns
+                  ? "No workflow runs recorded"
+                  : "Workflow execution reliability"}
               </p>
             </div>
           </div>
@@ -1082,13 +1053,13 @@ function ReliabilityCard({
             <ReliabilityRow
               label="Succeeded"
               value={
-                loading
+                loading || hasNoRuns
                   ? "—"
                   : `${successRate.toFixed(
                       1,
                     )}%`
               }
-              tone="success"
+              tone={hasNoRuns ? "neutral" : "success"}
             />
 
             <ReliabilityRow
@@ -1096,12 +1067,16 @@ function ReliabilityCard({
               value={
                 loading
                   ? "—"
-                  : failedRuns.toLocaleString()
+                  : hasNoRuns
+                    ? "—"
+                    : failedRuns.toLocaleString()
               }
               tone={
-                failedRuns > 0
-                  ? "danger"
-                  : "neutral"
+                hasNoRuns
+                  ? "neutral"
+                  : failedRuns > 0
+                    ? "danger"
+                    : "neutral"
               }
             />
 
@@ -1121,7 +1096,7 @@ function ReliabilityCard({
 
             <ReliabilityRow
               label="Open anomalies"
-              value={anomalies.toLocaleString()}
+              value={loading ? "—" : anomalies.toLocaleString()}
               tone={
                 anomalies > 0
                   ? "warning"
@@ -1238,7 +1213,7 @@ function ExecutionTable({
                     "Untitled workflow"}
                 </p>
 
-                <p className="mt-1 truncate font-mono text-[9px] text-white/18">
+                <p className="mt-1 truncate font-mono text-[11px] text-white/45">
                   v
                   {
                     execution.versionNumber
@@ -1254,7 +1229,7 @@ function ExecutionTable({
               {/* STATUS */}
 
               <div>
-                <ExecutionStatusBadge
+                <StatusBadge
                   status={
                     execution.status
                   }
@@ -1263,7 +1238,7 @@ function ExecutionTable({
 
               {/* DURATION */}
 
-              <span className="text-[10px] tabular-nums text-white/35">
+              <span className="text-[11px] tabular-nums text-white/50">
                 {execution.durationMs !==
                 null
                   ? formatDuration(
@@ -1274,7 +1249,7 @@ function ExecutionTable({
 
               {/* STARTED */}
 
-              <span className="text-[10px] text-white/30">
+              <span className="text-[11px] text-white/45">
                 {formatRelativeTime(
                   execution.createdAt,
                 )}
@@ -1282,7 +1257,7 @@ function ExecutionTable({
 
               {/* TRIGGER */}
 
-              <span className="truncate text-[10px] text-white/28">
+              <span className="truncate text-[11px] text-white/45">
                 {formatTrigger(
                   execution.triggerType,
                 )}
@@ -1293,81 +1268,6 @@ function ExecutionTable({
       </div>
     </div>
   );
-}
-
-/* ==========================================================================
-   STATUS
-============================================================================ */
-
-function ExecutionStatusBadge({
-  status,
-}: {
-  status: ExecutionStatus;
-}) {
-  const config =
-    getExecutionStatusConfig(
-      status,
-    );
-
-  return (
-    <Badge
-      variant="outline"
-      className={cn(
-        "rounded-md border px-2 py-0.5 text-[9px] font-medium",
-        config.className,
-      )}
-    >
-      {config.label}
-    </Badge>
-  );
-}
-
-function getExecutionStatusConfig(
-  status: ExecutionStatus,
-) {
-  switch (status) {
-    case "SUCCEEDED":
-      return {
-        label: "Succeeded",
-        className:
-          "border-emerald-400/15 bg-emerald-400/[0.045] text-emerald-300/70",
-      };
-
-    case "FAILED":
-      return {
-        label: "Failed",
-        className:
-          "border-red-400/15 bg-red-400/[0.045] text-red-300/70",
-      };
-
-    case "RUNNING":
-      return {
-        label: "Running",
-        className:
-          "border-indigo-400/15 bg-indigo-400/[0.045] text-indigo-300/70",
-      };
-
-    case "WAITING":
-      return {
-        label: "Waiting",
-        className:
-          "border-blue-400/15 bg-blue-400/[0.045] text-blue-300/70",
-      };
-
-    case "QUEUED":
-      return {
-        label: "Queued",
-        className:
-          "border-amber-400/15 bg-amber-400/[0.045] text-amber-300/70",
-      };
-
-    case "CANCELED":
-      return {
-        label: "Canceled",
-        className:
-          "border-white/[0.08] bg-white/[0.025] text-white/35",
-      };
-  }
 }
 
 /* ==========================================================================
@@ -1386,17 +1286,17 @@ function DashboardLink({
   return (
     <Link
       href={href}
-      className="group block rounded-xl border border-white/[0.06] bg-[#0D0D10] px-4 py-3.5 transition-colors hover:border-white/[0.10] hover:bg-[#0F0F12]"
+      className="group block rounded-xl border border-white/[0.065] bg-[#0a0a0c] px-4 py-3.5 transition-colors hover:border-white/[0.12] hover:bg-white/[0.03]"
     >
       <div className="flex items-center justify-between">
-        <span className="text-[12px] font-medium text-white/60 transition-colors group-hover:text-white/85">
+        <span className="text-[12px] font-medium text-white/70 transition-colors group-hover:text-white">
           {title}
         </span>
 
-        <ArrowRight className="size-3 text-white/18 transition-all group-hover:translate-x-0.5 group-hover:text-white/50" />
+        <ArrowRight className="size-3 text-white/40 transition-all group-hover:translate-x-0.5 group-hover:text-white/70" />
       </div>
 
-      <p className="mt-1 text-[10px] text-white/22">
+      <p className="mt-1 text-[11px] text-white/45">
         {description}
       </p>
     </Link>
@@ -1423,7 +1323,7 @@ function ChartLegend({
         )}
       />
 
-      <span className="text-[10px] text-white/30">
+      <span className="text-[11px] text-white/45">
         {label}
       </span>
     </div>
@@ -1482,13 +1382,13 @@ function EmptyChart() {
   return (
     <div className="flex h-full items-center justify-center">
       <div className="text-center">
-        <Activity className="mx-auto size-5 text-white/15" />
+        <Activity className="mx-auto size-5 text-white/30" />
 
-        <p className="mt-2 text-xs text-white/28">
+        <p className="mt-2 text-xs font-medium text-white/60">
           No execution activity
         </p>
 
-        <p className="mt-1 text-[10px] text-white/16">
+        <p className="mt-1 text-[11px] text-white/45">
           Activity will appear here once
           workflows run.
         </p>
@@ -1501,14 +1401,14 @@ function EmptyExecutions() {
   return (
     <div className="flex min-h-[180px] flex-col items-center justify-center px-5 text-center">
       <div className="flex size-10 items-center justify-center rounded-lg border border-white/[0.07] bg-[#111114]">
-        <Activity className="size-4 text-white/25" />
+        <Activity className="size-4 text-white/40" />
       </div>
 
-      <p className="mt-3 text-sm text-white/50">
+      <p className="mt-3 text-sm font-medium text-white/70">
         No executions yet
       </p>
 
-      <p className="mt-1 text-[11px] text-white/22">
+      <p className="mt-1 text-[11px] text-white/45">
         Run a workflow to start seeing
         activity here.
       </p>
@@ -1562,56 +1462,6 @@ function getRangeLabel(
   }
 }
 
-function getHealthLabel(
-  successRate: number,
-) {
-  if (successRate >= 99) {
-    return "Excellent";
-  }
-
-  if (successRate >= 95) {
-    return "Healthy";
-  }
-
-  if (successRate >= 90) {
-    return "Needs attention";
-  }
-
-  return "At risk";
-}
-
-function getHealthTone(
-  successRate: number,
-):
-  | "neutral"
-  | "success"
-  | "warning"
-  | "danger" {
-  if (successRate >= 95) {
-    return "success";
-  }
-
-  if (successRate >= 90) {
-    return "warning";
-  }
-
-  return "danger";
-}
-
-function getHealthStroke(
-  successRate: number,
-) {
-  if (successRate >= 95) {
-    return "rgb(52 211 153)";
-  }
-
-  if (successRate >= 90) {
-    return "rgb(251 191 36)";
-  }
-
-  return "rgb(248 113 113)";
-}
-
 function formatBucket(
   value: string,
 ) {
@@ -1647,41 +1497,13 @@ function formatTrigger(
     );
 }
 
-function getHealthTextClass(
-  successRate: number,
-) {
-  if (successRate >= 95) {
-    return "text-emerald-300/70";
-  }
-
-  if (successRate >= 90) {
-    return "text-amber-300/70";
-  }
-
-  return "text-red-300/70";
-}
-
-function getHealthDot(
-  successRate: number,
-) {
-  if (successRate >= 95) {
-    return "bg-emerald-400/80";
-  }
-
-  if (successRate >= 90) {
-    return "bg-amber-400/80";
-  }
-
-  return "bg-red-400/80";
-}
-
 function TableHeader({
   children,
 }: {
   children: ReactNode;
 }) {
   return (
-    <span className="text-[9px] font-medium uppercase tracking-[0.1em] text-white/22">
+    <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-white/40">
       {children}
     </span>
   );

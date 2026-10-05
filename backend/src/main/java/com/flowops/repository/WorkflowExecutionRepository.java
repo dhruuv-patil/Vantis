@@ -106,4 +106,41 @@ public interface WorkflowExecutionRepository extends JpaRepository<WorkflowExecu
     Optional<WorkflowExecution> findTopByWorkflowIdAndOrganizationIdOrderByFinishedAtDesc(
             @Param("workflowId") UUID workflowId, @Param("organizationId") UUID organizationId);
 
+    /** Count executions in an organization within the billing period. */
+    @Query("""
+            SELECT COUNT(e) FROM WorkflowExecution e
+            WHERE e.organizationId = :organizationId
+              AND e.createdAt >= :periodStart
+              AND e.createdAt < :periodEnd
+            """)
+    long countByOrganizationIdAndPeriod(
+            @Param("organizationId") UUID organizationId,
+            @Param("periodStart") Instant periodStart,
+            @Param("periodEnd") Instant periodEnd);
+
+    /** Find RUNNING executions whose worker heartbeat has not updated since threshold. */
+    @Query("""
+            SELECT e.id FROM WorkflowExecution e
+            WHERE e.status = com.flowops.domain.ExecutionStatus.RUNNING
+              AND (e.lastHeartbeatAt IS NULL OR e.lastHeartbeatAt < :staleThreshold)
+            ORDER BY e.createdAt ASC
+            """)
+    List<UUID> findStaleExecutionIds(@Param("staleThreshold") Instant staleThreshold);
+
+    /** Count active (QUEUED or RUNNING) executions for a tenant. */
+    @Query("""
+            SELECT COUNT(e) FROM WorkflowExecution e
+            WHERE e.organizationId = :organizationId
+              AND e.status IN (com.flowops.domain.ExecutionStatus.QUEUED, com.flowops.domain.ExecutionStatus.RUNNING)
+            """)
+    long countActiveByOrganizationId(@Param("organizationId") UUID organizationId);
+
+    /** Count active (QUEUED or RUNNING) executions for a workflow. */
+    @Query("""
+            SELECT COUNT(e) FROM WorkflowExecution e
+            WHERE e.workflowId = :workflowId
+              AND e.status IN (com.flowops.domain.ExecutionStatus.QUEUED, com.flowops.domain.ExecutionStatus.RUNNING)
+            """)
+    long countActiveByWorkflowId(@Param("workflowId") UUID workflowId);
+
 }

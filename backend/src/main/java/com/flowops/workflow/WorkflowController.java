@@ -11,9 +11,11 @@ import com.flowops.domain.Role;
 import com.flowops.security.AuthenticatedUser;
 import com.flowops.security.FlowOpsPrincipal;
 import com.flowops.workflow.validation.ValidationResult;
+import com.flowops.common.ratelimit.RateLimiter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.time.Duration;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -43,10 +45,15 @@ public class WorkflowController {
 
     private final WorkflowService workflowService;
     private final ExecutionService executionService;
+    private final RateLimiter rateLimiter;
 
-    public WorkflowController(WorkflowService workflowService, ExecutionService executionService) {
+    public WorkflowController(
+            WorkflowService workflowService,
+            ExecutionService executionService,
+            RateLimiter rateLimiter) {
         this.workflowService = workflowService;
         this.executionService = executionService;
+        this.rateLimiter = rateLimiter;
     }
 
     @GetMapping
@@ -105,7 +112,9 @@ public class WorkflowController {
     public ExecutionDetailResponse run(
             @PathVariable UUID workflowId,
             @RequestBody(required = false) RunWorkflowRequest request) {
-        return executionService.run(AuthenticatedUser.requireRole(Role.MEMBER), workflowId, request);
+        FlowOpsPrincipal principal = AuthenticatedUser.requireRole(Role.MEMBER);
+        rateLimiter.check("workflow:run:" + principal.userId(), 60, Duration.ofMinutes(1));
+        return executionService.run(principal, workflowId, request);
     }
 
     @GetMapping("/{workflowId}/versions")

@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /*
- * FlowOps — minimal monochrome dark design system.
+ * Vantis — minimal monochrome dark design system.
  * Based on the reference UI: #0a0a0a background, white/gray hierarchy,
  * green status accents, pure CSS animations.
  */
@@ -92,35 +92,35 @@
    * This prevents a light/green theme flash during the initial paint.
    */
   :root {
-    --background: 0 0% 2%;
+    --background: 0 0% 0%;
     --foreground: 0 0% 96%;
 
-    --card: 0 0% 4%;
+    --card: 240 7% 4%;
     --card-foreground: 0 0% 96%;
 
-    --popover: 0 0% 5%;
+    --popover: 240 7% 4%;
     --popover-foreground: 0 0% 96%;
 
-    --primary: 0 0% 96%;
+    --primary: 0 0% 98%;
     --primary-foreground: 0 0% 5%;
 
-    --secondary: 0 0% 8%;
+    --secondary: 240 5% 9%;
     --secondary-foreground: 0 0% 88%;
 
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 55%;
+    --muted: 240 5% 9%;
+    --muted-foreground: 0 0% 65%;
 
-    --accent: 0 0% 8%;
-    --accent-foreground: 0 0% 88%;
+    --accent: 240 5% 12%;
+    --accent-foreground: 0 0% 96%;
 
-    --destructive: 0 62% 50%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 10%;
-    --input: 0 0% 10%;
+    --border: 0 0% 100% / 0.065;
+    --input: 0 0% 100% / 0.08;
     --ring: 0 0% 80%;
 
-    --radius: 0.375rem;
+    --radius: 0.5rem;
   }
 }
 
@@ -133,16 +133,16 @@
 
   html {
     scroll-behavior: smooth;
-    background: #050505 !important;
-    background-color: #050505 !important;
+    background: #000000 !important;
+    background-color: #000000 !important;
   }
 
   body {
     @apply text-foreground;
     margin: 0;
     min-height: 100vh;
-    background: #050505 !important;
-    background-color: #050505 !important;
+    background: #000000 !important;
+    background-color: #000000 !important;
     font-feature-settings: "rlig" 1, "calt" 1;
     font-family: var(--font-geistsans);
     letter-spacing: -0.02em;
@@ -1179,7 +1179,7 @@ header.is-scrolled {
 }
 
 /* ============================================================
-   FlowOps landing — hero panels, traces, charts
+   Vantis landing — hero panels, traces, charts
    ============================================================ */
 
 header {
@@ -2329,10 +2329,11 @@ footer p {
   .mono-eyebrow {
     font-family: var(--font-geistmono);
     font-size: 10px;
+    font-weight: 600;
     line-height: 14px;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: rgba(255,255,255,0.35);
+    color: rgba(255, 255, 255, 0.40);
   }
 
   .font-geistsans {

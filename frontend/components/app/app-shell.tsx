@@ -3,21 +3,25 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import {
   Activity,
+  AlertTriangle,
   Bot,
   ChevronLeft,
   FileText,
   Home,
   LayoutDashboard,
+  CreditCard,
   LogOut,
+  Menu,
   PanelsTopLeft,
   Plug,
   Search,
   Settings,
   Users,
   Workflow,
-  AlertTriangle,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -37,6 +41,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { HoverLift } from "@/components/motion/motion-primitives";
 import { PageTransition } from "@/components/motion/page-transition";
 
@@ -44,7 +54,6 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  ready?: boolean;
 }
 
 interface NavGroup {
@@ -60,31 +69,26 @@ const NAV: NavGroup[] = [
         label: "Home",
         href: "/home",
         icon: Home,
-        ready: true,
       },
       {
         label: "Dashboard",
         href: "/dashboard",
         icon: LayoutDashboard,
-        ready: true,
       },
       {
         label: "Workflows",
         href: "/workflows",
         icon: Workflow,
-        ready: true,
       },
       {
         label: "Executions",
         href: "/executions",
         icon: Activity,
-        ready: true,
       },
       {
         label: "Templates",
         href: "/templates",
         icon: PanelsTopLeft,
-        ready: true,
       },
     ],
   },
@@ -95,7 +99,6 @@ const NAV: NavGroup[] = [
         label: "Anomalies",
         href: "/reliability",
         icon: AlertTriangle,
-        ready: true,
       },
     ],
   },
@@ -106,19 +109,16 @@ const NAV: NavGroup[] = [
         label: "AI Agents",
         href: "/agents",
         icon: Bot,
-        ready: true,
       },
       {
         label: "Integrations",
         href: "/integrations",
         icon: Plug,
-        ready: true,
       },
       {
         label: "Logs",
         href: "/logs",
         icon: FileText,
-        ready: true,
       },
     ],
   },
@@ -129,25 +129,102 @@ const NAV: NavGroup[] = [
         label: "Team",
         href: "/team",
         icon: Users,
-        ready: true,
+      },
+      {
+        label: "Billing",
+        href: "/billing",
+        icon: CreditCard,
       },
       {
         label: "Settings",
         href: "/settings",
         icon: Settings,
-        ready: true,
       },
     ],
   },
 ];
 
+function getPageTitle(pathname: string): { title: string; section?: string } {
+  if (pathname === "/home") return { title: "Home" };
+  if (pathname === "/dashboard") return { title: "Dashboard" };
+  if (pathname === "/workflows") return { title: "Workflows" };
+  if (pathname.startsWith("/workflows/")) return { title: "Editor", section: "Workflows" };
+  if (pathname === "/executions") return { title: "Executions" };
+  if (pathname.startsWith("/executions/")) return { title: "Run", section: "Executions" };
+  if (pathname === "/templates") return { title: "Templates" };
+  if (pathname === "/reliability") return { title: "Anomalies", section: "Reliability" };
+  if (pathname.startsWith("/reliability/")) return { title: "Detail", section: "Reliability" };
+  if (pathname === "/agents") return { title: "AI Agents" };
+  if (pathname.startsWith("/agents/")) return { title: "Agent", section: "AI Agents" };
+  if (pathname === "/integrations") return { title: "Integrations" };
+  if (pathname === "/logs") return { title: "Logs" };
+  if (pathname === "/team") return { title: "Team" };
+  if (pathname === "/billing") return { title: "Billing & Usage", section: "Organization" };
+  if (pathname === "/settings") return { title: "Settings" };
+  return { title: "Vantis" };
+}
+
+function getSectionHref(section?: string): string {
+  switch (section) {
+    case "Workflows":
+      return "/workflows";
+    case "Executions":
+      return "/executions";
+    case "Reliability":
+      return "/reliability";
+    case "AI Agents":
+      return "/agents";
+    default:
+      return "/dashboard";
+  }
+}
+
 export function AppShell({
+  defaultCollapsed = false,
   children,
 }: {
+  defaultCollapsed?: boolean;
   children: React.ReactNode;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Hydrate collapsed state from localStorage (SSR-safe) and sync cookie
+  useEffect(() => {
+    try {
+      const saved =
+        localStorage.getItem("vantis:sidebar-collapsed") ??
+        localStorage.getItem("oblayer:sidebar-collapsed") ??
+        localStorage.getItem("tracerun:sidebar-collapsed");
+      if (saved !== null) {
+        const isCollapsed = saved === "true";
+        setCollapsed(isCollapsed);
+        document.cookie = `vantis_sidebar_collapsed=${isCollapsed}; path=/; max-age=31536000; SameSite=Lax`;
+      }
+    } catch {
+      // ignore in environments without localStorage
+    }
+  }, []);
+
+  // Close mobile drawer on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  const toggleCollapsed = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("vantis:sidebar-collapsed", String(next));
+        document.cookie = `vantis_sidebar_collapsed=${next}; path=/; max-age=31536000; SameSite=Lax`;
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -177,20 +254,28 @@ export function AppShell({
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-[#050505]">
+    <div className="flex min-h-screen bg-black">
+      {/* Desktop Sidebar */}
       <Sidebar
         collapsed={collapsed}
-        onToggle={() => setCollapsed((c) => !c)}
+        onToggle={toggleCollapsed}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      {/* Mobile Drawer (screens < lg) */}
+      <MobileDrawer
+        open={mobileOpen}
+        onOpenChange={setMobileOpen}
+      />
+
+      <div className="flex min-w-0 flex-1 flex-col h-screen overflow-hidden">
         <Topbar
           onOpenPalette={() => setPaletteOpen(true)}
+          onOpenMobile={() => setMobileOpen(true)}
         />
 
-        <main className="flex-1 min-h-0 overflow-hidden p-0 m-0">
-  <PageTransition>{children}</PageTransition>
-</main>
+        <main className="flex-1 min-h-0 overflow-y-auto">
+          <PageTransition className="min-h-full flex flex-col">{children}</PageTransition>
+        </main>
       </div>
 
       <CommandPalette
@@ -213,7 +298,7 @@ function Sidebar({
   return (
     <aside
       className={cn(
-        "sticky top-0 flex h-screen shrink-0 flex-col border-r border-white/[0.075] bg-[#0a0a0a] transition-[width] duration-200",
+        "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-white/[0.075] bg-[#0a0a0c] transition-[width] duration-200 lg:flex",
         collapsed ? "w-[68px]" : "w-60"
       )}
     >
@@ -222,7 +307,6 @@ function Sidebar({
           Expanded: logo + toggle on same row
           Collapsed: logo, then toggle underneath
          ===================================================== */}
-
       <div className="shrink-0 border-b border-white/[0.075]">
         <div
           className={cn(
@@ -234,13 +318,13 @@ function Sidebar({
         >
           <Link
             href="/dashboard"
-            className="flex min-w-0 items-center gap-2"
+            className="flex min-w-0 items-center gap-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20 rounded"
           >
             <LogoMark className="!h-6 !w-6 shrink-0" />
 
             {!collapsed && (
               <span className="truncate text-sm font-semibold tracking-tight text-white/90">
-                Trace.run
+                Vantis
               </span>
             )}
           </Link>
@@ -258,7 +342,8 @@ function Sidebar({
                 "bg-white/[0.025]",
                 "text-white/40",
                 "hover:bg-white/[0.07]",
-                "hover:text-white/80"
+                "hover:text-white/80",
+                "focus-visible:ring-1 focus-visible:ring-white/20"
               )}
             >
               <ChevronLeft className="size-3.5" />
@@ -280,7 +365,8 @@ function Sidebar({
                 "bg-white/[0.025]",
                 "text-white/40",
                 "hover:bg-white/[0.07]",
-                "hover:text-white/80"
+                "hover:text-white/80",
+                "focus-visible:ring-1 focus-visible:ring-white/20"
               )}
             >
               <ChevronLeft className="size-3.5 rotate-180" />
@@ -293,7 +379,6 @@ function Sidebar({
           ORGANIZATION
           Keep this visible only in expanded mode.
          ===================================================== */}
-
       {!collapsed && (
         <div className="shrink-0 border-b border-white/[0.075] px-3 py-2.5">
           <OrgSwitcher collapsed={false} />
@@ -303,137 +388,278 @@ function Sidebar({
       {/* =====================================================
           NAVIGATION
          ===================================================== */}
+      <TooltipProvider delayDuration={150}>
+        <nav className="flex-1 space-y-5 overflow-y-auto px-2.5 py-3">
+          {NAV.map((group) => (
+            <div key={group.label}>
+              {!collapsed && (
+                <p className="px-2.5 pb-1.5 mono-eyebrow">
+                  {group.label}
+                </p>
+              )}
 
-      <nav className="flex-1 space-y-5 overflow-y-auto px-2.5 py-3">
-        {NAV.map((group) => (
-          <div key={group.label}>
-            {!collapsed && (
-              <p className="px-2.5 pb-1.5 mono-eyebrow">
-                {group.label}
-              </p>
-            )}
+              <ul className="space-y-0.5">
+                {group.items.map((item) => {
+                  const active =
+                    pathname === item.href ||
+                    (item.href !== "/home" &&
+                      pathname.startsWith(`${item.href}/`));
 
-            <ul className="space-y-0.5">
-              {group.items.map((item) => {
-                const active =
-                  item.ready &&
-                  (pathname === item.href ||
-                    pathname.startsWith(`${item.href}/`));
+                  const Icon = item.icon;
 
-                const Icon = item.icon;
+                  const inner = (
+                    <>
+                      <Icon className="size-4 shrink-0 opacity-60" />
 
-                const inner = (
-                  <>
-                    <Icon className="size-4 shrink-0 opacity-60" />
-
-                    {!collapsed && (
-                      <>
+                      {!collapsed && (
                         <span className="flex-1 truncate text-[13px]">
                           {item.label}
                         </span>
+                      )}
+                    </>
+                  );
 
-                        {!item.ready && (
-                          <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 text-[9px] font-medium text-white/40">
-                            Beta
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </>
-                );
+                  const linkNode = (
+                    <Link
+                      href={item.href}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20",
+                        collapsed && "justify-center px-2.5",
+                        active
+                          ? "bg-white/[0.06] text-white/90 before:absolute before:left-0 before:top-1/2 before:h-5 before:w-[2px] before:-translate-y-1/2 before:rounded-r before:bg-white/80"
+                          : "text-white/45 hover:bg-white/[0.04] hover:text-white/80"
+                      )}
+                    >
+                      {inner}
+                    </Link>
+                  );
 
-                const base =
-                  "relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-all duration-[180ms]";
-
-                return (
-                  <li key={item.href}>
-                    {item.ready ? (
+                  return (
+                    <li key={item.href}>
                       <HoverLift scale={1.01} y={-1}>
-                        <Link
-                          href={item.href}
-                          title={
-                            collapsed
-                              ? item.label
-                              : undefined
-                          }
-                          className={cn(
-                            base,
-                            collapsed &&
-                              "justify-center px-2.5",
-                            active
-                              ? "bg-white/[0.06] text-white/90 before:absolute before:left-0 before:top-1/2 before:h-5 before:w-px before:-translate-y-1/2 before:rounded-r before:bg-white/80"
-                              : "text-white/45 hover:bg-white/[0.04] hover:text-white/80"
-                          )}
-                        >
-                          {inner}
-                        </Link>
-                      </HoverLift>
-                    ) : (
-                      <span
-                        title={
-                          collapsed
-                            ? `${item.label} (coming soon)`
-                            : undefined
-                        }
-                        aria-disabled="true"
-                        className={cn(
-                          base,
-                          collapsed &&
-                            "justify-center px-2.5",
-                          "cursor-not-allowed text-white/20"
+                        {collapsed ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              {linkNode}
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="font-medium">
+                              {item.label}
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          linkNode
                         )}
-                      >
-                        {inner}
-                      </span>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
-      </nav>
+                      </HoverLift>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ))}
+        </nav>
+      </TooltipProvider>
 
       {/* =====================================================
           USER
          ===================================================== */}
-
       <UserBlock collapsed={collapsed} />
     </aside>
   );
 }
 
+function MobileDrawer({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const pathname = usePathname();
+
+  return (
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm transition-opacity duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <DialogPrimitive.Content
+          className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-white/[0.08] bg-[#0a0a0c] p-0 shadow-2xl transition-transform duration-200 ease-out focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left"
+          aria-describedby={undefined}
+        >
+          <DialogPrimitive.Title className="sr-only">
+            Navigation Menu
+          </DialogPrimitive.Title>
+
+          {/* Header */}
+          <div className="flex h-12 shrink-0 items-center justify-between border-b border-white/[0.075] px-4">
+            <Link
+              href="/dashboard"
+              onClick={() => onOpenChange(false)}
+              className="flex items-center gap-2.5"
+            >
+              <LogoMark className="!h-6 !w-6 shrink-0" />
+              <span className="text-sm font-semibold tracking-tight text-white/90">
+                Vantis
+              </span>
+            </Link>
+
+            <DialogPrimitive.Close asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-7 rounded-lg border border-white/[0.08] bg-white/[0.025] text-white/50 hover:bg-white/[0.06] hover:text-white"
+                aria-label="Close navigation"
+              >
+                <X className="size-3.5" />
+              </Button>
+            </DialogPrimitive.Close>
+          </div>
+
+          {/* Org Switcher */}
+          <div className="shrink-0 border-b border-white/[0.075] px-3 py-2.5">
+            <OrgSwitcher collapsed={false} />
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 space-y-5 overflow-y-auto px-2.5 py-3">
+            {NAV.map((group) => (
+              <div key={group.label}>
+                <p className="px-2.5 pb-1.5 mono-eyebrow">{group.label}</p>
+                <ul className="space-y-0.5">
+                  {group.items.map((item) => {
+                    const active =
+                      pathname === item.href ||
+                      (item.href !== "/home" &&
+                        pathname.startsWith(`${item.href}/`));
+
+                    const Icon = item.icon;
+
+                    return (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          onClick={() => onOpenChange(false)}
+                          aria-current={active ? "page" : undefined}
+                          className={cn(
+                            "relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20",
+                            active
+                              ? "bg-white/[0.06] text-white/90 before:absolute before:left-0 before:top-1/2 before:h-5 before:w-[2px] before:-translate-y-1/2 before:rounded-r before:bg-white/80"
+                              : "text-white/45 hover:bg-white/[0.04] hover:text-white/80"
+                          )}
+                        >
+                          <Icon className="size-4 shrink-0 opacity-60" />
+                          <span className="flex-1 truncate text-[13px]">
+                            {item.label}
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </nav>
+
+          {/* User Block */}
+          <UserBlock
+            collapsed={false}
+            onNavigate={() => onOpenChange(false)}
+          />
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
+  );
+}
+
 function Topbar({
   onOpenPalette,
+  onOpenMobile,
 }: {
   onOpenPalette: () => void;
+  onOpenMobile: () => void;
 }) {
+  const pathname = usePathname();
+  const { title, section } = getPageTitle(pathname);
+
   return (
-    <header className="sticky top-0 z-30 flex h-12 items-center gap-4 border-b border-white/[0.075] bg-[#050505]/80 px-5 backdrop-blur-md lg:px-6">
-      <button
-        type="button"
-        onClick={onOpenPalette}
-        className="flex flex-1 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[13px] text-white/40 transition-colors duration-[180ms] hover:bg-white/[0.06] hover:text-white/70 lg:max-w-md"
-        title="Search and commands"
-      >
-        <Search className="size-3.5" />
+    <header className="sticky top-0 z-30 flex h-12 shrink-0 items-center justify-between gap-3 border-b border-white/[0.075] bg-black/80 px-4 backdrop-blur-md lg:px-6">
+      {/* Left: Mobile hamburger + breadcrumb / page title */}
+      <div className="flex items-center gap-2.5 min-w-0">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onOpenMobile}
+          aria-label="Open navigation menu"
+          className="size-8 shrink-0 rounded-lg border border-white/[0.08] bg-white/[0.025] text-white/50 hover:bg-white/[0.06] hover:text-white lg:hidden focus-visible:ring-1 focus-visible:ring-white/20"
+        >
+          <Menu className="size-4" />
+        </Button>
 
-        <span>Search…</span>
+        {/* Desktop & Mobile breadcrumb / title */}
+        <div className="flex items-center gap-1.5 truncate text-[13px]">
+          {section ? (
+            <>
+              <Link
+                href={getSectionHref(section)}
+                className="text-white/45 transition-colors hover:text-white/80 hover:underline"
+              >
+                {section}
+              </Link>
+              <span className="text-white/30" aria-hidden="true">
+                /
+              </span>
+              <span className="font-medium text-white/90 truncate">
+                {title}
+              </span>
+            </>
+          ) : (
+            <span className="font-medium text-white/90 truncate">
+              {title}
+            </span>
+          )}
+        </div>
+      </div>
 
-        <kbd className="ml-auto rounded-md border border-white/[0.10] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-white/30">
-          ⌘K
-        </kbd>
-      </button>
+      {/* Right / Search & Notifications */}
+      <div className="flex items-center gap-2">
+        {/* Desktop full search button */}
+        <button
+          type="button"
+          onClick={onOpenPalette}
+          className="hidden lg:flex w-72 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[13px] text-white/40 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white/70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20"
+          title="Search and commands"
+        >
+          <Search className="size-3.5 shrink-0" />
+          <span className="truncate">Search or jump to…</span>
+          <kbd className="ml-auto rounded-md border border-white/[0.10] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-white/35">
+            ⌘K
+          </kbd>
+        </button>
 
-      <NotificationsMenu />
+        {/* Mobile search button */}
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={onOpenPalette}
+          aria-label="Search and commands (⌘K)"
+          className="flex lg:hidden size-8 rounded-lg border border-white/[0.08] bg-white/[0.025] text-white/50 hover:bg-white/[0.06] hover:text-white focus-visible:ring-1 focus-visible:ring-white/20"
+        >
+          <Search className="size-4" />
+        </Button>
+
+        <NotificationsMenu />
+      </div>
     </header>
   );
 }
 
 function UserBlock({
   collapsed,
+  onNavigate,
 }: {
   collapsed: boolean;
+  onNavigate?: () => void;
 }) {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
@@ -456,7 +682,7 @@ function UserBlock({
       <DropdownMenu>
         <DropdownMenuTrigger
           className={cn(
-            "flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-[13px] transition-colors duration-[180ms] hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/[0.15]",
+            "flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-[13px] transition-colors duration-150 hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20",
             collapsed && "justify-center px-0"
           )}
         >
@@ -478,9 +704,9 @@ function UserBlock({
         </DropdownMenuTrigger>
 
         <DropdownMenuContent
-          align="end"
+          align={collapsed ? "center" : "end"}
           side="top"
-          className="w-56"
+          className="w-56 border-white/[0.08] bg-[#0a0a0c]"
         >
           <DropdownMenuLabel className="font-normal">
             <span className="block truncate font-medium text-white/80">
@@ -495,11 +721,35 @@ function UserBlock({
           <DropdownMenuSeparator />
 
           <DropdownMenuItem
+            onSelect={() => {
+              onNavigate?.();
+              router.push("/settings");
+            }}
+            className="gap-2 cursor-pointer text-white/70 focus:text-white"
+          >
+            <Settings className="size-4 text-white/50" />
+            Settings
+          </DropdownMenuItem>
+
+          <DropdownMenuItem
+            onSelect={() => {
+              onNavigate?.();
+              router.push("/team");
+            }}
+            className="gap-2 cursor-pointer text-white/70 focus:text-white"
+          >
+            <Users className="size-4 text-white/50" />
+            Team & Members
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+
+          <DropdownMenuItem
             onSelect={(e) => {
               e.preventDefault();
               void onLogout();
             }}
-            className="gap-2 text-red-400 focus:text-red-400"
+            className="gap-2 cursor-pointer text-red-400 focus:text-red-400"
           >
             <LogOut className="size-4" />
             Log out

@@ -15,6 +15,9 @@ import com.flowops.workflow.nodes.NodeRegistry;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import com.flowops.common.ratelimit.RateLimiter;
+import com.flowops.security.FlowOpsPrincipal;
+import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -42,18 +45,40 @@ public class AiController {
     private final AiServiceClient aiService;
     private final NodeRegistry nodeRegistry;
     private final ObjectMapper mapper;
+    private final RateLimiter rateLimiter;
+    private final com.flowops.billing.BillingService billingService;
 
-    public AiController(AiServiceClient aiService, NodeRegistry nodeRegistry, ObjectMapper mapper) {
+    @org.springframework.beans.factory.annotation.Autowired
+    public AiController(
+            AiServiceClient aiService,
+            NodeRegistry nodeRegistry,
+            ObjectMapper mapper,
+            RateLimiter rateLimiter,
+            com.flowops.billing.BillingService billingService) {
         this.aiService = aiService;
         this.nodeRegistry = nodeRegistry;
         this.mapper = mapper;
+        this.rateLimiter = rateLimiter;
+        this.billingService = billingService;
+    }
+
+    public AiController(
+            AiServiceClient aiService,
+            NodeRegistry nodeRegistry,
+            ObjectMapper mapper,
+            RateLimiter rateLimiter) {
+        this(aiService, nodeRegistry, mapper, rateLimiter, null);
     }
 
     @PostMapping(path = "/generate-workflow", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Turn a natural-language prompt into a draft workflow graph")
     public GenerateWorkflowResponse generate(@Valid @RequestBody GenerateWorkflowRequest request) {
         // Authenticated tenant context is required even though generation is stateless.
-        AuthenticatedUser.requireRole(Role.MEMBER);
+        FlowOpsPrincipal principal = AuthenticatedUser.requireRole(Role.MEMBER);
+        rateLimiter.check("ai:generate:" + principal.userId(), 20, Duration.ofMinutes(1));
+        if (billingService != null) {
+            billingService.assertCanGenerateAi(principal.organizationId());
+        }
 
         AiServiceClient.Generation generation = aiService.generateWorkflow(request.prompt());
         if (!generation.configured()) {
@@ -64,6 +89,17 @@ public class AiController {
         if (graph.get("nodes").size() == 0) {
             throw new ApiException(ErrorCode.AI_GENERATION_FAILED);
         }
+
+        if (billingService != null) {
+            billingService.recordAiUsage(
+                    principal.organizationId(),
+                    "AI_WORKFLOW_GENERATION",
+                    1,
+                    request.prompt() != null && request.prompt().length() > 100
+                            ? request.prompt().substring(0, 100)
+                            : request.prompt());
+        }
+
         return new GenerateWorkflowResponse(graph, generation.notes());
     }
 

@@ -20,7 +20,6 @@ import { initialsFrom } from "@/lib/utils";
 import type { Invitation, OrganizationMember, Role } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
@@ -31,6 +30,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { InviteMemberDialog } from "@/components/app/invite-member-dialog";
+import {
+  EmptyState,
+  ErrorState,
+  LoadMoreButton,
+  PageContainer,
+  PageHeader,
+  TableSkeleton,
+} from "@/components/app/page-primitives";
 
 /** Roles assignable via the member row dropdown. OWNER is granted only by transfer, never here. */
 const ASSIGNABLE_ROLES: Role[] = ["ADMIN", "MEMBER", "VIEWER"];
@@ -42,36 +49,39 @@ export default function TeamPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="mono-eyebrow">Organization</p>
-          <h1 className="mt-1 text-xl font-semibold tracking-tight text-white/90">Team</h1>
-          <p className="mt-1 text-sm text-white/44">
-            Manage who belongs to this organization and what they can do.
-          </p>
-        </div>
+    <PageContainer variant="narrow">
+      <PageHeader
+        eyebrow="Organization"
+        title="Team"
+        description="Manage who belongs to this organization and what they can do."
+        actions={
+          isAdmin ? (
+            <Button onClick={() => setInviteOpen(true)} className="gap-2">
+              <UserPlus className="size-4" />
+              <span>Invite member</span>
+            </Button>
+          ) : undefined
+        }
+      />
+
+      <div className="space-y-8">
+        {/* `useSearchParams` needs a Suspense boundary during prerender. */}
+        <Suspense fallback={null}>
+          <AcceptInvitationHandler />
+        </Suspense>
+
+        <MemberList isAdmin={isAdmin} />
+
         {isAdmin && (
-          <Button onClick={() => setInviteOpen(true)}>
-            <UserPlus className="size-4" /> Invite member
-          </Button>
+          <>
+            <Separator className="border-white/[0.065]" />
+            <PendingInvitations />
+          </>
         )}
       </div>
 
-      {/* `useSearchParams` needs a Suspense boundary during prerender. */}
-      <Suspense fallback={null}>
-        <AcceptInvitationHandler />
-      </Suspense>
-      <MemberList isAdmin={isAdmin} />
-      {isAdmin && (
-        <>
-          <Separator />
-          <PendingInvitations />
-        </>
-      )}
-
       <InviteMemberDialog open={inviteOpen} onOpenChange={setInviteOpen} />
-    </div>
+    </PageContainer>
   );
 }
 
@@ -79,6 +89,7 @@ export default function TeamPage() {
 
 function MemberList({ isAdmin }: { isAdmin: boolean }) {
   const currentUserId = useAuthStore((s) => s.user?.id ?? null);
+  const [pageSize, setPageSize] = useState(25);
   const query = useQuery({
     queryKey: ["members"],
     queryFn: fetchCurrentOrganizationMembers,
@@ -86,30 +97,27 @@ function MemberList({ isAdmin }: { isAdmin: boolean }) {
 
   if (query.isError) {
     return (
-      <p className="text-sm text-destructive">
-        Could not load members. Please try again.
-      </p>
+      <ErrorState
+        title="Could not load members"
+        message="Please check your connection and try again."
+        onRetry={() => void query.refetch()}
+      />
     );
   }
+
   if (query.isPending) {
-    return (
-      <div className="space-y-2">
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-16 w-full" />
-      </div>
-    );
+    return <TableSkeleton rows={3} />;
   }
 
   const members = query.data.members;
 
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-medium text-white/44">
+      <h2 className="text-sm font-medium text-white/50">
         {members.length} member{members.length === 1 ? "" : "s"}
       </h2>
-      <ul className="divide-y divide-white/[0.06] rounded-xl border border-white/[0.08]">
-        {members.map((member) => (
+      <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]">
+        {members.slice(0, pageSize).map((member) => (
           <MemberRow
             key={member.userId}
             member={member}
@@ -118,6 +126,12 @@ function MemberList({ isAdmin }: { isAdmin: boolean }) {
           />
         ))}
       </ul>
+
+      <LoadMoreButton
+        loadedCount={Math.min(pageSize, members.length)}
+        totalCount={members.length}
+        onLoadMore={() => setPageSize((prev) => prev + 25)}
+      />
     </section>
   );
 }
@@ -148,20 +162,28 @@ function MemberRow({
   const canManage = isAdmin && !isSelf && member.role !== "OWNER";
 
   return (
-    <li className="flex items-center gap-3 px-4 py-3">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
+    <li className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-white/[0.02]">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-xs font-semibold text-white/80">
         {initialsFrom(member.fullName)}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">
+        <p
+          title={member.fullName}
+          className="truncate text-sm font-medium text-white/90"
+        >
           {member.fullName}
           {isSelf && (
-            <span className="ml-2 text-xs font-normal text-muted-foreground">
+            <span className="ml-2 text-xs font-normal text-white/40">
               (you)
             </span>
           )}
         </p>
-        <p className="truncate text-xs text-muted-foreground">{member.email}</p>
+        <p
+          title={member.email}
+          className="truncate text-xs text-white/40"
+        >
+          {member.email}
+        </p>
       </div>
 
       {canManage ? (
@@ -170,7 +192,7 @@ function MemberRow({
           value={member.role}
           disabled={roleMutation.isPending}
           onChange={(e) => roleMutation.mutate(e.target.value as Role)}
-          className="h-9 rounded-md border border-input bg-transparent px-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+          className="h-8 rounded-lg border border-white/[0.08] bg-[#0a0a0c] px-2 text-xs text-white/80 outline-none transition-colors hover:text-white focus-visible:border-white/20 disabled:opacity-50"
         >
           {ASSIGNABLE_ROLES.map((r) => (
             <option key={r} value={r}>
@@ -190,7 +212,7 @@ function MemberRow({
           size="icon"
           aria-label={`Remove ${member.fullName}`}
           onClick={() => setRemoveOpen(true)}
-          className="text-muted-foreground hover:text-destructive"
+          className="size-8 text-white/40 hover:text-red-400"
         >
           <X className="size-4" />
         </Button>
@@ -228,15 +250,15 @@ function RemoveMemberDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="border-white/[0.08] bg-[#0a0a0c] text-white">
         <DialogHeader>
           <DialogTitle>Remove {member.fullName}?</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-white/50">
             They lose access to this organization immediately. Their workflows and
             past executions are preserved. This cannot be undone.
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-2">
           <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -272,28 +294,33 @@ function PendingInvitations() {
 
   if (query.isError) {
     return (
-      <p className="text-sm text-destructive">Could not load invitations.</p>
+      <ErrorState
+        title="Could not load invitations"
+        message="Please check your connection and try again."
+        onRetry={() => void query.refetch()}
+      />
     );
   }
+
   if (query.isPending) {
-    return <Skeleton className="h-24 w-full" />;
+    return <TableSkeleton rows={2} />;
   }
 
   const pending = query.data.invitations.filter((i) => i.status === "PENDING");
 
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-medium text-white/44">
+      <h2 className="text-sm font-medium text-white/50">
         Pending invitations
       </h2>
       {pending.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-white/[0.10] py-16 text-center">
-          <p className="text-sm text-white/44">
-            No pending invitations. Invite a teammate to get started.
-          </p>
-        </div>
+        <EmptyState
+          icon={UserPlus}
+          title="No pending invitations"
+          description="Invite a teammate to get started."
+        />
       ) : (
-        <ul className="divide-y divide-white/[0.06] rounded-xl border border-white/[0.08]">
+        <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]">
           {pending.map((invitation) => (
             <InvitationRow
               key={invitation.id}
@@ -319,10 +346,15 @@ function InvitationRow({
 }) {
   const expired = new Date(invitation.expiresAt).getTime() < Date.now();
   return (
-    <li className="flex items-center gap-3 px-4 py-3">
+    <li className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-white/[0.02]">
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{invitation.email}</p>
-        <p className="truncate text-xs text-muted-foreground">
+        <p
+          title={invitation.email}
+          className="truncate text-sm font-medium text-white/90"
+        >
+          {invitation.email}
+        </p>
+        <p className="truncate text-xs text-white/40">
           {invitation.role} ·{" "}
           {expired
             ? "Expired"
@@ -337,7 +369,7 @@ function InvitationRow({
         size="sm"
         onClick={onRevoke}
         disabled={revoking}
-        className="text-muted-foreground hover:text-destructive"
+        className="text-white/40 hover:text-red-400"
       >
         Revoke
       </Button>

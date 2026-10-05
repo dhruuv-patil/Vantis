@@ -65,6 +65,15 @@ public class WorkflowExecution {
     @Column(name = "finished_at")
     private Instant finishedAt;
 
+    @Column(name = "last_heartbeat_at")
+    private Instant lastHeartbeatAt;
+
+    @Column(name = "worker_id", length = 64)
+    private String workerId;
+
+    @Column(name = "queue_wait_ms")
+    private Long queueWaitMs;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -110,10 +119,26 @@ public class WorkflowExecution {
     /** Enter (or re-enter, on resume) the running state. Records the first start. */
     public void markRunning() {
         this.status = ExecutionStatus.RUNNING;
+        Instant n = now();
         if (this.startedAt == null) {
-            this.startedAt = now();
+            this.startedAt = n;
+            if (this.createdAt != null) {
+                this.queueWaitMs = Math.max(0L, n.toEpochMilli() - this.createdAt.toEpochMilli());
+            }
         }
+        this.lastHeartbeatAt = n;
         this.error = null;
+        touch();
+    }
+
+    public void recordHeartbeat() {
+        this.lastHeartbeatAt = now();
+        touch();
+    }
+
+    public void assignWorker(String workerId) {
+        this.workerId = workerId;
+        this.lastHeartbeatAt = now();
         touch();
     }
 
@@ -196,6 +221,18 @@ public class WorkflowExecution {
 
     public Instant getFinishedAt() {
         return finishedAt;
+    }
+
+    public Instant getLastHeartbeatAt() {
+        return lastHeartbeatAt;
+    }
+
+    public String getWorkerId() {
+        return workerId;
+    }
+
+    public Long getQueueWaitMs() {
+        return queueWaitMs;
     }
 
     public Instant getCreatedAt() {

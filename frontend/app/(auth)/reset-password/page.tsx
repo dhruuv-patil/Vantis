@@ -103,7 +103,7 @@ function ResetPasswordPageContent() {
           </h2>
 
           <p className="mt-1.5 text-sm text-muted-foreground">
-            Enter a strong password you haven't used before.
+            Enter a strong password you haven&apos;t used before.
           </p>
         </div>
 

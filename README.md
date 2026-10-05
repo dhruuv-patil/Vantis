@@ -1,12 +1,12 @@
-# FlowOps
+# Vantis
 
-### AI-Powered Workflow Automation & Reliability Platform
+> **Reliability infrastructure for automation.**
 
-FlowOps is an AI-powered workflow automation platform built to help teams **build, execute, monitor, and troubleshoot production workflows from one workspace**.
+Vantis is reliability infrastructure for automation — helping teams build, monitor, detect abnormal behavior, and investigate workflow failures.
 
-Instead of treating automation and reliability as separate systems, FlowOps brings them together:
+Instead of treating automation and reliability as separate systems, Vantis brings them together:
 
-**Build → Execute → Observe → Detect → Investigate → Recover**
+**Build → Run → Monitor → Detect → Diagnose**
 
 ---
 
@@ -14,7 +14,7 @@ Instead of treating automation and reliability as separate systems, FlowOps brin
 
 Modern teams rely on automation across applications, APIs, AI services, and third-party platforms. But when those workflows fail, the debugging process is often fragmented across logs, dashboards, alerts, and multiple integrations.
 
-FlowOps provides a unified workspace for:
+Vantis provides a unified workspace for:
 
 - ⚡ Building and executing workflows
 - 🤖 Running AI-powered workflow agents
@@ -27,7 +27,7 @@ FlowOps provides a unified workspace for:
 
 The goal is simple:
 
-> **Make automated systems easier to build, operate, and trust.**
+> **Make automation reliable.**
 
 ---
 
@@ -37,7 +37,7 @@ The goal is simple:
 
 Create and execute multi-step workflows using a visual workflow model.
 
-FlowOps supports workflow capabilities including:
+Vantis supports workflow capabilities including:
 
 - Triggers
 - Actions
@@ -55,7 +55,7 @@ FlowOps supports workflow capabilities including:
 
 ### AI Workflow Agents
 
-FlowOps includes an AI agent framework that allows workflows to incorporate intelligent execution.
+Vantis includes an AI agent framework that allows workflows to incorporate intelligent execution.
 
 AI capabilities include:
 
@@ -71,7 +71,7 @@ The architecture is designed so AI providers can be extended without tightly cou
 
 ### Reliability & Anomaly Detection
 
-FlowOps doesn't stop when a workflow is deployed.
+Vantis doesn't stop when a workflow is deployed.
 
 It continuously works with execution data to provide operational visibility.
 
@@ -98,7 +98,7 @@ to:
 
 ### Integrations
 
-FlowOps is designed around a provider-agnostic integration architecture.
+Vantis is designed around a provider-agnostic integration architecture.
 
 Supported integration categories include:
 
@@ -118,7 +118,7 @@ The integration layer separates provider-specific implementations from the core 
 
 ## Architecture
 
-FlowOps is composed of three primary services:
+Vantis is composed of three primary services:
 
 ```text
                          ┌─────────────────────┐
@@ -147,3 +147,33 @@ FlowOps is composed of three primary services:
                          │ Provider-agnostic   │
                          │   AI / Agent Layer  │
                          └─────────────────────┘
+```
+
+---
+
+## Billing & Pricing (Private Beta to Paid Launch)
+
+Vantis features a localized, multi-currency billing and pricing engine with intentional regional pricing (no live FX conversions) and currency stability for international teams.
+
+### Current Status: Private Beta
+- `PRIVATE_BETA=true`: All Pro features are unlocked and complimentary for preview workspaces.
+- `BILLING_ENABLED=false`: Checkout and payment operations are safely disabled.
+- The UI displays planned regional prices struck through alongside localized `₹0 / $0` amounts and the banner: **"Private Beta — Pro features are currently free."**
+
+### How to Launch Paid Billing
+To activate paid billing without redesign or database migrations:
+1. **Flip the two configuration environment variables**:
+   ```bash
+   PRIVATE_BETA=false
+   BILLING_ENABLED=true
+   ```
+2. **Plug in your Payment Provider Adapter**:
+   - The codebase defines a pluggable `BillingProvider` interface in [`frontend/lib/billing/provider.ts`](file:///Users/dhruvpatil/Projects/flowforge-ai/frontend/lib/billing/provider.ts).
+   - Replace or register your production provider adapter (e.g., Stripe, Razorpay) against `defaultBillingProvider`.
+   - Provide standard provider credentials (e.g., API keys, webhook signing secrets).
+3. **Restart the application**:
+   - Existing workspaces seamlessly transition from `PRIVATE_BETA` to paid tiers (`PRO` or `BUSINESS`) on the same workspace and subscription record with full data integrity.
+
+---
+
+Website: [https://vantis.run](https://vantis.run)

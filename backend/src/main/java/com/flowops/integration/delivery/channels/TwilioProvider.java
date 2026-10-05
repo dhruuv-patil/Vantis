@@ -51,7 +51,7 @@ public class TwilioProvider implements NotificationProvider {
                         "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", "AC12345",
                         "Found on Twilio console dashboard."),
                 new CredentialField("authToken", "Auth Token", true,
-                        "your_auth_token", "1234567890abcdef",
+                        "your_auth_token", "your_auth_token",
                         "Secret auth token from Twilio console."),
                 new CredentialField("fromNumber", "From Phone Number", false,
                         "+15551234567", "+15551234567",
@@ -114,7 +114,7 @@ public class TwilioProvider implements NotificationProvider {
             String form = "From=" + URLEncoder.encode(from != null ? from : "", StandardCharsets.UTF_8)
                     + "&To=" + URLEncoder.encode(to, StandardCharsets.UTF_8)
                     + "&Body=" + URLEncoder.encode(
-                    message.text() != null ? message.text() : "FlowOps notification", StandardCharsets.UTF_8);
+                    message.text() != null ? message.text() : "Vantis notification", StandardCharsets.UTF_8);
 
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(uri)
@@ -139,6 +139,6 @@ public class TwilioProvider implements NotificationProvider {
     @Override
     public DeliveryResult sendTest(DeliveryContext context) {
         return deliver(context, new NotificationMessage("twilio",
-                "FlowOps test SMS — Twilio is connected.", null));
+                "Vantis test SMS — Twilio is connected.", null));
     }
 }

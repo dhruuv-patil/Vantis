@@ -1,573 +1,699 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+
 import {
-  Activity,
+  AlertTriangle,
   ArrowLeft,
-  CheckCircle2,
-  ChevronRight,
-  Circle,
+  ChevronDown,
   Clock3,
   Copy,
-  Layers3,
-  XCircle,
+  LayoutGrid,
+  List,
+  RefreshCw,
+  X,
 } from "lucide-react";
-import { Suspense, type ComponentType } from "react";
 
 import { fetchExecutionEvents, getErrorMessage } from "@/lib/api";
 
-import type { ExecutionEvent } from "@/types";
+import type { ExecutionEvent, ExecutionStatus } from "@/types";
 
 import {
+  executionStatusVariant,
+  formatDateTime,
   formatDuration,
   formatRelativeTime,
 } from "@/lib/format";
 
 import { cn } from "@/lib/utils";
+
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  ErrorState,
+  PageContainer,
+  PageHeader,
+  StatusBadge,
+  TableSkeleton,
+} from "@/components/app/page-primitives";
 
-function ExternalExecutionPageContent() {
-  const params = useParams();
-  const searchParams = useSearchParams();
+import { ExecutionSummaryStrip } from "@/components/app/execution/ExecutionSummaryStrip";
 
-  const executionExternalId = String(
-    params.executionExternalId ?? "",
-  );
+/* ------------------------------------------------------------------ helpers */
 
-  const workflowExternalId =
-    searchParams.get("workflowExternalId") ?? "";
+const POLL_MS = 4000;
 
-  const query = useQuery({
-    queryKey: [
-      "external-execution",
-      executionExternalId,
-      workflowExternalId,
-    ],
-    queryFn: () =>
-      fetchExecutionEvents({
-        limit: 100,
-      }),
-    enabled: Boolean(executionExternalId),
-    refetchInterval: 4000,
-  });
+function normalize(status: string | null | undefined): string {
+  return (status ?? "UNKNOWN").toUpperCase();
+}
 
-  const allEvents = query.data?.events ?? [];
+function isLive(status: string): boolean {
+  const s = normalize(status);
+  return s === "RUNNING" || s === "WAITING" || s === "QUEUED";
+}
 
-  const events = allEvents
-    .filter(
-      (event) =>
-        event.executionExternalId === executionExternalId &&
-        (!workflowExternalId ||
-          event.workflowExternalId === workflowExternalId),
-    )
+/** Same precedence the executions list uses, so both pages always agree. */
+function deriveStatus(events: ExecutionEvent[]): string {
+  const statuses = events.map((e) => normalize(e.status));
+
+  for (const s of [
+    "FAILED",
+    "CANCELED",
+    "RUNNING",
+    "WAITING",
+    "QUEUED",
+    "SUCCEEDED",
+    "SKIPPED",
+  ]) {
+    if (statuses.includes(s)) return s;
+  }
+
+  return statuses[0] ?? "UNKNOWN";
+}
+
+function minTime(values: Array<string | null | undefined>): string | null {
+  const valid = values.filter((v): v is string => Boolean(v));
+  if (valid.length === 0) return null;
+  return valid.reduce((a, b) => (Date.parse(b) < Date.parse(a) ? b : a));
+}
+
+function maxTime(values: Array<string | null | undefined>): string | null {
+  const valid = values.filter((v): v is string => Boolean(v));
+  if (valid.length === 0) return null;
+  return valid.reduce((a, b) => (Date.parse(b) > Date.parse(a) ? b : a));
+}
+
+function workflowNameOf(event: ExecutionEvent | undefined): string {
+  if (!event) return "External workflow";
+
+  const metadata = event.metadata as Record<string, unknown> | null | undefined;
+
+  for (const key of ["workflowName", "workflow"]) {
+    const value = metadata?.[key];
+    if (typeof value === "string" && value.trim()) return value;
+  }
+
+  return event.workflowExternalId || "External workflow";
+}
+
+interface Step {
+  id: string;
+  name: string;
+  status: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  durationMs: number | null;
+  retryCount: number;
+  errorType: string | null;
+  errorMessage: string | null;
+  /** Oldest → newest. */
+  events: ExecutionEvent[];
+}
+
+function buildSteps(events: ExecutionEvent[]): Step[] {
+  const groups = new Map<string, ExecutionEvent[]>();
+
+  for (const event of events) {
+    const id = event.stepExternalId || "workflow";
+    const list = groups.get(id);
+    if (list) list.push(event);
+    else groups.set(id, [event]);
+  }
+
+  return Array.from(groups.entries())
+    .map(([id, group]) => {
+      const asc = [...group].sort(
+        (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
+      );
+
+      // A step's state is whatever its most recent event says.
+      const latest = asc[asc.length - 1];
+      const startedAt = minTime(asc.map((e) => e.startedAt));
+      const finishedAt = maxTime(asc.map((e) => e.finishedAt));
+
+      const withError = [...asc].reverse().find((e) => e.errorMessage);
+
+      return {
+        id,
+        name:
+          [...asc].reverse().find((e) => e.stepName)?.stepName ||
+          (id === "workflow" ? "Workflow" : id),
+        status: normalize(latest.status),
+        startedAt,
+        finishedAt,
+        durationMs:
+          latest.durationMs ??
+          (startedAt && finishedAt
+            ? Math.max(0, Date.parse(finishedAt) - Date.parse(startedAt))
+            : null),
+        retryCount: Math.max(...asc.map((e) => Math.max(e.retryCount ?? 0, 0))),
+        errorType: normalize(latest.status) === "FAILED"
+          ? (withError?.errorType ?? null)
+          : null,
+        errorMessage: normalize(latest.status) === "FAILED"
+          ? (withError?.errorMessage ?? null)
+          : null,
+        events: asc,
+      };
+    })
     .sort(
       (a, b) =>
-        Date.parse(a.createdAt) -
-        Date.parse(b.createdAt),
+        Date.parse(a.startedAt ?? a.events[0].createdAt) -
+        Date.parse(b.startedAt ?? b.events[0].createdAt),
     );
+}
 
-  const workflowName = getWorkflowName(events[0]);
+function dotColor(status: string) {
+  switch (normalize(status)) {
+    case "FAILED":
+      return "bg-red-400/60";
+    case "SUCCEEDED":
+      return "bg-emerald-400/55";
+    case "RUNNING":
+      return "bg-white/55";
+    case "WAITING":
+      return "bg-amber-400/60";
+    case "QUEUED":
+      return "bg-white/30";
+    default:
+      return "bg-white/20";
+  }
+}
 
-  const overallStatus =
-    deriveExecutionStatus(events);
+/* ========================================================================= */
 
-  const startedAt = earliestTimestamp(
-    events.map((event) => event.startedAt),
+function ExternalExecutionDetail() {
+  const params = useParams<{ executionExternalId: string }>();
+  const searchParams = useSearchParams();
+
+  const executionExternalId = React.useMemo(() => {
+    const raw = String(params.executionExternalId ?? "");
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  }, [params.executionExternalId]);
+
+  const workflowExternalId = searchParams.get("workflowExternalId") ?? "";
+
+  const [selectedStepId, setSelectedStepId] = React.useState<
+    string | undefined
+  >();
+
+  const [view, setView] = React.useState<"graph" | "timeline">("graph");
+
+  /*
+   * The two ID filters need to exist in fetchExecutionEvents (and the backend)
+   * to take effect. Until the backend applies them, the client-side filter
+   * below keeps the page correct within the latest 500 events.
+   */
+  const eventsQuery = useQuery({
+    queryKey: ["external-execution", executionExternalId, workflowExternalId],
+    queryFn: () =>
+      fetchExecutionEvents({
+        executionExternalId,
+        workflowExternalId: workflowExternalId || undefined,
+        limit: 500,
+      }),
+    enabled: Boolean(executionExternalId),
+    placeholderData: keepPreviousData,
+    refetchInterval: (q) =>
+      (q.state.data?.events ?? []).some(
+        (e) =>
+          e.executionExternalId === executionExternalId && isLive(e.status),
+      )
+        ? POLL_MS
+        : false,
+  });
+
+  const events = React.useMemo(
+    () =>
+      (eventsQuery.data?.events ?? [])
+        .filter(
+          (e) =>
+            e.executionExternalId === executionExternalId &&
+            (!workflowExternalId ||
+              e.workflowExternalId === workflowExternalId),
+        )
+        .sort((a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt)),
+    [eventsQuery.data?.events, executionExternalId, workflowExternalId],
   );
 
-  const finishedAt = latestTimestamp(
-    events.map((event) => event.finishedAt),
+  const steps = React.useMemo(() => buildSteps(events), [events]);
+
+  const status = React.useMemo(() => deriveStatus(events), [events]);
+  const live = isLive(status);
+
+  const startedAt = React.useMemo(
+    () => minTime(events.map((e) => e.startedAt)),
+    [events],
+  );
+
+  const finishedAt = React.useMemo(
+    () => (live ? null : maxTime(events.map((e) => e.finishedAt))),
+    [events, live],
   );
 
   const durationMs =
     startedAt && finishedAt
-      ? Math.max(
-          0,
-          Date.parse(finishedAt) -
-            Date.parse(startedAt),
-        )
+      ? Math.max(0, Date.parse(finishedAt) - Date.parse(startedAt))
       : null;
 
-  const nodeCount = new Set(
-    events.map(
-      (event) => event.stepExternalId,
-    ),
-  ).size;
+  const summary = React.useMemo(() => {
+    let executed = 0;
+    let failed = 0;
+    let skipped = 0;
+    let running = 0;
 
-  const retryCount = events.reduce(
-    (total, event) =>
-      total + Math.max(event.retryCount ?? 0, 0),
-    0,
-  );
+    for (const step of steps) {
+      switch (step.status) {
+        case "SUCCEEDED":
+          executed++;
+          break;
+        case "FAILED":
+          executed++;
+          failed++;
+          break;
+        case "SKIPPED":
+          skipped++;
+          break;
+        case "RUNNING":
+          running++;
+          break;
+      }
+    }
+
+    return { total: steps.length, executed, failed, skipped, running };
+  }, [steps]);
+
+  const retryCount = steps.reduce((sum, s) => sum + s.retryCount, 0);
+
+  const failedStep = steps.find((s) => s.status === "FAILED" && s.errorMessage);
+
+  const selectedStep = steps.find((s) => s.id === selectedStepId) ?? null;
+
+  const first = events[0];
+  const workflowName = workflowNameOf(first);
+
+  /* ------------------------------------------------------------ guards */
+
+  if (eventsQuery.isPending) {
+    return (
+      <PageContainer variant="narrow">
+        <TableSkeleton rows={6} />
+      </PageContainer>
+    );
+  }
+
+  if (eventsQuery.isError || events.length === 0) {
+    return (
+      <PageContainer variant="narrow">
+        <ErrorState
+          title={eventsQuery.isError ? "Could not load execution" : "No captured events"}
+          message={
+            eventsQuery.isError
+              ? getErrorMessage(eventsQuery.error)
+              : `No captured events found for run ${executionExternalId}.`
+          }
+          onRetry={() => eventsQuery.refetch()}
+        />
+      </PageContainer>
+    );
+  }
+
+  /* -------------------------------------------------------------- page */
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5">
-      {/* ================================================================
-          Header
-      ================================================================= */}
-
-      <div className="flex items-start gap-3">
-        <Link
-          href="/executions"
-          className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.02] text-white/45 transition hover:bg-white/[0.05] hover:text-white"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-
-        <div className="min-w-0 flex-1">
-          <p className="mono-eyebrow">
-            External execution
-          </p>
-
-          <h1 className="mt-1 truncate text-xl font-semibold tracking-tight text-white/90">
-            {workflowName}
-          </h1>
-
-          <div className="mt-1 flex flex-wrap items-center gap-2">
-            <span className="font-mono text-[10px] text-white/30">
-              {events[0]?.source ?? "external"}
+    <PageContainer variant="narrow">
+      <PageHeader
+        backLink={{ href: "/executions", label: "Executions" }}
+        eyebrow="Execution Control Plane"
+        title={workflowName}
+        description={
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/50">
+            <StatusBadge status={status} />
+            <span>{first.source || "external"}</span>
+            <span className="font-mono text-xs">run {executionExternalId}</span>
+            <span title={startedAt ? formatDateTime(startedAt) : undefined}>
+              started {formatRelativeTime(startedAt ?? first.createdAt)}
             </span>
+            <span>·</span>
+            <span>{formatDuration(durationMs)}</span>
+            {live && (
+              <span className="inline-flex items-center gap-1 text-emerald-400">
+                <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
+                Live
+              </span>
+            )}
+          </span>
+        }
+        actions={
+          <Button
+            variant="outline"
+            onClick={() => eventsQuery.refetch()}
+            disabled={eventsQuery.isFetching}
+          >
+            <RefreshCw
+              className={cn("size-4", eventsQuery.isFetching && "animate-spin")}
+            />
+            <span>Refresh</span>
+          </Button>
+        }
+      />
 
-            <span className="text-white/15">·</span>
+      {/* failure banner */}
 
-            <span className="font-mono text-[10px] text-white/30">
-              run {executionExternalId}
-            </span>
-          </div>
+      {status === "FAILED" && failedStep && (
+        <div className="flex items-start gap-2 rounded-md border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-destructive">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+
+          <span className="min-w-0 break-words">
+            <span className="font-medium">{failedStep.name}</span>
+            {failedStep.errorType ? ` (${failedStep.errorType})` : ""}:{" "}
+            {failedStep.errorMessage}
+          </span>
         </div>
+      )}
 
-        {events.length > 0 && (
-          <ExternalStatusBadge
-            status={overallStatus}
-          />
-        )}
+      {/* retry banner */}
+
+      {retryCount > 0 && (
+        <div className="flex items-center gap-3 rounded-md border border-amber-500/20 bg-amber-500/[0.04] px-4 py-2.5 text-sm text-amber-200/80">
+          <Clock3 className="size-4 shrink-0 text-amber-300/70" />
+          {retryCount} {retryCount === 1 ? "retry was" : "retries were"}{" "}
+          recorded during this run.
+        </div>
+      )}
+
+      {/* summary strip */}
+
+      <ExecutionSummaryStrip
+        durationMs={durationMs}
+        totalNodes={summary.total}
+        executed={summary.executed}
+        failed={summary.failed}
+        skipped={summary.skipped}
+        running={summary.running}
+        status={status as ExecutionStatus}
+      />
+
+      {/* view tabs */}
+
+      <div className="flex items-center gap-1 border-b border-white/[0.08]">
+        {(
+          [
+            ["graph", "Graph", LayoutGrid],
+            ["timeline", "Timeline", List],
+          ] as const
+        ).map(([value, label, Icon]) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => setView(value)}
+            className={cn(
+              "-mb-px flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition",
+              view === value
+                ? "border-white/60 text-white/90"
+                : "border-transparent text-white/44 hover:text-white/70",
+            )}
+          >
+            <Icon className="size-4" />
+            {label}
+          </button>
+        ))}
       </div>
 
-      {/* ================================================================
-          Loading
-      ================================================================= */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* main panel */}
 
-      {query.isPending && (
-        <ExternalExecutionSkeleton />
-      )}
-
-      {/* ================================================================
-          Error
-      ================================================================= */}
-
-      {query.isError && (
-        <div className="rounded-xl border border-red-500/10 bg-red-500/[0.03] px-4 py-5">
-          <p className="text-sm text-red-300/80">
-            Unable to load this execution.
-          </p>
-
-          <p className="mt-1 text-xs text-white/35">
-            {getErrorMessage(query.error)}
-          </p>
-
-          <button
-            type="button"
-            onClick={() => query.refetch()}
-            className="mt-2 text-xs text-white/50 underline underline-offset-2 transition hover:text-white/80"
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* ================================================================
-          Not found
-      ================================================================= */}
-
-      {!query.isPending &&
-        !query.isError &&
-        events.length === 0 && (
-          <div className="rounded-xl border border-dashed border-white/[0.08] bg-white/[0.015] px-6 py-12 text-center">
-            <Circle className="mx-auto h-5 w-5 text-white/20" />
-
-            <p className="mt-3 text-sm font-medium text-white/55">
-              Execution not found
-            </p>
-
-            <p className="mx-auto mt-1 max-w-md text-xs leading-5 text-white/30">
-              No captured events were found for
-              execution{" "}
-              <span className="font-mono text-white/40">
-                {executionExternalId}
-              </span>
-              .
-            </p>
-
-            <Link
-              href="/executions"
-              className="mt-4 inline-flex items-center gap-1 text-xs text-white/50 transition hover:text-white/80"
-            >
-              Back to executions
-              <ChevronRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-        )}
-
-      {/* ================================================================
-          Execution
-      ================================================================= */}
-
-      {events.length > 0 && (
-        <>
-          {/* ============================================================
-              Summary
-          ============================================================= */}
-
-          <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <SummaryCard
-              icon={Activity}
-              label="Status"
-              value={overallStatus.toLowerCase()}
-              accent={statusAccent(overallStatus)}
-            />
-
-            <SummaryCard
-              icon={Layers3}
-              label="Nodes"
-              value={String(nodeCount)}
-            />
-
-            <SummaryCard
-              icon={Clock3}
-              label="Duration"
-              value={formatDuration(durationMs)}
-            />
-
-            <SummaryCard
-              icon={Clock3}
-              label="Started"
-              value={
-                startedAt
-                  ? formatRelativeTime(startedAt)
-                  : "—"
+        <div className="space-y-3 lg:col-span-2">
+          {view === "graph" ? (
+            <ExternalGraph
+              steps={steps}
+              selectedStepId={selectedStepId}
+              onSelect={(id) =>
+                setSelectedStepId((cur) => (cur === id ? undefined : id))
               }
             />
-          </section>
-
-          {/* ============================================================
-              Retry / reliability signal
-          ============================================================= */}
-
-          {retryCount > 0 && (
-            <div className="flex items-center gap-3 rounded-xl border border-amber-500/10 bg-amber-500/[0.025] px-4 py-3">
-              <Clock3 className="h-4 w-4 shrink-0 text-amber-300/70" />
-
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-amber-200/80">
-                  Execution required a retry
-                </p>
-
-                <p className="mt-0.5 text-[11px] text-white/30">
-                  {retryCount} retry
-                  {retryCount === 1 ? "" : "ies"} were
-                  recorded during this execution.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* ============================================================
-              Timeline
-          ============================================================= */}
-
-          <section className="overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.02]">
-            <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Activity className="h-3.5 w-3.5 text-white/30" />
-
-                  <p className="text-sm font-medium text-white/80">
-                    Execution timeline
-                  </p>
-                </div>
-
-                <p className="mt-0.5 text-xs text-white/35">
-                  Node-level events captured from the
-                  external workflow.
-                </p>
-              </div>
-
-              <span className="font-mono text-[10px] text-white/25">
-                {events.length} event
-                {events.length === 1 ? "" : "s"}
-              </span>
-            </div>
-
-            <div className="divide-y divide-white/[0.06]">
-              {events.map((event, index) => (
-                <ExecutionEventRow
-                  key={event.id}
-                  event={event}
-                  index={index}
-                  total={events.length}
+          ) : (
+            <div className="space-y-1.5">
+              {steps.map((step) => (
+                <StepRow
+                  key={step.id}
+                  step={step}
+                  selected={step.id === selectedStepId}
+                  onClick={() =>
+                    setSelectedStepId((cur) =>
+                      cur === step.id ? undefined : step.id,
+                    )
+                  }
                 />
               ))}
             </div>
-          </section>
+          )}
 
-          {/* ============================================================
-              Details
-          ============================================================= */}
+          <details className="group rounded-xl border border-white/[0.08] [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-sm">
+              <ChevronDown className="size-4 text-white/44 transition-transform group-open:rotate-180" />
+              <span className="font-medium">Execution details</span>
+            </summary>
 
-          <section className="rounded-xl border border-white/[0.08] bg-white/[0.02]">
-            <div className="border-b border-white/[0.06] px-5 py-4">
-              <p className="text-sm font-medium text-white/80">
-                Execution details
-              </p>
-
-              <p className="mt-0.5 text-xs text-white/35">
-                Identifiers and source information.
-              </p>
-            </div>
-
-            <div className="grid sm:grid-cols-2">
-              <DetailItem
-                label="Execution ID"
-                value={executionExternalId}
-                copyable
-              />
-
+            <div className="grid border-t border-white/[0.06] sm:grid-cols-2">
+              <DetailItem label="Execution ID" value={executionExternalId} copyable />
               <DetailItem
                 label="Workflow ID"
-                value={
-                  events[0]?.workflowExternalId ??
-                  workflowExternalId ??
-                  "—"
-                }
+                value={first.workflowExternalId || workflowExternalId || "—"}
                 copyable
               />
-
-              <DetailItem
-                label="Source"
-                value={
-                  events[0]?.source ?? "—"
-                }
-              />
-
-              <DetailItem
-                label="Events captured"
-                value={String(events.length)}
-              />
-
+              <DetailItem label="Source" value={first.source || "—"} />
+              <DetailItem label="Events captured" value={String(events.length)} />
               <DetailItem
                 label="Started"
-                value={
-                  startedAt
-                    ? formatAbsoluteDate(startedAt)
-                    : "—"
-                }
+                value={startedAt ? formatDateTime(startedAt) : "—"}
               />
-
               <DetailItem
                 label="Finished"
-                value={
-                  finishedAt
-                    ? formatAbsoluteDate(finishedAt)
-                    : "—"
-                }
+                value={finishedAt ? formatDateTime(finishedAt) : "—"}
               />
             </div>
-          </section>
-        </>
-      )}
-    </div>
+          </details>
+        </div>
+
+        {/* inspector + activity */}
+
+        <div className="space-y-6 lg:col-span-1">
+          {selectedStep && (
+            <StepInspector
+              step={selectedStep}
+              onClose={() => setSelectedStepId(undefined)}
+            />
+          )}
+
+          <ActivityPanel events={events} />
+        </div>
+      </div>
+    </PageContainer>
   );
 }
 
+/* useSearchParams requires a Suspense boundary for production builds. */
 export default function ExternalExecutionPage() {
   return (
-    <Suspense fallback={null}>
-      <ExternalExecutionPageContent />
-    </Suspense>
+    <React.Suspense fallback={null}>
+      <ExternalExecutionDetail />
+    </React.Suspense>
   );
 }
 
-/* ==========================================================================
- * Execution event row
- * ========================================================================== */
+/* ----------------------------------------------------------------- pieces */
 
-function ExecutionEventRow({
-  event,
-  index,
-  total,
+function StepRow({
+  step,
+  selected,
+  onClick,
 }: {
-  event: ExecutionEvent;
-  index: number;
-  total: number;
-}) {
-  const status = event.status.toUpperCase();
-
-  const retrying =
-    event.retryCount !== null &&
-    event.retryCount > 0;
-
-  return (
-    <div className="flex gap-4 px-5 py-4 transition-colors hover:bg-white/[0.015]">
-      {/* Timeline */}
-
-      <div className="flex w-5 shrink-0 flex-col items-center">
-        <div
-          className={cn(
-            "flex h-7 w-7 items-center justify-center rounded-full border",
-            timelineIconClasses(status),
-          )}
-        >
-          <StatusIcon status={status} />
-        </div>
-
-        {index < total - 1 && (
-          <div className="mt-2 h-full min-h-8 w-px bg-white/[0.08]" />
-        )}
-      </div>
-
-      {/* Event */}
-
-      <div className="min-w-0 flex-1 pb-2">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <p
-                className={cn(
-                  "truncate text-sm font-medium",
-                  status === "FAILED"
-                    ? "text-red-200/85"
-                    : "text-white/85",
-                )}
-              >
-                {event.stepName ||
-                  event.stepExternalId ||
-                  "Workflow step"}
-              </p>
-
-              {retrying && (
-                <span className="rounded-md border border-amber-500/15 bg-amber-500/[0.05] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-amber-300/70">
-                  retry ×{event.retryCount}
-                </span>
-              )}
-            </div>
-
-            <p className="mt-0.5 truncate font-mono text-[10px] text-white/30">
-              {event.stepExternalId}
-            </p>
-          </div>
-
-          <ExternalStatusBadge
-            status={status}
-          />
-        </div>
-
-        {/* Metadata */}
-
-        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[10px] text-white/35">
-          {event.startedAt && (
-            <span>
-              started{" "}
-              {formatRelativeTime(
-                event.startedAt,
-              )}
-            </span>
-          )}
-
-          {event.durationMs !== null && (
-            <span>
-              {formatDuration(
-                event.durationMs,
-              )}
-            </span>
-          )}
-
-          {event.finishedAt && (
-            <span>
-              finished{" "}
-              {formatRelativeTime(
-                event.finishedAt,
-              )}
-            </span>
-          )}
-        </div>
-
-        {/* Error */}
-
-        {event.errorMessage && (
-          <div className="mt-3 rounded-lg border border-red-500/10 bg-red-500/[0.04] px-3 py-2.5">
-            <p className="text-xs font-medium text-red-300/80">
-              {event.errorType ||
-                "Execution error"}
-            </p>
-
-            <p className="mt-1 text-xs leading-5 text-red-200/55">
-              {event.errorMessage}
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ==========================================================================
- * Summary card
- * ========================================================================== */
-
-function SummaryCard({
-  icon: Icon,
-  label,
-  value,
-  accent,
-}: {
-  icon: ComponentType<{
-    className?: string;
-  }>;
-  label: string;
-  value: string;
-  accent?: "success" | "danger" | "neutral";
+  step: Step;
+  selected: boolean;
+  onClick: () => void;
 }) {
   return (
-    <div className="group rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-3.5 transition-colors hover:border-white/[0.11] hover:bg-white/[0.025]">
-      <div className="flex items-center justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-wider text-white/30">
-          {label}
-        </p>
-
-        <Icon
-          className={cn(
-            "h-3.5 w-3.5",
-            accent === "success"
-              ? "text-emerald-400/60"
-              : accent === "danger"
-                ? "text-red-400/60"
-                : "text-white/20",
-          )}
-        />
-      </div>
-
-      <p
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex w-full items-center gap-3 rounded-xl border bg-[#0b0b0c] px-4 py-3 text-left transition hover:bg-white/[0.03]",
+        selected ? "border-white/[0.20]" : "border-white/[0.08]",
+      )}
+    >
+      <span
         className={cn(
-          "mt-1.5 truncate text-sm font-medium",
-          accent === "success"
-            ? "text-emerald-300/85"
-            : accent === "danger"
-              ? "text-red-300/85"
-              : "text-white/80",
+          "size-1.5 shrink-0 rounded-full",
+          dotColor(step.status),
+          isLive(step.status) && "animate-pulse",
         )}
-      >
-        {value}
-      </p>
-    </div>
+      />
+
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2">
+          <span className="truncate text-sm font-medium text-white/80">
+            {step.name}
+          </span>
+
+          {step.retryCount > 0 && (
+            <span className="shrink-0 rounded border border-amber-500/20 bg-amber-500/[0.05] px-1.5 py-0.5 font-mono text-[9px] text-amber-300/70">
+              retry ×{step.retryCount}
+            </span>
+          )}
+        </span>
+
+        {step.errorMessage && (
+          <span className="mt-0.5 block truncate text-xs text-destructive">
+            {step.errorMessage}
+          </span>
+        )}
+      </span>
+
+      <span className="text-xs capitalize text-white/44">
+        {step.status.toLowerCase()}
+      </span>
+
+      <span className="w-16 text-right font-mono text-xs text-white/45">
+        {formatDuration(step.durationMs)}
+      </span>
+    </button>
   );
 }
 
-/* ==========================================================================
- * Detail item
- * ========================================================================== */
+function StepInspector({
+  step,
+  onClose,
+}: {
+  step: Step;
+  onClose: () => void;
+}) {
+  const metadata = [...step.events]
+    .reverse()
+    .find((e) => e.metadata && Object.keys(e.metadata).length > 0)?.metadata;
+
+  return (
+    <Card className="border-white/[0.08] bg-[#0a0a0a]">
+      <CardHeader className="flex flex-row items-start justify-between gap-2 pb-3">
+        <CardTitle className="min-w-0 truncate text-base text-white/90">
+          {step.name}
+        </CardTitle>
+
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close inspector"
+          className="text-white/45 transition hover:text-white/80"
+        >
+          <X className="size-4" />
+        </button>
+      </CardHeader>
+
+      <CardContent className="space-y-4 text-sm">
+        <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-xs">
+          <dt className="text-white/45">Step ID</dt>
+          <dd className="break-all font-mono text-white/70">{step.id}</dd>
+
+          <dt className="text-white/45">Status</dt>
+          <dd className="capitalize text-white/70">
+            {step.status.toLowerCase()}
+          </dd>
+
+          <dt className="text-white/45">Started</dt>
+          <dd className="text-white/70">
+            {step.startedAt ? formatDateTime(step.startedAt) : "—"}
+          </dd>
+
+          <dt className="text-white/45">Finished</dt>
+          <dd className="text-white/70">
+            {step.finishedAt ? formatDateTime(step.finishedAt) : "—"}
+          </dd>
+
+          <dt className="text-white/45">Duration</dt>
+          <dd className="text-white/70">{formatDuration(step.durationMs)}</dd>
+
+          <dt className="text-white/45">Retries</dt>
+          <dd className="text-white/70">{step.retryCount}</dd>
+        </dl>
+
+        {step.errorMessage && (
+          <div className="rounded-md border border-white/[0.08] bg-white/[0.03] p-3 text-xs">
+            <p className="font-medium text-destructive">
+              {step.errorType || "Execution error"}
+            </p>
+            <p className="mt-1 break-words text-white/60">
+              {step.errorMessage}
+            </p>
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <p className="text-xs font-medium text-white/50">Metadata</p>
+          <JsonBlock value={metadata} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ActivityPanel({ events }: { events: ExecutionEvent[] }) {
+  const scrollRef = React.useRef<HTMLOListElement>(null);
+
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [events.length]);
+
+  return (
+    <Card className="border-white/[0.08] bg-[#0a0a0a] lg:sticky lg:top-6">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base text-white/90">Activity</CardTitle>
+      </CardHeader>
+
+      <CardContent>
+        <ol
+          ref={scrollRef}
+          className="max-h-[60vh] space-y-1.5 overflow-auto font-mono text-xs"
+        >
+          {events.map((event) => {
+            const s = normalize(event.status);
+
+            return (
+              <li key={event.id} className="flex gap-2">
+                <span
+                  className={cn(
+                    "w-20 shrink-0 font-medium",
+                    s === "FAILED" ? "text-destructive" : "text-white/44",
+                  )}
+                >
+                  {s}
+                </span>
+
+                <span className="min-w-0 flex-1 whitespace-pre-wrap break-words text-white/60">
+                  {event.stepName || event.stepExternalId || "workflow"}
+                  {event.errorMessage ? ` — ${event.errorMessage}` : ""}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      </CardContent>
+    </Card>
+  );
+}
 
 function DetailItem({
   label,
@@ -579,9 +705,7 @@ function DetailItem({
   copyable?: boolean;
 }) {
   async function copyValue() {
-    if (!value || value === "—") {
-      return;
-    }
+    if (!value || value === "—") return;
 
     try {
       await navigator.clipboard.writeText(value);
@@ -591,13 +715,10 @@ function DetailItem({
   }
 
   return (
-    <div className="group flex min-w-0 items-center justify-between gap-4 border-b border-white/[0.06] px-5 py-4 last:border-b-0 sm:nth-[2n]:border-l sm:nth-[2n]:border-white/[0.06]">
+    <div className="group flex min-w-0 items-center justify-between gap-4 border-b border-white/[0.06] px-4 py-3">
       <div className="min-w-0">
-        <p className="font-mono text-[10px] uppercase tracking-wider text-white/25">
-          {label}
-        </p>
-
-        <p className="mt-1 break-all font-mono text-xs text-white/55">
+        <p className="text-xs text-white/45">{label}</p>
+        <p className="mt-0.5 break-all font-mono text-xs text-white/60">
           {value}
         </p>
       </div>
@@ -607,378 +728,229 @@ function DetailItem({
           type="button"
           onClick={copyValue}
           aria-label={`Copy ${label}`}
-          className="shrink-0 rounded-md p-1.5 text-white/20 opacity-0 transition hover:bg-white/[0.05] hover:text-white/60 group-hover:opacity-100"
+          className="shrink-0 rounded-md p-1.5 text-white/35 opacity-0 transition hover:bg-white/[0.05] hover:text-white group-hover:opacity-100"
         >
-          <Copy className="h-3.5 w-3.5" />
+          <Copy className="size-3.5" />
         </button>
       )}
     </div>
   );
 }
 
-/* ==========================================================================
- * Status
- * ========================================================================== */
+/* ------------------------------------------------------------------- graph */
 
-function deriveExecutionStatus(
-  events: ExecutionEvent[],
-): string {
-  const statuses = events.map((event) =>
-    event.status.toUpperCase(),
-  );
+const NODE_W = 190;
+const NODE_H = 56;
+const GAP_X = 72;
+const GAP_Y = 18;
+const PAD = 16;
 
-  if (statuses.includes("FAILED")) {
-    return "FAILED";
-  }
-
-  if (statuses.includes("CANCELED")) {
-    return "CANCELED";
-  }
-
-  if (statuses.includes("RUNNING")) {
-    return "RUNNING";
-  }
-
-  if (statuses.includes("WAITING")) {
-    return "WAITING";
-  }
-
-  if (statuses.includes("QUEUED")) {
-    return "QUEUED";
-  }
-
-  if (statuses.includes("SUCCEEDED")) {
-    return "SUCCEEDED";
-  }
-
-  if (statuses.includes("SKIPPED")) {
-    return "SKIPPED";
-  }
-
-  return statuses[0] ?? "UNKNOWN";
+function startTime(step: Step): number {
+  return Date.parse(step.startedAt ?? step.events[0].createdAt);
 }
 
-function StatusIcon({
-  status,
-}: {
-  status: string;
-}) {
-  switch (status) {
-    case "SUCCEEDED":
-      return (
-        <CheckCircle2 className="h-3.5 w-3.5" />
-      );
+/**
+ * Events don't record which step feeds which, so layers are inferred from
+ * timing: steps whose time ranges overlap run in parallel (same layer);
+ * otherwise a step belongs to the next layer.
+ */
+function layoutSteps(steps: Step[]): Step[][] {
+  const sorted = [...steps].sort((a, b) => startTime(a) - startTime(b));
+  const layers: Step[][] = [];
+  let layerEnd = -Infinity;
 
-    case "FAILED":
-      return (
-        <XCircle className="h-3.5 w-3.5" />
-      );
+  for (const step of sorted) {
+    const start = startTime(step);
+    const end = step.finishedAt
+      ? Date.parse(step.finishedAt)
+      : isLive(step.status)
+        ? Infinity
+        : start;
 
-    case "RUNNING":
-    case "WAITING":
-    case "QUEUED":
-      return (
-        <Clock3 className="h-3.5 w-3.5" />
-      );
-
-    default:
-      return (
-        <Circle className="h-3.5 w-3.5" />
-      );
-  }
-}
-
-function timelineIconClasses(
-  status: string,
-): string {
-  switch (status) {
-    case "SUCCEEDED":
-      return "border-emerald-500/20 bg-emerald-500/10 text-emerald-300";
-
-    case "FAILED":
-      return "border-red-500/20 bg-red-500/10 text-red-300";
-
-    case "RUNNING":
-      return "border-amber-500/20 bg-amber-500/10 text-amber-300";
-
-    case "WAITING":
-      return "border-blue-500/20 bg-blue-500/10 text-blue-300";
-
-    case "QUEUED":
-      return "border-purple-500/20 bg-purple-500/10 text-purple-300";
-
-    default:
-      return "border-white/[0.08] bg-white/[0.03] text-white/40";
-  }
-}
-
-function ExternalStatusBadge({
-  status,
-}: {
-  status: string;
-}) {
-  const normalized = status.toUpperCase();
-
-  return (
-    <Badge
-      variant="outline"
-      className={cn(
-        "shrink-0 text-[10px] uppercase tracking-wide",
-        statusBadgeClasses(normalized),
-      )}
-    >
-      <span
-        className={cn(
-          "mr-1.5 h-1.5 w-1.5 rounded-full",
-          statusDotClasses(normalized),
-        )}
-      />
-
-      {normalized.toLowerCase()}
-    </Badge>
-  );
-}
-
-function statusBadgeClasses(
-  status: string,
-): string {
-  switch (status) {
-    case "SUCCEEDED":
-      return "border-emerald-500/20 bg-emerald-500/10 text-emerald-300";
-
-    case "FAILED":
-      return "border-red-500/20 bg-red-500/10 text-red-300";
-
-    case "RUNNING":
-      return "border-amber-500/20 bg-amber-500/10 text-amber-300";
-
-    case "WAITING":
-      return "border-blue-500/20 bg-blue-500/10 text-blue-300";
-
-    case "CANCELED":
-      return "border-white/10 bg-white/[0.04] text-white/50";
-
-    case "QUEUED":
-      return "border-purple-500/20 bg-purple-500/10 text-purple-300";
-
-    default:
-      return "border-white/10 bg-white/[0.04] text-white/45";
-  }
-}
-
-function statusDotClasses(
-  status: string,
-): string {
-  switch (status) {
-    case "SUCCEEDED":
-      return "bg-emerald-400";
-
-    case "FAILED":
-      return "bg-red-400";
-
-    case "RUNNING":
-      return "bg-amber-400";
-
-    case "WAITING":
-      return "bg-blue-400";
-
-    case "QUEUED":
-      return "bg-purple-400";
-
-    default:
-      return "bg-white/30";
-  }
-}
-
-function statusAccent(
-  status: string,
-): "success" | "danger" | "neutral" {
-  switch (status.toUpperCase()) {
-    case "SUCCEEDED":
-      return "success";
-
-    case "FAILED":
-      return "danger";
-
-    default:
-      return "neutral";
-  }
-}
-
-/* ==========================================================================
- * Workflow name
- * ========================================================================== */
-
-function getWorkflowName(
-  event: ExecutionEvent | undefined,
-): string {
-  if (!event) {
-    return "External workflow";
-  }
-
-  const metadata = event.metadata;
-
-  if (metadata) {
-    const workflowName =
-      metadata.workflowName;
-
-    if (
-      typeof workflowName === "string" &&
-      workflowName.trim()
-    ) {
-      return workflowName;
+    if (layers.length > 0 && start < layerEnd) {
+      layers[layers.length - 1].push(step);
+      layerEnd = Math.max(layerEnd, end);
+    } else {
+      layers.push([step]);
+      layerEnd = end;
     }
+  }
 
-    const workflow =
-      metadata.workflow;
+  return layers;
+}
 
-    if (
-      typeof workflow === "string" &&
-      workflow.trim()
-    ) {
-      return workflow;
+function dotFill(status: string) {
+  switch (normalize(status)) {
+    case "FAILED":
+      return "fill-red-400/70";
+    case "SUCCEEDED":
+      return "fill-emerald-400/70";
+    case "RUNNING":
+      return "fill-white/70";
+    case "WAITING":
+      return "fill-amber-400/70";
+    default:
+      return "fill-white/30";
+  }
+}
+
+function clip(text: string, max: number) {
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
+function ExternalGraph({
+  steps,
+  selectedStepId,
+  onSelect,
+}: {
+  steps: Step[];
+  selectedStepId: string | undefined;
+  onSelect: (id: string) => void;
+}) {
+  const layers = React.useMemo(() => layoutSteps(steps), [steps]);
+
+  const maxRows = Math.max(1, ...layers.map((l) => l.length));
+  const innerH = maxRows * NODE_H + (maxRows - 1) * GAP_Y;
+  const width = layers.length * NODE_W + (layers.length - 1) * GAP_X + PAD * 2;
+  const height = innerH + PAD * 2;
+
+  const positions = new Map<string, { x: number; y: number }>();
+
+  layers.forEach((layer, col) => {
+    const colH = layer.length * NODE_H + (layer.length - 1) * GAP_Y;
+    const top = PAD + (innerH - colH) / 2;
+
+    layer.forEach((step, row) => {
+      positions.set(step.id, {
+        x: PAD + col * (NODE_W + GAP_X),
+        y: top + row * (NODE_H + GAP_Y),
+      });
+    });
+  });
+
+  const edges: Array<{ key: string; d: string }> = [];
+
+  for (let i = 0; i < layers.length - 1; i++) {
+    for (const from of layers[i]) {
+      for (const to of layers[i + 1]) {
+        const a = positions.get(from.id)!;
+        const b = positions.get(to.id)!;
+        const x1 = a.x + NODE_W;
+        const y1 = a.y + NODE_H / 2;
+        const x2 = b.x;
+        const y2 = b.y + NODE_H / 2;
+        const mid = (x1 + x2) / 2;
+
+        edges.push({
+          key: `${from.id}->${to.id}`,
+          d: `M ${x1} ${y1} C ${mid} ${y1}, ${mid} ${y2}, ${x2} ${y2}`,
+        });
+      }
     }
   }
 
   return (
-    event.workflowExternalId ||
-    "External workflow"
-  );
-}
+    <div className="space-y-2">
+      <div className="overflow-auto rounded-xl border border-white/[0.08] bg-[#0b0b0c]">
+        <svg
+          width={width}
+          height={height}
+          role="group"
+          aria-label="Execution graph"
+          className="block"
+        >
+          {edges.map((edge) => (
+            <path
+              key={edge.key}
+              d={edge.d}
+              className="fill-none stroke-white/15"
+              strokeWidth={1.5}
+            />
+          ))}
 
-/* ==========================================================================
- * Dates
- * ========================================================================== */
+          {steps.map((step) => {
+            const p = positions.get(step.id);
+            if (!p) return null;
 
-function earliestTimestamp(
-  values: Array<string | null | undefined>,
-): string | null {
-  const valid = values.filter(
-    (value): value is string =>
-      Boolean(value),
-  );
+            const selected = step.id === selectedStepId;
 
-  if (valid.length === 0) {
-    return null;
-  }
-
-  return valid.reduce(
-    (earliest, value) =>
-      Date.parse(value) <
-      Date.parse(earliest)
-        ? value
-        : earliest,
-  );
-}
-
-function latestTimestamp(
-  values: Array<string | null | undefined>,
-): string | null {
-  const valid = values.filter(
-    (value): value is string =>
-      Boolean(value),
-  );
-
-  if (valid.length === 0) {
-    return null;
-  }
-
-  return valid.reduce(
-    (latest, value) =>
-      Date.parse(value) >
-      Date.parse(latest)
-        ? value
-        : latest,
-  );
-}
-
-function formatAbsoluteDate(
-  value: string,
-): string {
-  try {
-    return new Intl.DateTimeFormat(
-      undefined,
-      {
-        dateStyle: "medium",
-        timeStyle: "short",
-      },
-    ).format(new Date(value));
-  } catch {
-    return value;
-  }
-}
-
-/* ==========================================================================
- * Loading
- * ========================================================================== */
-
-function ExternalExecutionSkeleton() {
-  return (
-    <div className="space-y-5">
-      {/* Summary */}
-
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {Array.from({ length: 4 }).map(
-          (_, index) => (
-            <div
-              key={index}
-              className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-4"
-            >
-              <Skeleton className="h-2.5 w-16" />
-              <Skeleton className="mt-2 h-4 w-24" />
-            </div>
-          ),
-        )}
-      </div>
-
-      {/* Timeline */}
-
-      <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.02]">
-        <div className="border-b border-white/[0.06] px-5 py-4">
-          <Skeleton className="h-3 w-36" />
-          <Skeleton className="mt-2 h-2.5 w-60" />
-        </div>
-
-        {Array.from({ length: 4 }).map(
-          (_, index) => (
-            <div
-              key={index}
-              className="flex gap-4 border-b border-white/[0.06] px-5 py-5 last:border-0"
-            >
-              <Skeleton className="h-7 w-7 shrink-0 rounded-full" />
-
-              <div className="flex flex-1 flex-col gap-2">
-                <Skeleton className="h-3 w-40" />
-                <Skeleton className="h-2.5 w-56" />
-                <Skeleton className="h-2.5 w-32" />
-              </div>
-            </div>
-          ),
-        )}
-      </div>
-
-      {/* Details */}
-
-      <div className="rounded-xl border border-white/[0.08] bg-white/[0.02]">
-        <div className="border-b border-white/[0.06] px-5 py-4">
-          <Skeleton className="h-3 w-32" />
-          <Skeleton className="mt-2 h-2.5 w-48" />
-        </div>
-
-        <div className="grid sm:grid-cols-2">
-          {Array.from({ length: 4 }).map(
-            (_, index) => (
-              <div
-                key={index}
-                className="border-b border-white/[0.06] px-5 py-4"
+            return (
+              <g
+                key={step.id}
+                transform={`translate(${p.x} ${p.y})`}
+                role="button"
+                tabIndex={0}
+                aria-label={`${step.name}, ${step.status.toLowerCase()}`}
+                onClick={() => onSelect(step.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onSelect(step.id);
+                  }
+                }}
+                className="cursor-pointer outline-none"
               >
-                <Skeleton className="h-2.5 w-20" />
-                <Skeleton className="mt-2 h-3 w-36" />
-              </div>
-            ),
-          )}
-        </div>
+                <title>{step.name}</title>
+
+                <rect
+                  width={NODE_W}
+                  height={NODE_H}
+                  rx={10}
+                  className={cn(
+                    "fill-[#111113] transition-colors",
+                    selected
+                      ? "stroke-white/50"
+                      : step.status === "FAILED"
+                        ? "stroke-red-400/30"
+                        : "stroke-white/10",
+                  )}
+                  strokeWidth={1.5}
+                />
+
+                <circle
+                  cx={16}
+                  cy={NODE_H / 2}
+                  r={4}
+                  className={cn(
+                    dotFill(step.status),
+                    isLive(step.status) && "animate-pulse",
+                  )}
+                />
+
+                <text
+                  x={30}
+                  y={24}
+                  className="fill-white/80 text-[12px] font-medium"
+                >
+                  {clip(step.name, 22)}
+                </text>
+
+                <text x={30} y={42} className="fill-white/35 font-mono text-[10px]">
+                  {step.status.toLowerCase()} · {formatDuration(step.durationMs)}
+                  {step.retryCount > 0 ? ` · ×${step.retryCount}` : ""}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
       </div>
+
+      <p className="text-xs text-white/45">
+        Layout is inferred from run order: steps that overlap in time are shown
+        in parallel. Connections from the provider aren&apos;t captured.
+      </p>
     </div>
+  );
+}
+
+function JsonBlock({ value }: { value: unknown }) {
+  if (value === null || value === undefined) {
+    return <p className="text-xs text-white/44">None recorded.</p>;
+  }
+
+  return (
+    <pre className="max-h-64 overflow-auto rounded-md border border-white/[0.08] bg-[#0a0a0a] p-3 font-mono text-xs leading-relaxed">
+      {JSON.stringify(value, null, 2)}
+    </pre>
   );
 }

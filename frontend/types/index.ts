@@ -49,6 +49,12 @@ export type ErrorCode =
   | "METHOD_NOT_ALLOWED"
   | "EMAIL_ALREADY_REGISTERED"
   | "RATE_LIMITED"
+  | "CONCURRENCY_LIMIT_EXCEEDED"
+  | "CIRCUIT_BREAKER_OPEN"
+  | "DEAD_LETTER_NOT_FOUND"
+  | "INCIDENT_NOT_FOUND"
+  | "PLAN_LIMIT_EXCEEDED"
+  | "BILLING_DISABLED"
   | "INTERNAL_ERROR";
 
 export interface FieldError {
@@ -422,6 +428,19 @@ export interface ExecutionNodeState {
   startedAt: string | null;
   finishedAt: string | null;
   durationMs: number | null;
+  attempts?: NodeExecutionAttemptState[];
+}
+
+export interface NodeExecutionAttemptState {
+  id: string;
+  executionId: string;
+  nodeId: string;
+  attemptNumber: number;
+  status: "RUNNING" | "SUCCEEDED" | "FAILED" | "TIMED_OUT";
+  error: string | null;
+  durationMs: number | null;
+  startedAt: string;
+  finishedAt: string | null;
 }
 
 /** One line in a run's log. `nodeId` is null for execution-level lines. */
@@ -1235,4 +1254,125 @@ export interface InvestigateRequest {
 
 export interface InvestigateResponse {
   result: AIInvestigationResult;
+}
+
+/* ------------------------------------------------------------------ billing */
+
+export type PlanId = "FREE" | "PRIVATE_BETA" | "PRO" | "BUSINESS";
+export type BillingInterval = "MONTHLY" | "YEARLY";
+export type SupportedCurrency =
+  | "INR"
+  | "USD"
+  | "GBP"
+  | "EUR"
+  | "CAD"
+  | "AUD"
+  | "SGD"
+  | "JPY";
+
+export type SubscriptionStatus =
+  | "ACTIVE"
+  | "TRIALING"
+  | "PAST_DUE"
+  | "CANCELED"
+  | "INCOMPLETE";
+
+export interface SubscriptionRecord {
+  id: string;
+  workspaceId: string;
+  plan: PlanId;
+  status: SubscriptionStatus;
+  currency: SupportedCurrency;
+  billingCountry: string;
+  billingInterval: BillingInterval;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  providerCustomerId?: string | null;
+  providerSubscriptionId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface LocalizedPlanPrice {
+  amountMinor: number;
+  formatted: string;
+  formattedStrikethrough?: string;
+  isBetaZero: boolean;
+  interval: BillingInterval;
+  currency: SupportedCurrency;
+  currencySymbol: string;
+}
+
+export interface LocalizedPlanView {
+  id: PlanId;
+  name: string;
+  tagline: string;
+  betaBadge?: string;
+  isCustom: boolean;
+  isCurrent: boolean;
+  features: string[];
+  limits: {
+    workflows: number;
+    executionsPerMonth: number;
+    aiGenerationsPerMonth: number;
+    teamMembers: number;
+    featureFlags: Record<string, boolean>;
+  };
+  pricing?: LocalizedPlanPrice;
+}
+
+export interface WorkspaceUsageMetric {
+  used: number;
+  limit: number;
+  percentage?: number;
+}
+
+export interface WorkspaceUsageData {
+  plan: PlanId;
+  workflows: WorkspaceUsageMetric;
+  executions: WorkspaceUsageMetric;
+  aiGenerations: WorkspaceUsageMetric;
+  teamMembers: WorkspaceUsageMetric;
+}
+
+export interface BillingStateResponse {
+  isPrivateBeta: boolean;
+  isBillingEnabled: boolean;
+  betaNotice: string;
+  billingCountry: string;
+  billingCurrency: SupportedCurrency;
+  currencySymbol: string;
+  displayCurrency: SupportedCurrency;
+  providerSupported: boolean;
+  activePlan: PlanId;
+  subscription: SubscriptionRecord | null;
+  usage: {
+    workflows: { used: number; limit: number };
+    executions: { used: number; limit: number };
+    aiGenerations: { used: number; limit: number };
+    teamMembers: { used: number; limit: number };
+  };
+  availableCurrencies: readonly SupportedCurrency[];
+}
+
+export interface BillingPlansResponse {
+  plans: LocalizedPlanView[];
+  interval: BillingInterval;
+  displayCurrency: SupportedCurrency;
+  billingCurrency: SupportedCurrency;
+  billingCountry: string;
+  currencySymbol: string;
+  isDisplayCurrencyDifferent: boolean;
+  displayCurrencyNotice: string | null;
+  isPrivateBeta: boolean;
+  isBillingEnabled: boolean;
+  betaNotice: string;
+}
+
+export interface BillingCurrencyResponse {
+  country: string;
+  currency: SupportedCurrency;
+  symbol: string;
+  detectionSource: string;
+  supportedCurrencies: readonly SupportedCurrency[];
 }

@@ -24,9 +24,14 @@ public record ExecutionNodeResponse(
         String error,
         Instant startedAt,
         Instant finishedAt,
-        Long durationMs) {
+        Long durationMs,
+        List<ExecutionAttemptResponse> attempts) {
 
     public static ExecutionNodeResponse of(ExecutionNode node) {
+        return of(node, List.of());
+    }
+
+    public static ExecutionNodeResponse of(ExecutionNode node, List<ExecutionAttemptResponse> attempts) {
         return new ExecutionNodeResponse(
                 node.getId(),
                 node.getNodeId(),
@@ -40,6 +45,7 @@ public record ExecutionNodeResponse(
                 node.getError(),
                 node.getStartedAt(),
                 node.getFinishedAt(),
-                node.getDurationMs());
+                node.getDurationMs(),
+                attempts != null ? attempts : List.of());
     }
 }

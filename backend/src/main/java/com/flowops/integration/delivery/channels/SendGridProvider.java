@@ -101,8 +101,8 @@ public class SendGridProvider implements NotificationProvider {
         try {
             URI uri = URI.create("https://api.sendgrid.com/v3/mail/send");
             String subject = message.payload() != null && message.payload().get("subject") != null
-                    ? message.payload().get("subject").toString() : "FlowOps Notification";
-            String fromAddr = from != null && !from.isBlank() ? from : "no-reply@flowops.dev";
+                    ? message.payload().get("subject").toString() : "Vantis Notification";
+            String fromAddr = from != null && !from.isBlank() ? from : "no-reply@vantis.run";
 
             String jsonPayload = "{"
                     + "\"personalizations\":[{\"to\":[{\"email\":\"" + escape(to) + "\"}]}],"
@@ -135,9 +135,9 @@ public class SendGridProvider implements NotificationProvider {
     public DeliveryResult sendTest(DeliveryContext context) {
         String from = context.credentials().get("fromEmail");
         return deliver(context, new NotificationMessage("sendgrid",
-                "FlowOps test email — SendGrid is connected.",
+                "Vantis test email — SendGrid is connected.",
                 from != null && !from.isBlank()
-                        ? java.util.Map.of("to", from, "subject", "FlowOps Test Email")
+                        ? java.util.Map.of("to", from, "subject", "Vantis Test Email")
                         : null));
     }
 

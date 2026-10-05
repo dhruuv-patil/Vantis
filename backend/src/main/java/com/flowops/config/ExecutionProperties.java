@@ -33,8 +33,16 @@ public record ExecutionProperties(
         @DefaultValue("5s") Duration httpConnectTimeout,
         @DefaultValue("30s") Duration httpRequestTimeout,
         @DefaultValue("1048576") int httpMaxBodyBytes,
-        @DefaultValue("30m") Duration sseTimeout) {
+        @DefaultValue("30m") Duration sseTimeout,
+        @DefaultValue("5m") Duration staleThreshold,
+        @DefaultValue("10s") Duration heartbeatInterval,
+        @DefaultValue("10") int maxTenantConcurrency,
+        @DefaultValue("5") int maxWorkflowConcurrency,
+        @DefaultValue("1000") int maxStepsPerExecution,
+        @DefaultValue("60s") Duration nodeTimeout,
+        @DefaultValue("3600s") Duration workflowTimeout) {
 
+    @org.springframework.boot.context.properties.bind.ConstructorBinding
     public ExecutionProperties {
         if (workerPoolSize < 1) {
             workerPoolSize = 1;
@@ -42,5 +50,83 @@ public record ExecutionProperties(
         if (maxAttempts < 1) {
             maxAttempts = 1;
         }
+        if (maxTenantConcurrency < 1) {
+            maxTenantConcurrency = 1;
+        }
+        if (maxWorkflowConcurrency < 1) {
+            maxWorkflowConcurrency = 1;
+        }
+        if (maxStepsPerExecution < 1) {
+            maxStepsPerExecution = 100;
+        }
+    }
+
+    public ExecutionProperties() {
+        this(
+                4,
+                3,
+                Duration.ofSeconds(2),
+                Duration.ofSeconds(30),
+                300L,
+                Duration.ofSeconds(5),
+                Duration.ofSeconds(30),
+                1048576,
+                Duration.ofMinutes(30),
+                Duration.ofMinutes(5),
+                Duration.ofSeconds(10),
+                10,
+                5,
+                1000,
+                Duration.ofSeconds(60),
+                Duration.ofSeconds(3600));
+    }
+
+    public ExecutionProperties(
+            int workerPoolSize,
+            int maxAttempts,
+            Duration retryBackoff,
+            Duration maxRetryBackoff,
+            long maxDelaySeconds,
+            Duration httpConnectTimeout,
+            Duration httpRequestTimeout,
+            int httpMaxBodyBytes,
+            Duration sseTimeout) {
+        this(
+                workerPoolSize,
+                maxAttempts,
+                retryBackoff,
+                maxRetryBackoff,
+                maxDelaySeconds,
+                httpConnectTimeout,
+                httpRequestTimeout,
+                httpMaxBodyBytes,
+                sseTimeout,
+                Duration.ofMinutes(5),
+                Duration.ofSeconds(10),
+                10,
+                5,
+                1000,
+                Duration.ofSeconds(60),
+                Duration.ofSeconds(3600));
+    }
+
+    public static ExecutionProperties defaults() {
+        return new ExecutionProperties(
+                4,
+                3,
+                Duration.ofSeconds(2),
+                Duration.ofSeconds(30),
+                300L,
+                Duration.ofSeconds(5),
+                Duration.ofSeconds(30),
+                1048576,
+                Duration.ofMinutes(30),
+                Duration.ofMinutes(5),
+                Duration.ofSeconds(10),
+                10,
+                5,
+                1000,
+                Duration.ofSeconds(60),
+                Duration.ofSeconds(3600));
     }
 }

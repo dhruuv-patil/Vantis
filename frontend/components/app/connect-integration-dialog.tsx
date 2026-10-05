@@ -317,16 +317,17 @@ export function ConnectIntegrationDialog({
           <DialogHeader className="space-y-3">
             <div className="flex items-center gap-3">
               {selectedProvider && (
-  <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-    {selectedProvider.icon ? (
-      <ProviderIcon icon={selectedProvider.icon} className="size-5" />
-    ) : (
-      <span className="text-sm font-semibold">
-        {selectedProvider.name?.charAt(0) ?? "?"}
-      </span>
-    )}
-  </div>
-)}
+                <div className="flex size-10 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04]">
+                  <ProviderIcon
+                    provider={selectedProvider.type}
+                    name={selectedProvider.name}
+                    icon={selectedProvider.icon}
+                    className="size-5"
+                    theme="dark"
+                    fallbackInitials
+                  />
+                </div>
+              )}
               <div className="space-y-0.5">
                 <DialogTitle className="text-white/90">{title}</DialogTitle>
                 <DialogDescription className="text-white/44">

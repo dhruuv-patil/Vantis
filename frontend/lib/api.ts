@@ -91,7 +91,16 @@ import type {
   AIInvestigationResult,
   InvestigateRequest,
   InvestigateResponse,
-SendTestResult,
+  SendTestResult,
+
+  // Billing
+  BillingCurrencyResponse,
+  BillingInterval,
+  BillingPlansResponse,
+  BillingStateResponse,
+  PlanId,
+  SubscriptionRecord,
+  WorkspaceUsageData,
 } from "@/types";
 
 export const API_BASE_URL =
@@ -182,7 +191,7 @@ export function getErrorMessage(
   if (envelope?.message) return envelope.message;
 
   if (axios.isAxiosError(error) && !error.response) {
-    return "Cannot reach the FlowOps API. Check that the server is running.";
+    return "Cannot reach the Vantis API. Check that the server is running.";
   }
 
   return fallback;
@@ -372,7 +381,7 @@ export interface RegisterPayload {
   email: string;
   password: string;
   fullName: string;
-  organizationName: string;
+  organizationName?: string;
 }
 
 export interface LoginPayload {
@@ -756,7 +765,7 @@ export async function runWorkflow(
 }
 
 /**
- * `GET /api/executions` → org-scoped native FlowOps runs.
+ * `GET /api/executions` → org-scoped native Vantis runs.
  */
 export async function fetchExecutions(params?: {
   workflowId?: string;
@@ -782,7 +791,7 @@ export async function fetchExecutions(params?: {
 }
 
 /**
- * `GET /api/executions/{id}` → native FlowOps run detail.
+ * `GET /api/executions/{id}` → native Vantis run detail.
  */
 export async function fetchExecution(
   id: string,
@@ -799,12 +808,14 @@ export async function fetchExecution(
  * `GET /api/v1/execution-events` → external/provider execution events.
  *
  * This is intentionally separate from `/api/executions`.
- * Native FlowOps executions are represented by `ExecutionDetail`, while
+ * Native Vantis executions are represented by `ExecutionDetail`, while
  * monitored provider executions such as n8n are represented by
  * `ExecutionEvent` records.
  */
 export async function fetchExecutionEvents(params?: {
   workflowId?: string;
+  executionExternalId?: string;
+  workflowExternalId?: string;
   limit?: number;
 }): Promise<ExecutionEventsResponse> {
   const { data } =
@@ -814,6 +825,10 @@ export async function fetchExecutionEvents(params?: {
         params: {
           workflowId:
             params?.workflowId || undefined,
+          executionExternalId:
+            params?.executionExternalId || undefined,
+          workflowExternalId:
+            params?.workflowExternalId || undefined,
           limit:
             params?.limit || undefined,
         },
@@ -1416,4 +1431,100 @@ export async function fetchRecoveryStatus(
     );
 
   return data.snapshot;
+}
+
+/* ------------------------------------------------------------------ billing */
+
+export async function fetchBillingState(params?: {
+  workspaceId?: string;
+  currency?: string;
+  userCountry?: string;
+  workspaceCountry?: string;
+}): Promise<BillingStateResponse> {
+  const q = new URLSearchParams();
+  if (params?.workspaceId) q.set("workspaceId", params.workspaceId);
+  if (params?.currency) q.set("currency", params.currency);
+  if (params?.userCountry) q.set("userCountry", params.userCountry);
+  if (params?.workspaceCountry) q.set("workspaceCountry", params.workspaceCountry);
+
+  const res = await fetch(`/api/billing?${q.toString()}`);
+  if (!res.ok) throw new Error("Failed to fetch billing status");
+  return res.json();
+}
+
+export async function fetchBillingPlans(params?: {
+  workspaceId?: string;
+  currency?: string;
+  interval?: "MONTHLY" | "YEARLY";
+}): Promise<BillingPlansResponse> {
+  const q = new URLSearchParams();
+  if (params?.workspaceId) q.set("workspaceId", params.workspaceId);
+  if (params?.currency) q.set("currency", params.currency);
+  if (params?.interval) q.set("interval", params.interval);
+
+  const res = await fetch(`/api/billing/plans?${q.toString()}`);
+  if (!res.ok) throw new Error("Failed to fetch billing plans");
+  return res.json();
+}
+
+export async function fetchBillingUsage(workspaceId?: string): Promise<WorkspaceUsageData> {
+  try {
+    const { data } = await api.get<any>("/api/billing/usage");
+    return {
+      plan: data.plan,
+      workflows: data.workflows ?? data.activeWorkflows ?? { used: 0, limit: 50 },
+      executions: data.executions ?? { used: 0, limit: 10000 },
+      aiGenerations: data.aiGenerations ?? { used: 0, limit: 100 },
+      teamMembers: data.teamMembers ?? { used: 1, limit: 5 },
+    };
+  } catch {
+    const q = new URLSearchParams();
+    if (workspaceId) q.set("workspaceId", workspaceId);
+    const res = await fetch(`/api/billing/usage?${q.toString()}`);
+    if (!res.ok) throw new Error("Failed to fetch workspace billing usage");
+    return res.json();
+  }
+}
+
+export async function fetchBillingCurrency(country?: string): Promise<BillingCurrencyResponse> {
+  const q = new URLSearchParams();
+  if (country) q.set("country", country);
+
+  const res = await fetch(`/api/billing/currency?${q.toString()}`);
+  if (!res.ok) throw new Error("Failed to resolve billing currency");
+  return res.json();
+}
+
+export async function createBillingCheckout(payload: {
+  workspaceId: string;
+  plan: PlanId;
+  interval: BillingInterval;
+  successUrl?: string;
+  cancelUrl?: string;
+}): Promise<{ sessionId: string; url?: string; status: string; message?: string }> {
+  const res = await fetch("/api/billing/checkout", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || "Checkout unavailable");
+  }
+  return data;
+}
+
+export async function cancelBillingSubscription(
+  subscriptionId: string,
+): Promise<SubscriptionRecord> {
+  const res = await fetch("/api/billing/cancel", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ subscriptionId }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || "Cancellation unavailable");
+  }
+  return data;
 }

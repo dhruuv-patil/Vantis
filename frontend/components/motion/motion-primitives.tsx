@@ -62,6 +62,16 @@ interface StaggerGroupProps {
 
 export const StaggerGroup = forwardRef<HTMLDivElement, StaggerGroupProps>(
   ({ children, stagger = 0.08, delay = 0, className }, ref) => {
+    const prefersReduced = useReducedMotion();
+
+    if (prefersReduced) {
+      return (
+        <div ref={ref} className={className}>
+          {children}
+        </div>
+      );
+    }
+
     return (
       <motion.div
         ref={ref}

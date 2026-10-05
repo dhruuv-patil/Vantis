@@ -28,7 +28,7 @@ import org.springframework.stereotype.Component;
  *
  * <p>Provider metadata is derived from the actual graph rather than guessed from
  * the template title or description. This keeps the Templates UI truthful and
- * allows it to render every provider supported by FlowOps.
+ * allows it to render every provider supported by Vantis.
  *
  * <p>Graphs are built once at startup and handed out as {@code deepCopy()} by
  * {@link TemplateService}, so a caller can never mutate the shared instance.
@@ -116,13 +116,13 @@ public class TemplateCatalog {
 
         } catch (IOException e) {
             throw new IllegalStateException(
-                    "Failed to load FlowOps production templates.", e);
+                    "Failed to load Vantis production templates.", e);
         }
     }
 
     /**
      * Reads one production template JSON file and converts it into the
-     * immutable WorkflowTemplate record used by FlowOps.
+     * immutable WorkflowTemplate record used by Vantis.
      */
     private WorkflowTemplate readProductionTemplate(Resource resource) {
 
@@ -630,9 +630,9 @@ public class TemplateCatalog {
 
         g.node("extract", "http_batch", "Extract from sources",
                 Map.of("items", List.of(
-                                "https://api.flowops.com/source1/data",
-                                "https://api.flowops.com/source2/data",
-                                "https://api.flowops.com/source3/data"),
+                                "https://api.vantis.run/source1/data",
+                                "https://api.vantis.run/source2/data",
+                                "https://api.vantis.run/source3/data"),
                         "method", "GET",
                         "headers", Map.of("Authorization", "Bearer {{trigger.secret}}")),
                 1, 1);
@@ -728,7 +728,7 @@ public class TemplateCatalog {
                 4, 0);
 
         g.node("archive", "s3_upload", "Archive report",
-                Map.of("bucket", "flowops-reports",
+                Map.of("bucket", "vantis-reports",
                         "key", "weekly/{{trigger.timestamp}}.pdf",
                         "content", "{{format.output}}"),
                 4, 2);
@@ -826,14 +826,14 @@ public class TemplateCatalog {
 
         g.node("provision", "http_request", "Provision accounts",
                 Map.of("method", "POST",
-                        "url", "https://hr.flowops.com/accounts/provision",
+                        "url", "https://hr.vantis.run/accounts/provision",
                         "headers", Map.of("Authorization", "Bearer {{trigger.secret}}"),
                         "body", "{\"employeeId\": \"{{trigger.body.employeeId}}\", \"action\": \"provision\"}"),
                 2, 0);
 
         g.node("cleanup", "http_request", "Cleanup access",
                 Map.of("method", "POST",
-                        "url", "https://hr.flowops.com/access/revoke",
+                        "url", "https://hr.vantis.run/access/revoke",
                         "headers", Map.of("Authorization", "Bearer {{trigger.secret}}"),
                         "body", "{\"employeeId\": \"{{trigger.body.employeeId}}\", \"action\": \"revoke_all\"}"),
                 2, 2);
@@ -985,7 +985,7 @@ public class TemplateCatalog {
 
         g.node("initiateRenewal", "http_request", "Initiate renewal process",
                 Map.of("method", "POST",
-                        "url", "https://legal.flowops.com/contracts/renew",
+                        "url", "https://legal.vantis.run/contracts/renew",
                         "headers", Map.of("Authorization", "Bearer {{trigger.secret}}"),
                         "body", "{{fetch.results}}"),
                 5, 0);
@@ -1180,7 +1180,7 @@ public class TemplateCatalog {
     }
 
     /**
-     * Maps FlowOps node types onto the same provider identifiers used by the
+     * Maps Vantis node types onto the same provider identifiers used by the
      * integration/provider catalog.
      */
     private void addProviderByNodeType(Set<String> providers, String nodeType) {

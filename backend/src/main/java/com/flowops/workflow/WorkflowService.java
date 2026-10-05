@@ -41,6 +41,23 @@ public class WorkflowService {
     private final WorkflowValidator validator;
     private final ObjectMapper objectMapper;
     private final WebhookEventDispatcher webhookEvents;
+    private final com.flowops.billing.BillingService billingService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public WorkflowService(
+            WorkflowRepository workflows,
+            WorkflowVersionRepository versions,
+            WorkflowValidator validator,
+            ObjectMapper objectMapper,
+            WebhookEventDispatcher webhookEvents,
+            com.flowops.billing.BillingService billingService) {
+        this.workflows = workflows;
+        this.versions = versions;
+        this.validator = validator;
+        this.objectMapper = objectMapper;
+        this.webhookEvents = webhookEvents;
+        this.billingService = billingService;
+    }
 
     public WorkflowService(
             WorkflowRepository workflows,
@@ -48,11 +65,7 @@ public class WorkflowService {
             WorkflowValidator validator,
             ObjectMapper objectMapper,
             WebhookEventDispatcher webhookEvents) {
-        this.workflows = workflows;
-        this.versions = versions;
-        this.validator = validator;
-        this.objectMapper = objectMapper;
-        this.webhookEvents = webhookEvents;
+        this(workflows, versions, validator, objectMapper, webhookEvents, null);
     }
 
     @Transactional(readOnly = true)
@@ -69,6 +82,9 @@ public class WorkflowService {
 
     @Transactional
     public WorkflowDetailResponse create(FlowOpsPrincipal principal, CreateWorkflowRequest request) {
+        if (billingService != null) {
+            billingService.assertCanCreateWorkflow(principal.organizationId());
+        }
         Workflow workflow = Workflow.create(
                 principal.organizationId(),
                 principal.userId(),

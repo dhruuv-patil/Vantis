@@ -10,6 +10,7 @@ import {
   monitorProviderWorkflow,
 } from "@/lib/api";
 import { getErrorMessage } from "@/lib/api";
+import { ProviderIcon } from "@/components/integrations/provider-icon";
 import type { ExternalWorkflow, MonitoredWorkflowsResponse } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -114,11 +115,18 @@ export function WorkflowDiscovery({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="border-white/[0.08] !bg-[#0a0a0a] max-w-4xl max-h-[80vh]">
         <DialogHeader className="space-y-3">
-            <DialogTitle className="text-white/90">Workflows for {integrationName}</DialogTitle>
-            <DialogDescription className="text-white/44">
-              Discovered workflows from your {integrationName} instance. Enable monitoring
-              to sync execution telemetry and run anomaly detection.
-            </DialogDescription>
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04]">
+              <ProviderIcon name={integrationName} className="size-5" theme="dark" fallbackInitials />
+            </div>
+            <div className="space-y-0.5">
+              <DialogTitle className="text-white/90">Workflows for {integrationName}</DialogTitle>
+              <DialogDescription className="text-white/44">
+                Discovered workflows from your {integrationName} instance. Enable monitoring
+                to sync execution telemetry and run anomaly detection.
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -156,7 +164,7 @@ export function WorkflowDiscovery({
           ) : filteredWorkflows.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-white/44">
               <p>No workflows found.</p>
-              <p className="text-sm">Click "Test Connection" then refresh to discover workflows.</p>
+              <p className="text-sm">Click &quot;Test Connection&quot; then refresh to discover workflows.</p>
             </div>
           ) : (
             <Card className="border-white/[0.08] !bg-[#0a0a0a]">
@@ -173,8 +181,8 @@ export function WorkflowDiscovery({
                     <TableRow key={wf.id} className="border-white/[0.08] hover:bg-white/[0.02]">
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                            <Zap className="size-4" />
+                          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04]">
+                            <ProviderIcon name={integrationName} className="size-4" theme="dark" fallbackInitials />
                           </span>
                           <div>
                             <p className="font-medium text-white/90">{wf.name}</p>

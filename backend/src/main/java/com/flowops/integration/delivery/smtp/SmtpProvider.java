@@ -86,7 +86,7 @@ public class SmtpProvider implements NotificationProvider {
         SmtpSettings settings;
         try {
             settings = toSettings(context.credentials().secrets());
-        } catch (IllegalArgumentException invalid) {
+        } catch (IllegalArgumentException | com.flowops.common.error.ApiException invalid) {
             return ConnectionTestResult.failure(invalid.getMessage());
         }
         try {
@@ -104,7 +104,7 @@ public class SmtpProvider implements NotificationProvider {
         SmtpSettings settings;
         try {
             settings = toSettings(context.credentials().secrets());
-        } catch (IllegalArgumentException invalid) {
+        } catch (IllegalArgumentException | com.flowops.common.error.ApiException invalid) {
             return failure(DeliveryResult.Code.INVALID_CONFIG, invalid.getMessage(), false, start);
         }
 
@@ -130,7 +130,7 @@ public class SmtpProvider implements NotificationProvider {
         SmtpSettings settings;
         try {
             settings = toSettings(context.credentials().secrets());
-        } catch (IllegalArgumentException invalid) {
+        } catch (IllegalArgumentException | com.flowops.common.error.ApiException invalid) {
             return failure(DeliveryResult.Code.INVALID_CONFIG, invalid.getMessage(), false, start);
         }
         try {
@@ -165,6 +165,7 @@ public class SmtpProvider implements NotificationProvider {
         if (host == null || host.isBlank()) {
             throw new IllegalArgumentException("SMTP host is required.");
         }
+        com.flowops.common.security.SsrfGuard.validateHost(host.trim());
         int port = parseInt(config.get("port"), DEFAULT_PORT);
         if (port <= 0 || port > 65535) {
             throw new IllegalArgumentException("SMTP port is invalid.");
