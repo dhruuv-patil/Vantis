@@ -5,17 +5,33 @@ import { Providers } from "@/components/providers";
 
 export const metadata: Metadata = {
   title: {
-    default: "Trace.run — Build workflows. Let AI run the work.",
-    template: "%s · Trace.run",
+    default: "Vantis — Reliability infrastructure for automation",
+    template: "%s · Vantis",
   },
   description:
-    "Trace.run is a visual automation platform for building, executing, and monitoring intelligent AI workflows.",
-  metadataBase: new URL("http://localhost:3000"),
+    "Reliability infrastructure for automation. Monitor workflows, detect anomalies, and investigate failures.",
+  metadataBase: new URL("https://vantis.run"),
+  manifest: "/site.webmanifest",
 
   icons: {
     icon: "/logo-mark.svg",
     shortcut: "/logo-mark.svg",
     apple: "/logo-mark.svg",
+  },
+
+  openGraph: {
+    title: "Vantis — Reliability infrastructure for automation",
+    description:
+      "Reliability infrastructure for automation. Monitor workflows, detect anomalies, and investigate failures.",
+    siteName: "Vantis",
+    type: "website",
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "Vantis — Reliability infrastructure for automation",
+    description:
+      "Reliability infrastructure for automation. Monitor workflows, detect anomalies, and investigate failures.",
   },
 };
 
@@ -28,7 +44,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      style={{ backgroundColor: "#050505" }}
+      style={{ backgroundColor: "#000000" }}
     >
       <head>
         <link
@@ -40,7 +56,7 @@ export default function RootLayout({
 
       <body
         className="min-h-screen font-sans text-foreground antialiased"
-        style={{ backgroundColor: "#050505" }}
+        style={{ backgroundColor: "#000000" }}
       >
         <Providers>{children}</Providers>
       </body>

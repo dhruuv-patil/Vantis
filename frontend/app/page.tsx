@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import FlowOpsClean from '@/components/landing/flowops-clean'
+import VantisLanding from '@/components/landing/vantis-landing'
 import { StartupLoader } from '@/components/landing/startup-loader'
 
 export default function Page() {
@@ -11,7 +11,7 @@ export default function Page() {
   return (
     <>
       {!loaded && <StartupLoader onComplete={handleComplete} />}
-      <FlowOpsClean />
+      <VantisLanding />
     </>
   )
 }

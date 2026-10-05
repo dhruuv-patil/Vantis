@@ -11,9 +11,9 @@ export function LogoMark({
 }) {
   return (
     <Image
-  src={logoMark}
-  alt="FlowOps"
-  width={size}
+      src={logoMark}
+      alt="Vantis"
+      width={size}
   height={size}
   style={{
     width: `${size}px`,
@@ -39,7 +39,7 @@ export function Logo({
       <LogoMark size={size} />
 
       <span className="text-xl font-semibold tracking-[-0.03em] text-foreground">
-        Trace.run
+        Vantis
       </span>
     </span>
   );
