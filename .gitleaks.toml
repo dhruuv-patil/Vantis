@@ -1,0 +1,30 @@
+title = "Vantis Gitleaks Configuration"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Global allowlist for build artifacts, virtual environments, tool directories, template files, and docs examples"
+paths = [
+    # Build artifacts, dependencies, and virtual environments
+    '''(^|/)node_modules/''',
+    '''(^|/)\.next/''',
+    '''(^|/)target/''',
+    '''(^|/)\.venv/''',
+    '''(^|/)venv/''',
+    '''(^|/)\.git/''',
+    '''(^|/)dist/''',
+    '''(^|/)build/''',
+    '''\.tsbuildinfo$''',
+    '''(^|/)smtp-tls-test/''',
+    '''(^|/)\.claude/''',
+
+    # Template environment files with placeholders
+    '''^\.env\.example$''',
+    '''^backend/\.env\.example$''',
+    '''^ai-service/\.env\.example$''',
+    '''^frontend/\.env\.local\.example$''',
+
+    # Documentation specification examples
+    '''^docs/M1-API-CONTRACT\.md$''',
+]

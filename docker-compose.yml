@@ -1,4 +1,4 @@
-# FlowOps — full local stack.
+# Vantis — full local stack.
 #
 # Docker is OPTIONAL. The default local workflow runs each service on the host
 # (see README). Compose is provided for a one-command full stack:
@@ -11,15 +11,17 @@
 services:
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: flowops-postgres
+    container_name: vantis-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       POSTGRES_DB: ${POSTGRES_DB:-flowops}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend-tier
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB:-flowops}"]
       interval: 5s
@@ -29,14 +31,15 @@ services:
     security_opt:
       - "no-new-privileges:true"
 
-  # Redis is declared for parity with the env file but is not used by the
-  # current execution queue. Keep it for the day we drop in a Redis-backed
-  # QueueService; the in-memory queue (the default) ignores it entirely.
+  # Redis is used for distributed rate limiting across backend instances
+  # and for execution queueing.
   redis:
     image: redis:7-alpine
-    container_name: flowops-redis
+    container_name: vantis-redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
+    networks:
+      - backend-tier
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -50,15 +53,17 @@ services:
     build:
       context: ./ai-service
       dockerfile: Dockerfile
-    container_name: flowops-ai
+    container_name: vantis-ai
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
       AI_SERVICE_TOKEN: ${AI_SERVICE_TOKEN:?AI_SERVICE_TOKEN is required}
     # The AI service is NOT exposed on the host network. The backend talks to
-    # it over the compose-internal network; nothing else should.
+    # it over the internal network; nothing else should.
     expose:
       - "8100"
+    networks:
+      - backend-tier
     depends_on:
       postgres:
         condition: service_healthy
@@ -70,11 +75,11 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: flowops-backend
+    container_name: vantis-backend
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
       BACKEND_PORT: 8080
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-flowops}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://postgres:5432/${POSTGRES_DB:-flowops}}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:?POSTGRES_USER is required}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
       AI_SERVICE_URL: http://ai-service:8100
@@ -84,15 +89,26 @@ services:
       # and CryptoProperties fail the boot if either is missing or weak.
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required (openssl rand -base64 48)}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?ENCRYPTION_KEY is required (openssl rand -base64 32)}
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?PUBLIC_BASE_URL is required (e.g. https://api.flowops.example)}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?PUBLIC_BASE_URL is required (e.g. https://api.vantis.run)}
       REFRESH_COOKIE_SECURE: ${REFRESH_COOKIE_SECURE:-true}
       REFRESH_COOKIE_SAME_SITE: ${REFRESH_COOKIE_SAME_SITE:-None}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
     ports:
       - "8080:8080"
+    networks:
+      - backend-tier
+      - frontend-tier
     depends_on:
       postgres:
         condition: service_healthy
       ai-service:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     restart: unless-stopped
     security_opt:
@@ -102,19 +118,27 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: flowops-frontend
+    container_name: vantis-frontend
     environment:
       # Browser-exposed. Only ever put non-secret values behind NEXT_PUBLIC_*.
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL is required (e.g. https://api.flowops.example)}
-      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-FlowOps}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?NEXT_PUBLIC_API_URL is required (e.g. https://api.vantis.run)}
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME:-Vantis}
     ports:
       - "3000:3000"
+    networks:
+      - frontend-tier
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
     security_opt:
       - "no-new-privileges:true"
+
+networks:
+  backend-tier:
+    driver: bridge
+  frontend-tier:
+    driver: bridge
 
 volumes:
   postgres_data:

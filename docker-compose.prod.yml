@@ -1,0 +1,31 @@
+# -----------------------------------------------------------------------------
+# Vantis — Production Docker Compose Override
+# -----------------------------------------------------------------------------
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Production Security Guarantees:
+#   1. PostgreSQL and Redis do NOT publish host ports (reset ports list).
+#   2. AI Service is completely private to backend-tier (expose 8100 only).
+#   3. Backend profile forced to 'prod', enforcing TLS on database connections.
+#   4. Strict network tier isolation:
+#      - frontend-tier: Internet-facing reverse proxy / frontend -> backend
+#      - backend-tier: backend -> postgres, redis, ai-service
+#   5. All containers run with non-root users and no-new-privileges:true.
+# -----------------------------------------------------------------------------
+
+services:
+  postgres:
+    ports: !reset []
+
+  redis:
+    ports: !reset []
+
+  ai-service:
+    ports: !reset []
+
+  backend:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://postgres:5432/${POSTGRES_DB:-flowops}?sslmode=require}
+      POSTGRES_SSL_MODE: ${POSTGRES_SSL_MODE:-require}

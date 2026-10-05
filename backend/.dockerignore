@@ -1,0 +1,18 @@
+# Git & Tooling
+.git
+
+# Environment files and credentials (CRITICAL: never copy into images)
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.crt
+
+# Build outputs and caches
+target
+*.log
+.mvn/timing.properties
+src/test

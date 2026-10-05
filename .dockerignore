@@ -1,0 +1,29 @@
+# Git & Tooling
+.git
+.github
+.claude
+.superpowers
+
+# Environment files and credentials (CRITICAL: never copy into images)
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.crt
+
+# Build outputs and dependencies
+node_modules
+.next
+target
+__pycache__
+*.py[cod]
+.venv
+venv
+
+# Persistence and test directories
+postgres_data
+smtp-tls-test
+docs

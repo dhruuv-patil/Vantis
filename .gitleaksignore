@@ -1,0 +1,8 @@
+# Gitleaks ignore list for known historical commit false-positives
+# 1. TwilioProvider UI metadata dummy placeholders in past commits
+bee99da89af3a4c8f353515ee11125ba004e02d0:backend/src/main/java/com/flowops/integration/delivery/channels/TwilioProvider.java:generic-api-key:54
+f1f15e39ee810774e1618bce715afd4bc7efff40:backend/src/main/java/com/flowops/integration/delivery/channels/TwilioProvider.java:generic-api-key:54
+
+# 2. Sanitized test fixture mock webhooks in historical test commits
+6571450492b96ea2cad5d7f8f6233ba856bb6b41:backend/src/test/java/com/flowops/common/crypto/CredentialCipherTest.java:slack-webhook-url:23
+3adb9b34ac1e84b7f1b479ddfe5e879f21092e2b:backend/src/test/java/com/flowops/integration/IntegrationServiceTest.java:slack-webhook-url:47
