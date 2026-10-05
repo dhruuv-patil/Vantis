@@ -19,7 +19,7 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-10 w-full items-center justify-between rounded-inputs bg-white/[0.04] border border-white/[0.10] text-white/80 placeholder:text-white/30 px-3.5 py-2 text-sm transition-all duration-[180ms] focus:outline-none focus-visible:border-white/[0.20] focus-visible:ring-1 focus-visible:ring-white/[0.10] disabled:cursor-not-allowed disabled:opacity-40 [&>span]:line-height-[1.1] data-[placeholder]:text-white/30",
+      "flex h-10 w-full items-center justify-between rounded-inputs bg-white/[0.04] border border-white/[0.10] text-white/80 placeholder:text-white/30 px-3.5 py-2 text-sm transition-all duration-200 focus:outline-none focus-visible:border-white/[0.20] focus-visible:ring-1 focus-visible:ring-white/[0.10] disabled:cursor-not-allowed disabled:opacity-40 [&>span]:line-height-[1.1] data-[placeholder]:text-white/30",
       error && "border-destructive focus:ring-destructive",
       className,
     )}

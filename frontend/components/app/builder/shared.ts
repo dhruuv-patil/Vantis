@@ -147,4 +147,4 @@ export function groupByCategory(
 }
 
 /** MIME key used for HTML5 drag-and-drop from the palette to the canvas. */
-export const DND_MIME = "application/flowops-node-type";
+export const DND_MIME = "application/vantis-node-type";

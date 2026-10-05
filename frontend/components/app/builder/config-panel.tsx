@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { resolveIcon, type FlowNode } from "@/components/app/builder/shared";
+import { BrandIcon, resolveTheSvgSlug } from "@/components/app/builder/node-visuals";
 
 interface ConfigPanelProps {
   node: FlowNode | null;
@@ -34,64 +35,6 @@ interface ConfigPanelProps {
   onConfigChange: (key: string, value: unknown) => void;
 }
 
-const THESVG_SLUGS: Record<string, string> = {
-  github: "github",
-  github_actions: "github-actions",
-  gitlab: "gitlab",
-  salesforce: "salesforce",
-  hubspot: "hubspot",
-  pipedrive: "pipedrive",
-  jira: "jira",
-  linear: "linear",
-  asana: "asana",
-  slack: "slack",
-  discord: "discord",
-  telegram: "telegram",
-  twilio: "twilio",
-  sendgrid: "sendgrid",
-  resend: "resend",
-  gmail: "gmail",
-  notion: "notion",
-  google_sheets: "google-sheets",
-  stripe: "stripe",
-  openai: "openai",
-  anthropic: "anthropic",
-  n8n: "n8n",
-  zapier: "zapier",
-  make: "make",
-  temporal: "temporal",
-  vercel: "vercel",
-  sentry: "sentry",
-  pagerduty: "pagerduty",
-  aws: "aws",
-  s3: "s3",
-};
-
-function normalizeKey(value: string | undefined) {
-  return (value ?? "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-}
-
-function resolveTheSvgSlug(type?: string, label?: string) {
-  const values = [normalizeKey(type), normalizeKey(label)].filter(Boolean);
-
-  for (const value of values) {
-    if (THESVG_SLUGS[value]) {
-      return THESVG_SLUGS[value];
-    }
-
-    for (const [key, slug] of Object.entries(THESVG_SLUGS)) {
-      if (value.includes(key)) {
-        return slug;
-      }
-    }
-  }
-
-  return null;
-}
-
 function NodeBrandIcon({
   type,
   label,
@@ -103,29 +46,22 @@ function NodeBrandIcon({
   icon?: string;
   className?: string;
 }) {
-  const slug = resolveTheSvgSlug(type, label);
-
-  if (slug) {
-    return (
-      <img
-        src={`https://thesvg.org/icons/${slug}/default.svg`}
-        alt=""
-        aria-hidden="true"
-        className={cn("size-5 object-contain", className)}
-      />
-    );
-  }
-
-  const Icon = resolveIcon(icon);
-
-  return <Icon className={cn("size-5", className)} />;
+  return (
+    <BrandIcon
+      type={type}
+      label={label}
+      icon={icon}
+      className={cn("size-5", className)}
+      theme="auto"
+    />
+  );
 }
 
 const fieldControlClass =
-  "h-9 w-full rounded-lg border-white/[0.09] bg-white/[0.035] text-white shadow-none transition-all placeholder:text-white/25 hover:border-white/[0.14] focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/10";
+  "h-9 w-full rounded-lg border-white/[0.09] bg-white/[0.035] text-white shadow-none transition-all placeholder:text-white/45 hover:border-white/[0.14] focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/10";
 
 const textAreaClass =
-  "w-full rounded-lg border-white/[0.09] bg-white/[0.035] text-white shadow-none transition-all placeholder:text-white/25 hover:border-white/[0.14] focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/10";
+  "w-full rounded-lg border-white/[0.09] bg-white/[0.035] text-white shadow-none transition-all placeholder:text-white/45 hover:border-white/[0.14] focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/10";
 
 export function ConfigPanel({
   node,
@@ -152,7 +88,7 @@ export function ConfigPanel({
                 Inspector
               </p>
 
-              <p className="text-[10px] text-white/35">
+              <p className="text-[11px] text-white/45">
                 Workflow node settings
               </p>
             </div>
@@ -162,14 +98,14 @@ export function ConfigPanel({
         <div className="flex min-h-0 flex-1 items-center justify-center p-7">
           <div className="max-w-[230px] text-center">
             <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] shadow-[0_0_30px_-18px_rgba(255,255,255,0.35)]">
-              <Settings2 className="size-5 text-white/35" />
+              <Settings2 className="size-5 text-white/40" />
             </div>
 
-            <p className="text-sm font-medium text-white/75">
+            <p className="text-sm font-medium text-white/80">
               Select a node
             </p>
 
-            <p className="mt-1.5 text-xs leading-relaxed text-white/35">
+            <p className="mt-1.5 text-xs leading-relaxed text-white/45">
               Choose a node on the canvas to edit its configuration and inputs.
             </p>
           </div>
@@ -200,7 +136,7 @@ export function ConfigPanel({
             </p>
 
             <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
-              <span className="truncate font-mono text-[9px] uppercase tracking-[0.11em] text-white/30">
+              <span className="truncate font-mono text-[10px] uppercase tracking-[0.11em] text-white/45">
                 {node.type}
               </span>
 
@@ -229,12 +165,12 @@ export function ConfigPanel({
         <div className="space-y-3.5 p-3.5">
           {def?.description && (
             <div className="rounded-xl border border-white/[0.07] bg-white/[0.022] p-3">
-              <div className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.13em] text-white/35">
+              <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.13em] text-white/45">
                 <Info className="size-3" />
                 About this node
               </div>
 
-              <p className="break-words text-[11px] leading-relaxed text-white/50">
+              <p className="break-words text-[11px] leading-relaxed text-white/60">
                 {def.description}
               </p>
             </div>
@@ -251,7 +187,7 @@ export function ConfigPanel({
                   General
                 </p>
 
-                <p className="text-[10px] text-white/30">
+                <p className="text-[11px] text-white/45">
                   Identity and display
                 </p>
               </div>
@@ -287,7 +223,7 @@ export function ConfigPanel({
                     Configuration
                   </p>
 
-                  <p className="text-[10px] text-white/30">
+                  <p className="text-[11px] text-white/45">
                     Runtime inputs for this node
                   </p>
                 </div>
@@ -312,11 +248,11 @@ export function ConfigPanel({
 
       <div className="shrink-0 border-t border-white/[0.07] bg-[#08090b]/95 px-3.5 py-2.5 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-[9px] font-semibold uppercase tracking-[0.12em] text-white/25">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/45">
             Node ID
           </span>
 
-          <span className="min-w-0 truncate font-mono text-[10px] text-white/35">
+          <span className="min-w-0 truncate font-mono text-[11px] text-white/50">
             {node.id}
           </span>
         </div>
@@ -341,7 +277,7 @@ function FieldControl({
       {field.type !== "boolean" && (
         <Label
           htmlFor={controlId}
-          className="flex min-w-0 items-center gap-1 text-[10px] font-medium uppercase tracking-[0.08em] text-white/45"
+          className="flex min-w-0 items-center gap-1 text-[11px] font-medium uppercase tracking-[0.08em] text-white/60"
         >
           <span className="min-w-0 truncate">
             {field.label}
@@ -363,7 +299,7 @@ function FieldControl({
       />
 
       {field.help && (
-        <p className="break-words text-[10px] leading-relaxed text-white/28">
+        <p className="break-words text-[11px] leading-relaxed text-white/45">
           {field.help}
         </p>
       )}
@@ -435,7 +371,7 @@ function FieldWidget({
             </span>
 
             {field.help && (
-              <span className="mt-0.5 block break-words text-[10px] text-white/28">
+              <span className="mt-0.5 block break-words text-[11px] text-white/45">
                 {field.help}
               </span>
             )}
@@ -547,12 +483,12 @@ function AgentSelect({
   if (!query.isPending && agents.length === 0) {
     return (
       <div className="rounded-lg border border-white/[0.07] bg-white/[0.02] p-3">
-        <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold text-white/55">
+        <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-white/60">
           <Sparkles className="size-3" />
           No saved agents
         </div>
 
-        <p className="text-[10px] leading-relaxed text-white/30">
+        <p className="text-[11px] leading-relaxed text-white/45">
           <Link
             href="/agents"
             className="text-primary underline-offset-2 hover:underline"
@@ -624,7 +560,7 @@ function IntegrationSelect({
 
   if (query.isPending) {
     return (
-      <div className="flex h-9 items-center rounded-lg border border-white/[0.07] bg-white/[0.025] px-3 text-[10px] text-white/30">
+      <div className="flex h-9 items-center rounded-lg border border-white/[0.07] bg-white/[0.025] px-3 text-[11px] text-white/45">
         Loading integrations…
       </div>
     );
@@ -632,7 +568,7 @@ function IntegrationSelect({
 
   if (query.isError) {
     return (
-      <p className="rounded-lg border border-destructive/20 bg-destructive/5 p-2.5 text-[10px] leading-relaxed text-destructive">
+      <p className="rounded-lg border border-destructive/20 bg-destructive/5 p-2.5 text-[11px] leading-relaxed text-destructive">
         Could not load integrations.
       </p>
     );
@@ -641,7 +577,7 @@ function IntegrationSelect({
   if (integrations.length === 0) {
     return (
       <div className="rounded-lg border border-white/[0.07] bg-white/[0.02] p-3">
-        <p className="text-[10px] leading-relaxed text-white/30">
+        <p className="text-[11px] leading-relaxed text-white/45">
           No connected integrations.{" "}
           <Link
             href="/integrations"
@@ -809,15 +745,15 @@ function VariableHint({
             Available variables
           </p>
 
-          <p className="text-[10px] text-white/30">
+          <p className="text-[11px] text-white/45">
             Use outputs from upstream nodes
           </p>
         </div>
       </div>
 
-      <p className="text-[10px] leading-relaxed text-white/35">
+      <p className="text-[11px] leading-relaxed text-white/45">
         Reference upstream output with{" "}
-        <code className="rounded-md border border-white/[0.06] bg-black/20 px-1.5 py-0.5 font-mono text-[9px] text-primary/80">
+        <code className="rounded-md border border-white/[0.06] bg-black/20 px-1.5 py-0.5 font-mono text-[10px] text-primary/90">
           {"{{nodeId.field}}"}
         </code>
       </p>
@@ -827,7 +763,7 @@ function VariableHint({
           <Badge
             key={id}
             variant="outline"
-            className="max-w-full break-all border-primary/[0.14] bg-primary/[0.04] font-mono text-[9px] font-normal text-white/55"
+            className="max-w-full break-all border-primary/[0.14] bg-primary/[0.04] font-mono text-[10px] font-normal text-white/60"
           >
             {`{{${id}}}`}
           </Badge>

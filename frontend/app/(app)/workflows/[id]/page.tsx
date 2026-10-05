@@ -922,6 +922,7 @@ export default function WorkflowDetailPage() {
       dirty: false,
       savePending: false,
       publishPending: false,
+      validatePending: false,
       hasWebhookTrigger: false,
     });
 
@@ -1035,10 +1036,31 @@ export default function WorkflowDetailPage() {
         canRun={
           version != null
         }
-        runPending={false}
         namePending={false}
         onRename={() => {}}
-        onRun={() => {}}
+        onValidate={() => {
+          if (
+            activeView !==
+            "editor"
+          ) {
+            setActiveView(
+              "editor",
+            );
+
+            window.setTimeout(
+              () =>
+                builderRef.current?.validate(),
+              0,
+            );
+
+            return;
+          }
+
+          builderRef.current?.validate();
+        }}
+        validatePending={
+          builderHeaderState.validatePending
+        }
         onGenerate={() => {
           if (
             activeView !==
@@ -1186,6 +1208,7 @@ interface BuilderHeaderState {
   dirty: boolean;
   savePending: boolean;
   publishPending: boolean;
+  validatePending: boolean;
   hasWebhookTrigger: boolean;
 }
 
@@ -1194,6 +1217,7 @@ interface BuilderHandle {
   publish: () => void;
   generate: () => void;
   webhook: () => void;
+  validate: () => void;
 }
 
 interface BuilderProps {
@@ -2134,6 +2158,65 @@ const Builder =
           ),
       });
 
+    const [isValidating, setIsValidating] =
+      React.useState(false);
+
+    const doValidate =
+      React.useCallback(async () => {
+        if (
+          validateMutation.isPending ||
+          isValidating ||
+          saveMutation.isPending
+        ) {
+          return;
+        }
+
+        setIsValidating(true);
+        try {
+          if (dirty) {
+            const detail =
+              await saveWorkflowGraph(
+                workflow.id,
+                flowToGraph(
+                  nodes,
+                  edges,
+                ),
+              );
+            savedRef.current =
+              JSON.stringify(
+                detail.graph,
+              );
+            setDirty(false);
+            queryClient.setQueryData(
+              [
+                "workflow",
+                workflow.id,
+              ],
+              detail,
+            );
+          }
+          await validateMutation.mutateAsync();
+        } catch (err) {
+          if (dirty) {
+            toast.error(
+              "Failed to save draft before validation: " +
+                getErrorMessage(err),
+            );
+          }
+        } finally {
+          setIsValidating(false);
+        }
+      }, [
+        dirty,
+        nodes,
+        edges,
+        workflow.id,
+        queryClient,
+        saveMutation.isPending,
+        validateMutation,
+        isValidating,
+      ]);
+
     const doSave =
       React.useCallback(
         () => {
@@ -2151,6 +2234,9 @@ const Builder =
       () => ({
         save: () =>
           doSave(),
+
+        validate: () =>
+          doValidate(),
 
         publish: () => {
           if (
@@ -2180,6 +2266,7 @@ const Builder =
       }),
       [
         doSave,
+        doValidate,
         publishMutation.isPending,
       ],
     );
@@ -2213,12 +2300,16 @@ const Builder =
           saveMutation.isPending,
         publishPending:
           publishMutation.isPending,
+        validatePending:
+          validateMutation.isPending || isValidating,
         hasWebhookTrigger,
       });
     }, [
       dirty,
       saveMutation.isPending,
       publishMutation.isPending,
+      validateMutation.isPending,
+      isValidating,
       hasWebhookTrigger,
       onHeaderStateChange,
     ]);
@@ -2465,9 +2556,7 @@ const Builder =
                     maxZoom: 1.1,
                   })
                 }
-                onValidate={() =>
-                  validateMutation.mutate()
-                }
+                onValidate={doValidate}
                 onSave={doSave}
                 onPublish={() => {
                   setPublishBlock(

@@ -93,7 +93,7 @@ export function PublishDialog({
             Cancel
           </Button>
           <Button
-            variant="contrast"
+            variant="default"
             onClick={() => onPublish(note.trim())}
             disabled={pending}
           >

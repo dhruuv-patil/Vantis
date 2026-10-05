@@ -10,6 +10,7 @@ import {
   Upload,
   Trash2,
   Loader2,
+  CheckCircle2,
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -34,10 +35,12 @@ interface WorkflowHeaderProps {
   version: number | null;
   dirty: boolean;
   canRun: boolean;
-  runPending: boolean;
-  namePending: boolean;
-  onRename: (name: string) => void;
-  onRun: () => void;
+  runPending?: boolean;
+  namePending?: boolean;
+  onRename?: (name: string) => void;
+  onRun?: () => void;
+  onValidate?: () => void;
+  validatePending?: boolean;
   onGenerate: () => void;
   onSave: () => void;
   onPublish: () => void;
@@ -91,6 +94,8 @@ export function WorkflowHeader({
   namePending,
   onRename,
   onRun,
+  onValidate,
+  validatePending = false,
   onGenerate,
   onSave,
   onPublish,
@@ -128,8 +133,16 @@ export function WorkflowHeader({
     onError: (err) => toast.error(getErrorMessage(err)),
   });
 
-  const running = runMutation.isPending || runPending;
+  const running = runMutation.isPending || Boolean(runPending);
   const status = statusConfig[workflow.status];
+
+  const handleRun = React.useCallback(() => {
+    if (onRun) {
+      onRun();
+    } else {
+      runMutation.mutate();
+    }
+  }, [onRun, runMutation]);
 
   return (
     <TooltipProvider delayDuration={250}>
@@ -275,6 +288,31 @@ export function WorkflowHeader({
               </TooltipContent>
             </Tooltip>
 
+            {/* Validate */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onValidate}
+                    disabled={validatePending}
+                    aria-label="Validate workflow"
+                    className="size-8 text-white/60 hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
+                  >
+                    {validatePending ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="size-4" />
+                    )}
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                {validatePending ? "Validating workflow…" : "Validate workflow"}
+              </TooltipContent>
+            </Tooltip>
+
             {/* Publish */}
             <Tooltip>
               <TooltipTrigger asChild>
@@ -302,7 +340,7 @@ export function WorkflowHeader({
                 <span className="shrink-0">
                   <Button
                     size="sm"
-                    onClick={running ? undefined : onRun}
+                    onClick={running ? undefined : handleRun}
                     disabled={!canRun || running}
                     className="h-8 gap-1.5 bg-white px-3.5 text-black hover:bg-white/90 disabled:bg-white/[0.08] disabled:text-white/25"
                   >
@@ -317,7 +355,9 @@ export function WorkflowHeader({
               </TooltipTrigger>
               <TooltipContent>
                 {canRun
-                  ? "Run the latest published version"
+                  ? dirty
+                    ? `Run latest published version (v${version}). Unsaved changes will not be included.`
+                    : "Run the latest published version"
                   : "Publish a version before running"}
               </TooltipContent>
             </Tooltip>

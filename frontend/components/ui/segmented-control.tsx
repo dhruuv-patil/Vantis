@@ -3,13 +3,26 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-interface SegmentedControlProps<T extends string = string> {
-  /** Array of tab values and labels */
-  tabs: readonly { value: T; label: string }[];
-  /** Currently active tab value */
+export interface SegmentedOption<T extends string = string> {
   value: T;
+  label: React.ReactNode;
+  icon?: React.ReactNode;
+  disabled?: boolean;
+}
+
+export interface SegmentedControlProps<T extends string = string> {
+  /** Array of tab values and labels (tabs or options) */
+  tabs?: readonly SegmentedOption<T>[];
+  options?: readonly SegmentedOption<T>[];
+  /** Currently active tab value */
+  value?: T;
+  defaultValue?: T;
   /** Callback when tab changes */
-  onValueChange: (value: T) => void;
+  onValueChange?: (value: T) => void;
+  /** Accessible label */
+  label?: string;
+  /** Size variant: default (h-10, h-8 pill) or compact (h-8) */
+  size?: "default" | "sm";
   /** Additional className for the container */
   className?: string;
   /** Whether the control is disabled */
@@ -17,73 +30,82 @@ interface SegmentedControlProps<T extends string = string> {
 }
 
 /**
- * A compact segmented control (pill-style) for switching between views.
- * Features:
- * - Rounded pill container with dark translucent background
- * - Thin subtle border
- * - Active tab uses bright filled pill inside container
- * - Inactive tabs remain muted gray
- * - Smooth transition when switching
- * - No large colored tabs or excessive shadows
+ * Unified segmented control for Vantis.
+ * Follows the Templates visual benchmark: dark surface container,
+ * crisp white/[0.08] border, subtle rounded-lg / rounded-md tabs.
  */
-export function SegmentedControl<T extends string>({
+export function SegmentedControl<T extends string = string>({
   tabs,
+  options,
   value,
+  defaultValue,
   onValueChange,
+  label = "View selector",
+  size = "default",
   className,
   disabled = false,
 }: SegmentedControlProps<T>) {
-  const [activeTab, setActiveTab] = React.useState(value);
+  const items = (options ?? tabs ?? []) as readonly SegmentedOption<T>[];
+  const [internal, setInternal] = React.useState<T>(
+    defaultValue ?? items[0]?.value ?? ("" as T),
+  );
 
-  // Sync with controlled value
-  React.useEffect(() => {
-    setActiveTab(value);
-  }, [value]);
+  const isControlled = value !== undefined;
+  const selected = isControlled ? value : internal;
+
+  const handleSelect = (next: T) => {
+    if (!isControlled) {
+      setInternal(next);
+    }
+    onValueChange?.(next);
+  };
 
   return (
     <div
+      role="radiogroup"
+      aria-label={label}
       className={cn(
-        "inline-flex items-center gap-1 rounded-full bg-white/[0.035] border border-white/[0.10] p-1 transition-all duration-200",
-        "h-9",
+        "inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-[#0a0a0c] p-1 transition-all duration-200",
+        size === "sm" ? "h-8" : "h-10",
         disabled && "opacity-50 pointer-events-none",
         className,
       )}
-      role="tablist"
-      aria-label="View selector"
     >
-      {tabs.map((tab, index) => (
-        <button
-          key={tab.value}
-          type="button"
-          role="tab"
-          aria-selected={activeTab === tab.value}
-          aria-controls={`panel-${tab.value}`}
-          id={`tab-${tab.value}`}
-          onClick={() => {
-            if (!disabled) {
-              setActiveTab(tab.value);
-              onValueChange(tab.value);
-            }
-          }}
-          disabled={disabled}
-          className={cn(
-            "relative z-10 flex items-center justify-center rounded-full px-4 text-xs font-medium tracking-tight transition-all duration-200 ease-out",
-            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20",
-            "disabled:opacity-50 disabled:pointer-events-none",
-            "h-8",
-            activeTab === tab.value
-              ? "bg-white text-[#050505] shadow-sm"
-              : "text-white/45 hover:text-white/75",
-          )}
-          style={{
-            // Equal width for all tabs
-            flex: 1,
-            minWidth: 0,
-          }}
-        >
-          {tab.label}
-        </button>
-      ))}
+      {items.map((item) => {
+        const active = item.value === selected;
+        const isDisabled = disabled || item.disabled;
+
+        return (
+          <button
+            key={item.value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            disabled={isDisabled}
+            onClick={() => handleSelect(item.value)}
+            className={cn(
+              "relative z-10 inline-flex items-center justify-center gap-1.5 rounded-md px-3 font-medium transition-all duration-150 ease-out",
+              size === "sm" ? "h-6 text-[11px]" : "h-8 text-xs",
+              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20",
+              "disabled:opacity-40 disabled:pointer-events-none",
+              active
+                ? "bg-white text-black font-semibold shadow-sm"
+                : "text-white/45 hover:text-white/80 hover:bg-white/[0.04]",
+            )}
+          >
+            {item.icon && (
+              <span className="[&_svg]:size-3.5 [&_svg]:shrink-0 opacity-70">
+                {item.icon}
+              </span>
+            )}
+            <span>{item.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
+
+/** Alias for backward compatibility */
+export const SegmentedToggle = SegmentedControl;
+export type SegmentedToggleProps = SegmentedControlProps;

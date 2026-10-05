@@ -6,44 +6,93 @@ import { cn } from "@/lib/utils";
 import { resolveIcon } from "@/components/app/builder/shared";
 
 /* ==========================================================================
-   BRAND RULES  (slug on theSVG -> identifiers that map to it)
+   BRAND RULES (slug on theSVG -> identifiers/keywords that map to it)
    Order matters: more specific rules first.
    Keywords match whole underscore-separated tokens, so "make" in
-   "Make HTTP Request" no longer matches the Make brand.
+   "Make HTTP Request" matches only if it is the isolated token.
    ========================================================================== */
 
-const BRAND_RULES: ReadonlyArray<readonly [string, readonly string[]]> = [
-  ["github-actions", ["github_actions", "githubactions"]],
-  ["google-sheets", ["google_sheets", "googlesheets", "sheets"]],
-  ["microsoft-teams", ["microsoft_teams", "ms_teams", "teams"]],
-  ["amazon-s3", ["s3", "aws_s3"]],
-
-  ["salesforce", ["salesforce"]],
-  ["pagerduty", ["pagerduty"]],
-  ["github", ["github"]],
+export const BRAND_RULES: ReadonlyArray<readonly [string, readonly string[]]> = [
+  // Developer & CI/CD
+  ["github-actions", ["github_actions", "githubactions", "actions"]],
+  ["bitbucket", ["bitbucket"]],
   ["gitlab", ["gitlab"]],
-  ["vercel", ["vercel"]],
+  ["github", ["github", "gh"]],
   ["sentry", ["sentry"]],
+  ["pagerduty", ["pagerduty", "pd"]],
+  ["vercel", ["vercel"]],
+  ["docker", ["docker"]],
+  ["kubernetes", ["kubernetes", "k8s"]],
+
+  // Google Workspace & Cloud
+  ["google-sheets", ["google_sheets", "googlesheets", "sheets", "googlesheet", "sheet"]],
+  ["google-calendar", ["google_calendar", "googlecalendar", "calendar", "gcal"]],
+  ["google-docs", ["google_docs", "googledocs", "gdocs"]],
+  ["google-drive", ["google_drive", "googledrive", "gdrive", "drive"]],
+  ["google-cloud", ["google_cloud", "googlecloud", "gcp", "gcs"]],
+  ["gmail", ["gmail"]],
+
+  // Microsoft
+  ["microsoft-teams", ["microsoft_teams", "ms_teams", "teams", "msteams"]],
+  ["microsoft-onedrive", ["microsoft_onedrive", "onedrive"]],
+  ["azure", ["azure", "microsoft_azure", "ms_azure"]],
+
+  // Cloud & Storage
+  ["amazon-s3", ["s3", "aws_s3", "amazons3", "amazon_s3"]],
+  ["aws", ["aws", "amazon_web_services", "amazonaws"]],
+  ["cloudflare", ["cloudflare"]],
+  ["digitalocean", ["digitalocean", "digital_ocean"]],
+  ["dropbox", ["dropbox"]],
+  ["box", ["box"]],
+
+  // Databases
+  ["postgresql", ["postgresql", "postgres", "psql"]],
+  ["mysql", ["mysql"]],
+  ["mongodb", ["mongodb", "mongo"]],
+  ["redis", ["redis"]],
+  ["supabase", ["supabase"]],
+  ["airtable", ["airtable"]],
+
+  // Project Management & Tracking
   ["linear", ["linear"]],
-  ["jira", ["jira"]],
+  ["jira", ["jira", "atlassian_jira"]],
   ["asana", ["asana"]],
+  ["trello", ["trello"]],
+  ["clickup", ["clickup"]],
+  ["monday", ["monday", "monday_com"]],
+
+  // CRM & Sales
+  ["salesforce", ["salesforce", "sfdc"]],
   ["hubspot", ["hubspot"]],
   ["pipedrive", ["pipedrive"]],
+  ["zoho", ["zoho", "zoho_crm", "zohocrm"]],
+
+  // Communication
   ["slack", ["slack"]],
   ["discord", ["discord"]],
   ["telegram", ["telegram"]],
   ["twilio", ["twilio"]],
+
+  // Email
   ["sendgrid", ["sendgrid"]],
   ["resend", ["resend"]],
-  ["gmail", ["gmail"]],
-  ["notion", ["notion"]],
+
+  // Payments & Productivity
   ["stripe", ["stripe"]],
-  ["openai", ["openai"]],
-  ["anthropic", ["anthropic"]],
+  ["notion", ["notion"]],
+
+  // AI & LLM
+  ["openai", ["openai", "chatgpt"]],
+  ["anthropic", ["anthropic", "claude"]],
+  ["cohere", ["cohere"]],
+  ["hugging-face", ["huggingface", "hugging_face"]],
+  ["mistral", ["mistral"]],
+  ["groq", ["groq"]],
+
+  // Automation & Orchestration
   ["n8n", ["n8n"]],
   ["zapier", ["zapier"]],
   ["temporal", ["temporal"]],
-  ["aws", ["aws"]],
 ];
 
 function normalize(value?: string) {
@@ -78,8 +127,9 @@ export function resolveTheSvgSlug(
 }
 
 /**
- * Brands whose default logo is black / near-black and disappears on a
- * dark surface. Rendered as white silhouettes.
+ * Brands whose default logo is black / near-black monochrome and disappears
+ * on a dark surface without inversion. In dark mode, rendered as white silhouettes;
+ * in light mode, rendered in crisp black / original color.
  */
 export const MONO_DARK_SLUGS = new Set([
   "github",
@@ -93,7 +143,147 @@ export const MONO_DARK_SLUGS = new Set([
   "pipedrive",
   "temporal",
   "aws",
+  "linear",
+  "cohere",
 ]);
+
+export function isMonoDarkBrand(slug: string): boolean {
+  return MONO_DARK_SLUGS.has(slug);
+}
+
+export const BRAND_TITLES: Record<string, string> = {
+  github: "GitHub",
+  "github-actions": "GitHub Actions",
+  gitlab: "GitLab",
+  bitbucket: "Bitbucket",
+  "google-sheets": "Google Sheets",
+  "google-calendar": "Google Calendar",
+  "google-docs": "Google Docs",
+  "google-drive": "Google Drive",
+  "google-cloud": "Google Cloud",
+  "microsoft-teams": "Microsoft Teams",
+  "microsoft-onedrive": "OneDrive",
+  azure: "Microsoft Azure",
+  "amazon-s3": "Amazon S3",
+  aws: "AWS",
+  salesforce: "Salesforce",
+  pagerduty: "PagerDuty",
+  vercel: "Vercel",
+  sentry: "Sentry",
+  linear: "Linear",
+  jira: "Jira",
+  asana: "Asana",
+  trello: "Trello",
+  clickup: "ClickUp",
+  monday: "Monday.com",
+  airtable: "Airtable",
+  hubspot: "HubSpot",
+  pipedrive: "Pipedrive",
+  zoho: "Zoho",
+  slack: "Slack",
+  discord: "Discord",
+  telegram: "Telegram",
+  twilio: "Twilio",
+  sendgrid: "SendGrid",
+  resend: "Resend",
+  gmail: "Gmail",
+  notion: "Notion",
+  stripe: "Stripe",
+  openai: "OpenAI",
+  anthropic: "Anthropic",
+  cohere: "Cohere",
+  "hugging-face": "Hugging Face",
+  mistral: "Mistral AI",
+  groq: "Groq",
+  n8n: "n8n",
+  make: "Make",
+  zapier: "Zapier",
+  temporal: "Temporal",
+  postgresql: "PostgreSQL",
+  mysql: "MySQL",
+  mongodb: "MongoDB",
+  redis: "Redis",
+  docker: "Docker",
+  kubernetes: "Kubernetes",
+  cloudflare: "Cloudflare",
+  digitalocean: "DigitalOcean",
+  dropbox: "Dropbox",
+  box: "Box",
+  supabase: "Supabase",
+};
+
+export const BRAND_COLORS: Record<string, string> = {
+  github: "#181717",
+  "github-actions": "#2088FF",
+  gitlab: "#FC6D26",
+  bitbucket: "#0052CC",
+  "google-sheets": "#34A853",
+  "google-calendar": "#1A73E8",
+  "google-docs": "#4285F4",
+  "google-drive": "#34A853",
+  "google-cloud": "#4285F4",
+  "microsoft-teams": "#6264A7",
+  "microsoft-onedrive": "#0078D4",
+  azure: "#0078D4",
+  "amazon-s3": "#569A31",
+  aws: "#FF9900",
+  salesforce: "#00A1E0",
+  pagerduty: "#06AC38",
+  vercel: "#000000",
+  sentry: "#362D59",
+  linear: "#5E6AD2",
+  jira: "#0C66E4",
+  asana: "#F06A6A",
+  trello: "#0052CC",
+  clickup: "#7B68EE",
+  monday: "#FF3D57",
+  airtable: "#18BFFF",
+  hubspot: "#FF7A59",
+  pipedrive: "#017737",
+  zoho: "#C8232C",
+  slack: "#E01E5A",
+  discord: "#5865F2",
+  telegram: "#229ED9",
+  twilio: "#F22F46",
+  sendgrid: "#1A82E2",
+  resend: "#000000",
+  gmail: "#EA4335",
+  notion: "#000000",
+  stripe: "#635BFF",
+  openai: "#10A37F",
+  anthropic: "#D97757",
+  cohere: "#39594C",
+  "hugging-face": "#FFD21E",
+  mistral: "#FA520F",
+  groq: "#F55036",
+  n8n: "#EA4B71",
+  make: "#6D00CC",
+  zapier: "#FF4A00",
+  temporal: "#7C3AED",
+  postgresql: "#4169E1",
+  mysql: "#4479A1",
+  mongodb: "#47A248",
+  redis: "#DC382D",
+  docker: "#2496ED",
+  kubernetes: "#326CE5",
+  cloudflare: "#F38020",
+  digitalocean: "#0080FF",
+  dropbox: "#0061FF",
+  box: "#0061D5",
+  supabase: "#3ECF8E",
+};
+
+export function theSvgUrl(slug: string): string {
+  return `https://thesvg.org/icons/${slug}/default.svg`;
+}
+
+export function getBrandTitle(slug: string, fallback?: string): string {
+  return BRAND_TITLES[slug] ?? fallback ?? slug;
+}
+
+export function getBrandColor(slug: string, fallback = "#818cf8"): string {
+  return BRAND_COLORS[slug] ?? fallback;
+}
 
 /* ==========================================================================
    CATEGORY ACCENTS  (space-separated RGB so we can add alpha)
@@ -102,7 +292,6 @@ export const MONO_DARK_SLUGS = new Set([
 const DEFAULT_ACCENT = "129 140 248";
 export const TRIGGER_ACCENT = "245 158 11";
 
-// Adjust the keys to match your backend's category names.
 const CATEGORY_ACCENTS: Record<string, string> = {
   trigger: TRIGGER_ACCENT,
   ai: "167 139 250",
@@ -116,9 +305,14 @@ const CATEGORY_ACCENTS: Record<string, string> = {
   communication: "52 211 153",
   email: "52 211 153",
   crm: "244 114 182",
+  storage: "56 189 248",
+  database: "96 165 250",
+  payments: "167 139 250",
+  security: "244 63 94",
+  reliability: "245 158 11",
 };
 
-export function resolveAccent(category?: string, isTrigger?: boolean) {
+export function resolveAccent(category?: string, isTrigger?: boolean): string {
   if (isTrigger) return TRIGGER_ACCENT;
 
   const tokens = (category ?? "").toLowerCase().split(/[^a-z]+/);
@@ -131,9 +325,107 @@ export function resolveAccent(category?: string, isTrigger?: boolean) {
 }
 
 /* ==========================================================================
-   ICON
-   node    -> bare logo / colored icon on the canvas
-   palette -> same, in a fixed 32px slot so labels line up
+   BRAND ICON COMPONENT
+   Reusable across Workflow Editor, Templates, Integrations, and Modals.
+   Features 3-tier fallback (theSVG CDN -> local /integrations/ -> Lucide).
+   Theme support:
+     - "dark": forces mono-dark icons to white silhouette
+     - "light": forces mono-dark icons to keep natural dark appearance
+     - "auto": dynamically inverts in dark mode via Tailwind (dark:brightness-0 dark:invert)
+   ========================================================================== */
+
+export interface BrandIconProps {
+  slug?: string | null;
+  type?: string;
+  label?: string;
+  icon?: string;
+  name?: string;
+  theme?: "dark" | "light" | "auto";
+  className?: string;
+  alt?: string;
+  fallbackIcon?: React.ElementType;
+  fallbackColor?: string;
+}
+
+export function BrandIcon({
+  slug: rawSlug,
+  type,
+  label,
+  icon,
+  name,
+  theme = "auto",
+  className = "size-5",
+  alt = "",
+  fallbackIcon,
+  fallbackColor,
+}: BrandIconProps) {
+  const [sourceIndex, setSourceIndex] = React.useState(0);
+
+  const slug = React.useMemo(() => {
+    if (rawSlug) return rawSlug;
+    return resolveTheSvgSlug(type, label || name, icon);
+  }, [rawSlug, type, label, name, icon]);
+
+  React.useEffect(() => {
+    setSourceIndex(0);
+  }, [slug]);
+
+  const isMonoDark = slug ? MONO_DARK_SLUGS.has(slug) : false;
+
+  const themeFilterClass = isMonoDark
+    ? theme === "dark"
+      ? "brightness-0 invert"
+      : theme === "light"
+      ? ""
+      : "dark:brightness-0 dark:invert"
+    : "";
+
+  // 1. Try remote theSVG CDN
+  if (slug && sourceIndex === 0) {
+    return (
+      <img
+        src={theSvgUrl(slug)}
+        alt={alt}
+        aria-hidden={!alt}
+        draggable={false}
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        className={cn("object-contain", className, themeFilterClass)}
+        onError={() => setSourceIndex(1)}
+      />
+    );
+  }
+
+  // 2. Try local public SVG fallback
+  if (slug && sourceIndex === 1) {
+    return (
+      <img
+        src={`/integrations/${slug}.svg`}
+        alt={alt}
+        aria-hidden={!alt}
+        draggable={false}
+        loading="lazy"
+        decoding="async"
+        className={cn("object-contain", className, themeFilterClass)}
+        onError={() => setSourceIndex(2)}
+      />
+    );
+  }
+
+  // 3. Fallback to vector icon
+  const Fallback = fallbackIcon || resolveIcon(icon);
+  return (
+    <Fallback
+      className={className}
+      style={fallbackColor ? { color: fallbackColor } : undefined}
+      aria-hidden={!alt}
+    />
+  );
+}
+
+/* ==========================================================================
+   NODE ICON (Canvas & Palette)
    ========================================================================== */
 
 const SIZES = {
@@ -153,16 +445,18 @@ export function NodeIcon({
   icon,
   accent,
   variant = "node",
+  theme = "auto",
   className,
 }: {
   type?: string;
   label?: string;
   icon?: string;
-  accent: string;
+  accent?: string;
   variant?: keyof typeof SIZES;
+  theme?: "dark" | "light" | "auto";
   className?: string;
 }) {
-  const [failed, setFailed] = React.useState(false);
+  const [sourceIndex, setSourceIndex] = React.useState(0);
 
   const slug = React.useMemo(
     () => resolveTheSvgSlug(type, label, icon),
@@ -170,43 +464,72 @@ export function NodeIcon({
   );
 
   React.useEffect(() => {
-    setFailed(false);
+    setSourceIndex(0);
   }, [slug]);
 
   const size = SIZES[variant];
+  const isMonoDark = slug ? MONO_DARK_SLUGS.has(slug) : false;
 
-  /* Brand logo: dark logos flipped to white */
-  const visual =
-    slug && !failed ? (
+  const themeFilterClass = isMonoDark
+    ? theme === "dark"
+      ? "brightness-0 invert"
+      : theme === "light"
+      ? ""
+      : "dark:brightness-0 dark:invert"
+    : "";
+
+  let visual: React.ReactNode;
+
+  if (slug && sourceIndex === 0) {
+    visual = (
       <img
-        src={`https://thesvg.org/icons/${slug}/default.svg`}
+        src={theSvgUrl(slug)}
         alt=""
         aria-hidden="true"
         draggable={false}
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
         className={cn(
           "object-contain",
           size.logo,
           variant === "node" &&
-            "drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)]",
-          MONO_DARK_SLUGS.has(slug) && "brightness-0 invert",
+            "drop-shadow-[0_1px_2px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)]",
+          themeFilterClass,
         )}
-        onError={() => setFailed(true)}
+        onError={() => setSourceIndex(1)}
       />
-    ) : (
-      /* Generic node: colored Lucide icon */
-      (() => {
-        const FallbackIcon = resolveIcon(icon);
-
-        return (
-          <FallbackIcon
-            className={size.glyph}
-            style={{ color: `rgb(${accent})` }}
-            strokeWidth={1.75}
-            aria-hidden="true"
-          />
-        );
-      })()
     );
+  } else if (slug && sourceIndex === 1) {
+    visual = (
+      <img
+        src={`/integrations/${slug}.svg`}
+        alt=""
+        aria-hidden="true"
+        draggable={false}
+        loading="lazy"
+        decoding="async"
+        className={cn(
+          "object-contain",
+          size.logo,
+          variant === "node" &&
+            "drop-shadow-[0_1px_2px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)]",
+          themeFilterClass,
+        )}
+        onError={() => setSourceIndex(2)}
+      />
+    );
+  } else {
+    const FallbackIcon = resolveIcon(icon);
+    visual = (
+      <FallbackIcon
+        className={size.glyph}
+        style={accent ? { color: `rgb(${accent})` } : undefined}
+        strokeWidth={1.75}
+        aria-hidden="true"
+      />
+    );
+  }
 
   /* Canvas: bare icon, no wrapper */
   if (variant === "node") return visual;
@@ -223,3 +546,61 @@ export function NodeIcon({
     </span>
   );
 }
+
+export const THESVG_SLUGS: Record<string, string> = {
+  // Automation
+  n8n: "n8n",
+  make: "make",
+  zapier: "zapier",
+  temporal: "temporal",
+
+  // Developer
+  github: "github",
+  githubactions: "github-actions",
+  "github-actions": "github-actions",
+  gitlab: "gitlab",
+  vercel: "vercel",
+  sentry: "sentry",
+  pagerduty: "pagerduty",
+  linear: "linear",
+  jira: "jira",
+  asana: "asana",
+
+  // CRM
+  hubspot: "hubspot",
+  salesforce: "salesforce",
+  pipedrive: "pipedrive",
+
+  // Communication
+  slack: "slack",
+  discord: "discord",
+  teams: "microsoft-teams",
+  "microsoft-teams": "microsoft-teams",
+  telegram: "telegram",
+  twilio: "twilio",
+
+  // Email
+  gmail: "gmail",
+  sendgrid: "sendgrid",
+  resend: "resend",
+
+  // Productivity & Google
+  calendar: "google-calendar",
+  "google-calendar": "google-calendar",
+  notion: "notion",
+  "google-sheets": "google-sheets",
+  googlesheets: "google-sheets",
+  sheets: "google-sheets",
+
+  // Payments
+  stripe: "stripe",
+
+  // AI
+  openai: "openai",
+  anthropic: "anthropic",
+
+  // Cloud / storage
+  aws: "aws",
+  s3: "amazon-s3",
+  "aws-s3": "amazon-s3",
+};

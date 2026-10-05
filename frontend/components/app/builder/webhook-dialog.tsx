@@ -242,7 +242,7 @@ export function WebhookDialog({
                     Webhook ••••{webhook.tokenHint ?? ""}
                   </p>
 
-                  <p className="mt-0.5 break-all text-xs leading-5 text-white/30">
+                  <p className="mt-0.5 break-all text-xs leading-5 text-white/50">
                     {webhook.urlMasked}
                   </p>
                 </div>
@@ -257,7 +257,7 @@ export function WebhookDialog({
                 </Badge>
               </div>
             ) : (
-              <p className="rounded-lg border border-dashed border-white/[0.08] bg-white/[0.012] p-3 text-sm text-white/35">
+              <p className="rounded-lg border border-dashed border-white/[0.08] bg-white/[0.012] p-3 text-sm text-white/50">
                 No webhook configured yet.
                 {canManage
                   ? " Generate one to get a URL."
@@ -266,7 +266,7 @@ export function WebhookDialog({
             )}
 
             {/* Honest scope note — no fake toggles. */}
-            <p className="text-xs leading-5 text-white/30">
+            <p className="text-xs leading-5 text-white/45">
               Requests are rate-limited and size-capped. HMAC signature
               verification and replay protection are coming in a later
               release.
