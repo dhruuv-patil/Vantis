@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
  *
  * <p>Only fires for newly opened anomalies (not aggregated repeat occurrences) so the
  * channel is not spammed. The message includes workflow name, anomaly type, severity,
- * affected node/step, concise explanation, and a link back to the anomaly in FlowOps.
+ * affected node/step, concise explanation, and a link back to the anomaly in Vantis.
  *
  * <p>Missing or misconfigured Slack integration is handled gracefully — the alert is
  * simply skipped with a debug log, never an error.
@@ -117,7 +117,7 @@ public class SlackAlertService {
         // For now, construct a clean message with all required fields
 
         StringBuilder sb = new StringBuilder();
-        sb.append("🚨 *FlowOps Anomaly Alert*");
+        sb.append("🚨 *Vantis Anomaly Alert*");
         sb.append("\n\n");
         sb.append("*Workflow:* ").append(escapeSlack(anomaly.getWorkflowId().toString())).append("\n");
         sb.append("*Type:* ").append(type).append("\n");
@@ -135,7 +135,7 @@ public class SlackAlertService {
         sb.append("*Affected executions:* ").append(anomaly.getAffectedExecutions()).append("\n");
         sb.append("*Detected:* ").append(anomaly.getDetectedAt().toString()).append("\n");
         sb.append("\n");
-        sb.append("<").append(buildAnomalyUrl(anomaly)).append("|View anomaly in FlowOps>");
+        sb.append("<").append(buildAnomalyUrl(anomaly)).append("|View anomaly in Vantis>");
 
         return sb.toString();
     }

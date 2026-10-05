@@ -9,11 +9,13 @@ import com.flowops.domain.IntegrationCredential;
 import com.flowops.domain.LogLevel;
 import com.flowops.domain.NodeRunStatus;
 import com.flowops.domain.WorkflowExecution;
+import com.flowops.domain.NodeExecutionAttempt;
 import com.flowops.repository.AiAgentRepository;
 import com.flowops.repository.ExecutionLogRepository;
 import com.flowops.repository.ExecutionNodeRepository;
 import com.flowops.repository.IntegrationCredentialRepository;
 import com.flowops.repository.IntegrationRepository;
+import com.flowops.repository.NodeExecutionAttemptRepository;
 import com.flowops.repository.WorkflowExecutionRepository;
 import com.flowops.repository.WorkflowVersionRepository;
 import java.util.List;
@@ -43,6 +45,7 @@ public class ExecutionStore {
     private final AiAgentRepository aiAgents;
     private final IntegrationRepository integrations;
     private final IntegrationCredentialRepository integrationCredentials;
+    private final NodeExecutionAttemptRepository nodeAttempts;
 
     public ExecutionStore(
             WorkflowExecutionRepository executions,
@@ -51,7 +54,8 @@ public class ExecutionStore {
             WorkflowVersionRepository versions,
             AiAgentRepository aiAgents,
             IntegrationRepository integrations,
-            IntegrationCredentialRepository integrationCredentials) {
+            IntegrationCredentialRepository integrationCredentials,
+            NodeExecutionAttemptRepository nodeAttempts) {
         this.executions = executions;
         this.nodes = nodes;
         this.logs = logs;
@@ -59,6 +63,7 @@ public class ExecutionStore {
         this.aiAgents = aiAgents;
         this.integrations = integrations;
         this.integrationCredentials = integrationCredentials;
+        this.nodeAttempts = nodeAttempts;
     }
 
     @Transactional(readOnly = true)
@@ -171,5 +176,26 @@ public class ExecutionStore {
     @Transactional
     public ExecutionLog appendLog(UUID executionId, String nodeId, LogLevel level, String message, int seq) {
         return logs.save(ExecutionLog.create(executionId, nodeId, level, message, seq));
+    }
+
+    @Transactional
+    public void saveAttempt(NodeExecutionAttempt attempt) {
+        nodeAttempts.save(attempt);
+    }
+
+    @Transactional(readOnly = true)
+    public List<NodeExecutionAttempt> getAttempts(UUID executionId) {
+        return nodeAttempts.findByExecutionIdOrderByStartedAtAsc(executionId);
+    }
+
+    @Transactional
+    public void recordHeartbeat(UUID executionId, String workerId) {
+        executions.findById(executionId).ifPresent(e -> {
+            e.recordHeartbeat();
+            if (workerId != null && !workerId.isBlank()) {
+                e.assignWorker(workerId);
+            }
+            executions.save(e);
+        });
     }
 }

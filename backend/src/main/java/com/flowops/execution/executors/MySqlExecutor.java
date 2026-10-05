@@ -31,29 +31,48 @@ public class MySqlExecutor implements NodeExecutor {
         JsonNode parameters = ctx.mapper().valueToTree(ctx.config().get("parameters"));
         String limitStr = ctx.configString("limit");
 
-        if (host == null || host.isBlank()) return NodeResult.fail("MySQL requires 'host'.");
-        if (database == null || database.isBlank()) return NodeResult.fail("MySQL requires 'database'.");
-        if (username == null || username.isBlank()) return NodeResult.fail("MySQL requires 'username'.");
-        if (sql == null || sql.isBlank()) return NodeResult.fail("MySQL requires 'sql'.");
+        if (host == null || host.isBlank())
+            return NodeResult.fail("MySQL requires 'host'.");
+        if (database == null || database.isBlank())
+            return NodeResult.fail("MySQL requires 'database'.");
+        if (username == null || username.isBlank())
+            return NodeResult.fail("MySQL requires 'username'.");
+        if (sql == null || sql.isBlank())
+            return NodeResult.fail("MySQL requires 'sql'.");
 
         int port = 3306;
         if (portStr != null && !portStr.isBlank()) {
-            try { port = Integer.parseInt(portStr); } catch (NumberFormatException ignored) {}
+            try {
+                port = Integer.parseInt(portStr);
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         int limit = 100;
         if (limitStr != null && !limitStr.isBlank()) {
-            try { limit = Integer.parseInt(limitStr); } catch (NumberFormatException ignored) {}
+            try {
+                limit = Integer.parseInt(limitStr);
+            } catch (NumberFormatException ignored) {
+            }
         }
 
-        String url = "jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false&allowPublicKeyRetrieval=true";
+        try {
+            com.flowops.common.security.SsrfGuard.validateHost(host);
+            com.flowops.common.security.SsrfGuard.validateDatabaseName(database);
+        } catch (com.flowops.common.error.ApiException blocked) {
+            return NodeResult.fail("Database target rejected: " + blocked.getMessage());
+        }
+
+        String url = "jdbc:mysql://" + host + ":" + port + "/" + database
+                + "?useSSL=false&allowPublicKeyRetrieval=true";
 
         Properties props = new Properties();
         props.setProperty("user", username);
-        if (password != null) props.setProperty("password", password);
+        if (password != null)
+            props.setProperty("password", password);
 
         try (Connection conn = DriverManager.getConnection(url, props);
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             if (parameters != null && parameters.isArray()) {
                 for (int i = 0; i < parameters.size(); i++) {
@@ -100,12 +119,18 @@ public class MySqlExecutor implements NodeExecutor {
     }
 
     private JsonNode toJsonNode(NodeExecutionContext ctx, Object val) {
-        if (val == null) return ctx.mapper().nullNode();
-        if (val instanceof Number) return ctx.mapper().valueToTree(val);
-        if (val instanceof Boolean) return ctx.mapper().valueToTree(val);
-        if (val instanceof java.sql.Timestamp) return ctx.mapper().getNodeFactory().textNode(val.toString());
-        if (val instanceof java.sql.Date) return ctx.mapper().getNodeFactory().textNode(val.toString());
-        if (val instanceof java.sql.Time) return ctx.mapper().getNodeFactory().textNode(val.toString());
+        if (val == null)
+            return ctx.mapper().nullNode();
+        if (val instanceof Number)
+            return ctx.mapper().valueToTree(val);
+        if (val instanceof Boolean)
+            return ctx.mapper().valueToTree(val);
+        if (val instanceof java.sql.Timestamp)
+            return ctx.mapper().getNodeFactory().textNode(val.toString());
+        if (val instanceof java.sql.Date)
+            return ctx.mapper().getNodeFactory().textNode(val.toString());
+        if (val instanceof java.sql.Time)
+            return ctx.mapper().getNodeFactory().textNode(val.toString());
         return ctx.mapper().getNodeFactory().textNode(val.toString());
     }
 }

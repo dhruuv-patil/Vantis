@@ -34,9 +34,15 @@ public class DiscordExecutor implements NodeExecutor {
         }
 
         String interpolated = ctx.interpolate(message);
-        String interpolatedUsername = username != null ? ctx.interpolate(username) : "FlowOps";
+        String interpolatedUsername = username != null ? ctx.interpolate(username) : "Vantis";
+        java.net.URI uri;
         try {
-            java.net.URI uri = java.net.URI.create(webhookUrl);
+            uri = com.flowops.common.security.SsrfGuard.validate(webhookUrl.trim());
+        } catch (IllegalArgumentException | com.flowops.common.error.ApiException blocked) {
+            return NodeResult.fail("Discord webhook target rejected: " + blocked.getMessage());
+        }
+
+        try {
             java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
             String payload = "{\"content\":\"" + interpolated.replace("\"", "\\\"") + "\",\"username\":\"" + interpolatedUsername.replace("\"", "\\\"") + "\"}";
             java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()

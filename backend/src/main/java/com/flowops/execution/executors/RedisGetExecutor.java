@@ -11,7 +11,9 @@ import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
-/** Redis Get: reads a value by key from a Redis server via raw RESP protocol. */
+/**
+ * Redis Get: reads a value by key from a Redis server via raw RESP protocol.
+ */
 @Component
 public class RedisGetExecutor implements NodeExecutor {
 
@@ -28,24 +30,40 @@ public class RedisGetExecutor implements NodeExecutor {
         String password = ctx.configString("password");
         String key = ctx.configString("key");
 
-        if (host == null || host.isBlank()) return NodeResult.fail("Redis Get requires 'host'.");
-        if (key == null || key.isBlank()) return NodeResult.fail("Redis Get requires 'key'.");
+        if (host == null || host.isBlank())
+            return NodeResult.fail("Redis Get requires 'host'.");
+        if (key == null || key.isBlank())
+            return NodeResult.fail("Redis Get requires 'key'.");
 
         int port = 6379;
         if (portStr != null && !portStr.isBlank()) {
-            try { port = Integer.parseInt(portStr); } catch (NumberFormatException ignored) {}
+            try {
+                port = Integer.parseInt(portStr);
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         int db = 0;
         if (dbStr != null && !dbStr.isBlank()) {
-            try { db = Integer.parseInt(dbStr); } catch (NumberFormatException ignored) {}
+            try {
+                db = Integer.parseInt(dbStr);
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         String interpolatedKey = ctx.interpolate(key);
 
+        try {
+            com.flowops.common.security.SsrfGuard.validateHost(host);
+        } catch (com.flowops.common.error.ApiException blocked) {
+            return NodeResult.fail("Redis target rejected: " + blocked.getMessage());
+        }
+
         try (Socket socket = new Socket(host, port);
-             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
-             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
+                BufferedWriter writer = new BufferedWriter(
+                        new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
 
             // AUTH if password provided
             if (password != null && !password.isBlank()) {
@@ -86,10 +104,12 @@ public class RedisGetExecutor implements NodeExecutor {
 
     private String readResponse(BufferedReader reader) throws IOException {
         String line = reader.readLine();
-        if (line == null) return "";
+        if (line == null)
+            return "";
         if (line.startsWith("$")) {
             int len = Integer.parseInt(line.substring(1));
-            if (len == -1) return "$-1"; // nil
+            if (len == -1)
+                return "$-1"; // nil
             char[] buf = new char[len];
             reader.read(buf, 0, len);
             reader.readLine(); // consume \r\n

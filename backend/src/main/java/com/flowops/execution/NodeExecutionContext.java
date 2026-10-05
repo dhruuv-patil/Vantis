@@ -40,6 +40,11 @@ public final class NodeExecutionContext {
     private final ObjectMapper mapper;
     private final ExecutionProperties properties;
     private final NodeLogger logger;
+    private final java.util.UUID organizationId;
+    private final java.util.UUID executionId;
+    private final int attempt;
+    private final NodeIdempotencyService idempotencyService;
+    private final com.flowops.reliability.CircuitBreakerService circuitBreakerService;
 
     public NodeExecutionContext(
             GraphNode node,
@@ -50,6 +55,23 @@ public final class NodeExecutionContext {
             ObjectMapper mapper,
             ExecutionProperties properties,
             NodeLogger logger) {
+        this(node, effectiveConfig, secrets, variables, interpolator, mapper, properties, logger, null, null, 1, null, null);
+    }
+
+    public NodeExecutionContext(
+            GraphNode node,
+            Map<String, Object> effectiveConfig,
+            Map<String, String> secrets,
+            JsonNode variables,
+            VariableInterpolator interpolator,
+            ObjectMapper mapper,
+            ExecutionProperties properties,
+            NodeLogger logger,
+            java.util.UUID organizationId,
+            java.util.UUID executionId,
+            int attempt,
+            NodeIdempotencyService idempotencyService,
+            com.flowops.reliability.CircuitBreakerService circuitBreakerService) {
         this.node = node;
         this.effectiveConfig = effectiveConfig == null ? Map.of() : effectiveConfig;
         this.secrets = secrets == null ? Map.of() : secrets;
@@ -58,6 +80,11 @@ public final class NodeExecutionContext {
         this.mapper = mapper;
         this.properties = properties;
         this.logger = logger;
+        this.organizationId = organizationId;
+        this.executionId = executionId;
+        this.attempt = attempt;
+        this.idempotencyService = idempotencyService;
+        this.circuitBreakerService = circuitBreakerService;
     }
 
     public GraphNode node() {
@@ -129,5 +156,25 @@ public final class NodeExecutionContext {
             }
         }
         return result;
+    }
+
+    public java.util.UUID organizationId() {
+        return organizationId;
+    }
+
+    public java.util.UUID executionId() {
+        return executionId;
+    }
+
+    public int attempt() {
+        return attempt;
+    }
+
+    public NodeIdempotencyService idempotencyService() {
+        return idempotencyService;
+    }
+
+    public com.flowops.reliability.CircuitBreakerService circuitBreakerService() {
+        return circuitBreakerService;
     }
 }

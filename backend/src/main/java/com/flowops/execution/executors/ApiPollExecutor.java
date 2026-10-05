@@ -19,9 +19,12 @@ import java.util.Set;
 import org.springframework.stereotype.Component;
 
 /**
- * API Poll: repeatedly requests a URL until a dotted-path condition ({@code stopWhen})
- * resolves to a truthy value in the response body, or {@code maxPolls} attempts have
- * been exhausted. Useful for long-running jobs whose completion flag only appears once
+ * API Poll: repeatedly requests a URL until a dotted-path condition
+ * ({@code stopWhen})
+ * resolves to a truthy value in the response body, or {@code maxPolls} attempts
+ * have
+ * been exhausted. Useful for long-running jobs whose completion flag only
+ * appears once
  * the work is done.
  */
 @Component
@@ -35,7 +38,7 @@ public class ApiPollExecutor implements NodeExecutor {
     public ApiPollExecutor(ExecutionProperties properties) {
         this.client = HttpClient.newBuilder()
                 .connectTimeout(properties.httpConnectTimeout())
-                .followRedirects(HttpClient.Redirect.NORMAL)
+                .followRedirects(HttpClient.Redirect.NEVER)
                 .build();
     }
 
@@ -53,12 +56,9 @@ public class ApiPollExecutor implements NodeExecutor {
 
         URI uri;
         try {
-            uri = URI.create(url.trim());
-        } catch (IllegalArgumentException badUrl) {
-            return NodeResult.fail("API Poll URL is not a valid URI.");
-        }
-        if (uri.getScheme() == null || !(uri.getScheme().equals("http") || uri.getScheme().equals("https"))) {
-            return NodeResult.fail("API Poll URL must be http or https.");
+            uri = com.flowops.common.security.SsrfGuard.validate(url);
+        } catch (com.flowops.common.error.ApiException blocked) {
+            return NodeResult.fail("API Poll URL rejected: " + blocked.getMessage());
         }
 
         String stopWhen = ctx.configString("stopWhen");
@@ -86,8 +86,8 @@ public class ApiPollExecutor implements NodeExecutor {
             applyHeaders(ctx, request);
 
             long startedAt = System.nanoTime();
-            HttpResponse<String> response =
-                    client.send(request.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse<String> response = client.send(request.build(),
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             long millis = (System.nanoTime() - startedAt) / 1_000_000;
 
             statusCode = response.statusCode();
@@ -108,7 +108,8 @@ public class ApiPollExecutor implements NodeExecutor {
         return NodeResult.success(buildPollOutput(ctx, statusCode, lastBody, maxPolls, false));
     }
 
-    private ObjectNode buildPollOutput(NodeExecutionContext ctx, int status, JsonNode body, int pollsUsed, boolean stoppedByCondition) {
+    private ObjectNode buildPollOutput(NodeExecutionContext ctx, int status, JsonNode body, int pollsUsed,
+            boolean stoppedByCondition) {
         ObjectNode output = ctx.mapper().createObjectNode();
         output.put("status", status);
         output.put("pollsUsed", pollsUsed);
@@ -184,7 +185,10 @@ public class ApiPollExecutor implements NodeExecutor {
         return ctx.mapper().getNodeFactory().textNode(captured);
     }
 
-    /** Walks a dotted path (e.g. {@code result.done}) against a JSON node; missing if any segment is absent. */
+    /**
+     * Walks a dotted path (e.g. {@code result.done}) against a JSON node; missing
+     * if any segment is absent.
+     */
     private JsonNode resolvePath(JsonNode root, String path) {
         if (root == null || root.isMissingNode() || path == null || path.isBlank()) {
             return MissingNode.getInstance();

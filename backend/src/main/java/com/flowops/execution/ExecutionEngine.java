@@ -29,11 +29,15 @@ import com.flowops.notification.NotificationService;
 import com.flowops.repository.IncidentRepository;
 import com.flowops.reliability.detect.ReliabilityDetectionService;
 import com.flowops.reliability.telemetry.TelemetryCollector;
+import com.flowops.domain.NodeExecutionAttempt;
+import com.flowops.reliability.CircuitBreakerService;
+import com.flowops.reliability.DependencyIntelligenceService;
 import com.flowops.workflow.graph.GraphDocument;
 import com.flowops.workflow.graph.GraphEdge;
 import com.flowops.workflow.graph.GraphNode;
 import com.flowops.workflow.nodes.NodeDefinition;
 import com.flowops.workflow.nodes.NodeRegistry;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -64,6 +68,12 @@ public class ExecutionEngine {
     private final ReliabilityDetectionService detection;
     private final NotificationProviderRegistry notificationProviders;
     private final WebhookEventDispatcher webhookEvents;
+    private final NodeIdempotencyService idempotencyService;
+    private final CircuitBreakerService circuitBreakerService;
+    private final RetryPolicyClassifier retryClassifier;
+    private final DeadLetterService deadLetterService;
+    private final DependencyIntelligenceService dependencyIntelligenceService;
+    private final String workerId = "worker-" + UUID.randomUUID().toString().substring(0, 8);
 
     public ExecutionEngine(
             ExecutionStore store,
@@ -79,7 +89,12 @@ public class ExecutionEngine {
             TelemetryCollector telemetry,
             ReliabilityDetectionService detection,
             NotificationProviderRegistry notificationProviders,
-            WebhookEventDispatcher webhookEvents) {
+            WebhookEventDispatcher webhookEvents,
+            NodeIdempotencyService idempotencyService,
+            CircuitBreakerService circuitBreakerService,
+            RetryPolicyClassifier retryClassifier,
+            DeadLetterService deadLetterService,
+            DependencyIntelligenceService dependencyIntelligenceService) {
         this.store = store;
         this.incidents = incidents;
         this.events = events;
@@ -94,6 +109,11 @@ public class ExecutionEngine {
         this.detection = detection;
         this.notificationProviders = notificationProviders;
         this.webhookEvents = webhookEvents;
+        this.idempotencyService = idempotencyService;
+        this.circuitBreakerService = circuitBreakerService;
+        this.retryClassifier = retryClassifier;
+        this.deadLetterService = deadLetterService;
+        this.dependencyIntelligenceService = dependencyIntelligenceService;
     }
 
     public void run(UUID executionId) {
@@ -125,6 +145,8 @@ public class ExecutionEngine {
                 .allMatch(n -> n.getStatus() == NodeRunStatus.PENDING);
 
         execution.markRunning();
+        execution.assignWorker(workerId);
+        execution.recordHeartbeat();
         store.saveExecution(execution);
         emitExecution(execution);
 
@@ -142,6 +164,7 @@ public class ExecutionEngine {
         }
 
         boolean progressed;
+        int executedSteps = 0;
 
         do {
             progressed = false;
@@ -174,6 +197,17 @@ public class ExecutionEngine {
                     }
                 }
 
+                executedSteps++;
+                if (executedSteps > properties.maxStepsPerExecution()) {
+                    fail(
+                            execution,
+                            "Runaway execution loop detected: exceeded maximum steps limit ("
+                                    + properties.maxStepsPerExecution() + ")",
+                            seq);
+                    return;
+                }
+
+                store.recordHeartbeat(executionId, workerId);
                 NodeResult.Kind outcome = runNode(execution, node, row, rows, seq);
 
                 progressed = true;
@@ -263,12 +297,14 @@ public class ExecutionEngine {
 
         JsonNode variables = buildVariables(execution, rows);
         JsonNode input = snapshotInput(node, effectiveConfig, variables);
-        int maxAttempts = properties.maxAttempts();
+        RetryPolicyClassifier.NodeRetryPolicy policy = retryClassifier.resolvePolicy(node, properties);
+        int maxAttempts = policy.maxAttempts();
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             row.markRunning(input);
             store.saveNode(row);
             emitNode(executionId, row);
+            store.recordHeartbeat(executionId, workerId);
 
             NodeLogger logger = nodeLogger(executionId, node.id(), seq);
 
@@ -280,7 +316,14 @@ public class ExecutionEngine {
                     interpolator,
                     mapper,
                     properties,
-                    logger);
+                    logger,
+                    execution.getOrganizationId(),
+                    execution.getId(),
+                    attempt,
+                    idempotencyService,
+                    circuitBreakerService);
+
+            NodeExecutionAttempt attemptRecord = NodeExecutionAttempt.create(executionId, node.id(), attempt);
 
             NodeResult result;
 
@@ -295,6 +338,9 @@ public class ExecutionEngine {
 
             switch (result.kind()) {
                 case SUCCESS -> {
+                    attemptRecord.succeed();
+                    store.saveAttempt(attemptRecord);
+
                     row.succeed(
                             result.output(),
                             fired(node, result.handles()));
@@ -341,6 +387,9 @@ public class ExecutionEngine {
                 }
 
                 case WAIT -> {
+                    attemptRecord.succeed();
+                    store.saveAttempt(attemptRecord);
+
                     row.markWaiting();
                     store.saveNode(row);
                     emitNode(executionId, row);
@@ -348,7 +397,22 @@ public class ExecutionEngine {
                 }
 
                 case FAIL -> {
+                    attemptRecord.fail(safe(result.error()));
+                    store.saveAttempt(attemptRecord);
+
+                    String dep = dependencyIntelligenceService.resolveDependency(node.type(), node.config());
+                    if (dep != null) {
+                        dependencyIntelligenceService.recordFailure(
+                                execution.getOrganizationId(),
+                                execution.getWorkflowId(),
+                                execution.getId(),
+                                dep,
+                                safe(result.error()));
+                    }
+
+                    boolean retryable = retryClassifier.isRetryable(result.error(), null);
                     boolean lastAttempt = attempt >= maxAttempts
+                            || !retryable
                             || Thread.currentThread().isInterrupted();
 
                     if (lastAttempt) {
@@ -358,11 +422,11 @@ public class ExecutionEngine {
                         return NodeResult.Kind.FAIL;
                     }
 
-                    long backoff = backoffMillis(attempt);
+                    long backoff = retryClassifier.calculateBackoffMillis(attempt, policy);
 
                     logger.warn(
                             "Attempt " + attempt
-                                    + " failed: " + safe(result.error())
+                                    + " failed (" + (retryable ? "retryable" : "non-retryable") + "): " + safe(result.error())
                                     + " Retrying in "
                                     + (backoff / 1000.0) + "s.");
 
@@ -846,6 +910,36 @@ private static final class SecretResolutionException
                 seq,
                 LogLevel.ERROR,
                 safe(message));
+
+        try {
+            List<ExecutionNode> allNodes = store.getNodes(execution.getId());
+            ExecutionNode failedNode = allNodes.stream()
+                    .filter(n -> n.getStatus() == NodeRunStatus.FAILED)
+                    .findFirst()
+                    .orElse(null);
+
+            String failedNodeId = failedNode != null ? failedNode.getNodeId() : "workflow";
+            String failedNodeType = failedNode != null ? failedNode.getNodeType() : "workflow";
+            int attempts = failedNode != null ? failedNode.getAttempt() : 1;
+
+            ObjectNode executionContext = mapper.createObjectNode();
+            executionContext.put("failureReason", safe(message));
+            executionContext.put("totalNodes", allNodes.size());
+            if (failedNode != null && failedNode.getInput() != null) {
+                executionContext.set("failedNodeInput", failedNode.getInput());
+            }
+
+            deadLetterService.capture(
+                    execution,
+                    failedNodeId,
+                    failedNodeType,
+                    attempts,
+                    safe(message),
+                    executionContext);
+        } catch (Exception dlEx) {
+            log.warn("Could not capture dead letter record for execution {}: {}",
+                    execution.getId(), dlEx.getMessage());
+        }
 
         webhookEvents.dispatch(
                 execution.getOrganizationId(),

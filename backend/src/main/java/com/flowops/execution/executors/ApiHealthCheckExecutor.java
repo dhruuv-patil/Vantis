@@ -18,7 +18,8 @@ import java.util.Set;
 import org.springframework.stereotype.Component;
 
 /**
- * API Health Check: probes an endpoint and reports status, latency, and a healthy flag.
+ * API Health Check: probes an endpoint and reports status, latency, and a
+ * healthy flag.
  */
 @Component
 public class ApiHealthCheckExecutor implements NodeExecutor {
@@ -31,7 +32,7 @@ public class ApiHealthCheckExecutor implements NodeExecutor {
     public ApiHealthCheckExecutor(ExecutionProperties properties) {
         this.client = HttpClient.newBuilder()
                 .connectTimeout(properties.httpConnectTimeout())
-                .followRedirects(HttpClient.Redirect.NORMAL)
+                .followRedirects(HttpClient.Redirect.NEVER)
                 .build();
     }
 
@@ -49,12 +50,9 @@ public class ApiHealthCheckExecutor implements NodeExecutor {
 
         URI uri;
         try {
-            uri = URI.create(url.trim());
+            uri = com.flowops.common.security.SsrfGuard.validate(url);
         } catch (IllegalArgumentException badUrl) {
             return NodeResult.fail("API Health Check URL is not a valid URI.");
-        }
-        if (uri.getScheme() == null || !(uri.getScheme().equals("http") || uri.getScheme().equals("https"))) {
-            return NodeResult.fail("API Health Check URL must be http or https.");
         }
 
         String method = orDefault(ctx.configString("method"), "GET").toUpperCase(Locale.ROOT);
@@ -76,12 +74,16 @@ public class ApiHealthCheckExecutor implements NodeExecutor {
         HttpResponse<String> response;
         String error = null;
         int statusCode = 0;
+
         try {
-            response = client.send(request.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            response = client.send(
+                    request.build(),
+                    HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             statusCode = response.statusCode();
         } catch (Exception e) {
             error = sanitize(e);
         }
+
         long millis = (System.nanoTime() - startedAt) / 1_000_000;
 
         boolean healthy = error == null && isStatusHealthy(statusCode, expectedStatus);
@@ -92,19 +94,32 @@ public class ApiHealthCheckExecutor implements NodeExecutor {
         output.put("status", statusCode);
         output.put("latencyMs", millis);
         output.put("healthy", healthy);
+
         if (error != null) {
             output.put("error", error);
         }
 
-        ctx.log().info("Health check " + method + " " + safeTarget(uri) + " → " + (healthy ? "healthy" : "unhealthy") + " (" + millis + "ms)");
+        ctx.log().info(
+                "Health check "
+                        + method
+                        + " "
+                        + safeTarget(uri)
+                        + " → "
+                        + (healthy ? "healthy" : "unhealthy")
+                        + " ("
+                        + millis
+                        + "ms)");
+
         return NodeResult.success(output);
     }
 
     private int parseExpectedStatus(NodeExecutionContext ctx) {
         String raw = ctx.configString("expectedStatus");
+
         if (raw == null || raw.isBlank()) {
             return -1; // default: any 2xx
         }
+
         try {
             return Integer.parseInt(raw.trim());
         } catch (NumberFormatException nfe) {
@@ -114,9 +129,11 @@ public class ApiHealthCheckExecutor implements NodeExecutor {
 
     private int parseTimeout(NodeExecutionContext ctx, int defaultSeconds) {
         String raw = ctx.configString("timeoutSeconds");
+
         if (raw == null || raw.isBlank()) {
             return defaultSeconds;
         }
+
         try {
             return Math.max(1, Integer.parseInt(raw.trim()));
         } catch (NumberFormatException nfe) {
@@ -128,58 +145,77 @@ public class ApiHealthCheckExecutor implements NodeExecutor {
         if (expected > 0) {
             return status == expected;
         }
+
         return status >= 200 && status < 300;
     }
 
-    private void applyHeaders(NodeExecutionContext ctx, HttpRequest.Builder request) {
+    private void applyHeaders(
+            NodeExecutionContext ctx,
+            HttpRequest.Builder request) {
         Object rawHeaders = ctx.config().get("headers");
         Map<String, Object> headers = asMap(ctx, rawHeaders);
+
         for (Map.Entry<String, Object> entry : headers.entrySet()) {
             if (entry.getKey() == null || entry.getValue() == null) {
                 continue;
             }
+
             String value = ctx.interpolate(String.valueOf(entry.getValue()));
+
             try {
                 request.header(entry.getKey(), value);
             } catch (IllegalArgumentException restricted) {
-                ctx.log().warn("Skipped restricted request header \"" + entry.getKey() + "\".");
+                ctx.log().warn(
+                        "Skipped restricted request header \""
+                                + entry.getKey()
+                                + "\".");
             }
         }
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Object> asMap(NodeExecutionContext ctx, Object raw) {
+    private Map<String, Object> asMap(
+            NodeExecutionContext ctx,
+            Object raw) {
         if (raw instanceof Map<?, ?> map) {
             return (Map<String, Object>) map;
         }
+
         if (raw instanceof String text && !text.isBlank()) {
             try {
                 JsonNode parsed = ctx.mapper().readTree(text);
+
                 if (parsed.isObject()) {
                     return ctx.mapper().convertValue(parsed, Map.class);
                 }
             } catch (Exception ignored) {
             }
         }
+
         return Map.of();
     }
 
     private String orDefault(String value, String fallback) {
-        return value == null || value.isBlank() ? fallback : value.trim();
+        return value == null || value.isBlank()
+                ? fallback
+                : value.trim();
     }
 
     /** Host + path only in logs — never the query string. */
     private String safeTarget(URI uri) {
         String host = uri.getHost() == null ? "" : uri.getHost();
         String path = uri.getRawPath() == null ? "" : uri.getRawPath();
+
         return uri.getScheme() + "://" + host + path;
     }
 
     private String sanitize(Exception failure) {
         String message = failure.getMessage();
+
         if (message == null || message.isBlank()) {
             return failure.getClass().getSimpleName();
         }
+
         return message;
     }
 }

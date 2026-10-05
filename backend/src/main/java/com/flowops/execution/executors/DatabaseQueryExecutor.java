@@ -31,34 +31,54 @@ public class DatabaseQueryExecutor implements NodeExecutor {
         String sql = ctx.configString("sql");
         String limitStr = ctx.configString("limit");
 
-        if (dbType == null || dbType.isBlank()) return NodeResult.fail("Database Query requires 'databaseType'.");
-        if (host == null || host.isBlank()) return NodeResult.fail("Database Query requires 'host'.");
-        if (database == null || database.isBlank()) return NodeResult.fail("Database Query requires 'database'.");
-        if (username == null || username.isBlank()) return NodeResult.fail("Database Query requires 'username'.");
-        if (sql == null || sql.isBlank()) return NodeResult.fail("Database Query requires 'sql'.");
+        if (dbType == null || dbType.isBlank())
+            return NodeResult.fail("Database Query requires 'databaseType'.");
+        if (host == null || host.isBlank())
+            return NodeResult.fail("Database Query requires 'host'.");
+        if (database == null || database.isBlank())
+            return NodeResult.fail("Database Query requires 'database'.");
+        if (username == null || username.isBlank())
+            return NodeResult.fail("Database Query requires 'username'.");
+        if (sql == null || sql.isBlank())
+            return NodeResult.fail("Database Query requires 'sql'.");
 
         int port = defaultPort(dbType);
         if (portStr != null && !portStr.isBlank()) {
-            try { port = Integer.parseInt(portStr); } catch (NumberFormatException ignored) {}
+            try {
+                port = Integer.parseInt(portStr);
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         int limit = 100;
         if (limitStr != null && !limitStr.isBlank()) {
-            try { limit = Integer.parseInt(limitStr); } catch (NumberFormatException ignored) {}
+            try {
+                limit = Integer.parseInt(limitStr);
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         String interpolatedSql = ctx.interpolate(sql);
+        try {
+            com.flowops.common.security.SsrfGuard.validateHost(host);
+            com.flowops.common.security.SsrfGuard.validateDatabaseName(database);
+        } catch (com.flowops.common.error.ApiException blocked) {
+            return NodeResult.fail("Database target rejected: " + blocked.getMessage());
+        }
         String url = buildUrl(dbType, host, port, database);
 
         Properties props = new Properties();
         props.setProperty("user", username);
-        if (password != null) props.setProperty("password", password);
-        if ("postgresql".equalsIgnoreCase(dbType)) props.setProperty("ssl", "false");
-        if ("mysql".equalsIgnoreCase(dbType)) props.setProperty("useSSL", "false");
+        if (password != null)
+            props.setProperty("password", password);
+        if ("postgresql".equalsIgnoreCase(dbType))
+            props.setProperty("ssl", "false");
+        if ("mysql".equalsIgnoreCase(dbType))
+            props.setProperty("useSSL", "false");
 
         try (Connection conn = DriverManager.getConnection(url, props)) {
             try (PreparedStatement stmt = conn.prepareStatement(interpolatedSql);
-                 ResultSet rs = stmt.executeQuery()) {
+                    ResultSet rs = stmt.executeQuery()) {
                 ArrayNode rows = ctx.mapper().createArrayNode();
                 ResultSetMetaData meta = rs.getMetaData();
                 int colCount = meta.getColumnCount();
@@ -99,12 +119,18 @@ public class DatabaseQueryExecutor implements NodeExecutor {
     }
 
     private JsonNode toJsonNode(NodeExecutionContext ctx, Object val) {
-        if (val == null) return ctx.mapper().nullNode();
-        if (val instanceof Number) return ctx.mapper().valueToTree(val);
-        if (val instanceof Boolean) return ctx.mapper().valueToTree(val);
-        if (val instanceof java.sql.Timestamp) return ctx.mapper().getNodeFactory().textNode(val.toString());
-        if (val instanceof java.sql.Date) return ctx.mapper().getNodeFactory().textNode(val.toString());
-        if (val instanceof java.sql.Time) return ctx.mapper().getNodeFactory().textNode(val.toString());
+        if (val == null)
+            return ctx.mapper().nullNode();
+        if (val instanceof Number)
+            return ctx.mapper().valueToTree(val);
+        if (val instanceof Boolean)
+            return ctx.mapper().valueToTree(val);
+        if (val instanceof java.sql.Timestamp)
+            return ctx.mapper().getNodeFactory().textNode(val.toString());
+        if (val instanceof java.sql.Date)
+            return ctx.mapper().getNodeFactory().textNode(val.toString());
+        if (val instanceof java.sql.Time)
+            return ctx.mapper().getNodeFactory().textNode(val.toString());
         return ctx.mapper().getNodeFactory().textNode(val.toString());
     }
 }

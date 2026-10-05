@@ -90,4 +90,12 @@ public class ExecutionController {
     public ExecutionDetailResponse cancel(@PathVariable UUID executionId) {
         return executionService.cancel(AuthenticatedUser.requireRole(Role.MEMBER), executionId);
     }
+
+    @PostMapping("/{executionId}/replay")
+    @Operation(summary = "Safely replay an execution with side-effect analysis")
+    public com.flowops.api.ReplayResponse replay(
+            @PathVariable UUID executionId,
+            @RequestBody(required = false) com.flowops.api.ReplayRequest request) {
+        return executionService.replay(AuthenticatedUser.requireRole(Role.MEMBER), executionId, request);
+    }
 }

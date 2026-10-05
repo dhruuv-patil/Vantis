@@ -2,12 +2,15 @@ package com.flowops.execution;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.flowops.api.ExecutionAttemptResponse;
 import com.flowops.api.ExecutionDetailResponse;
 import com.flowops.api.ExecutionEnvelopes;
 import com.flowops.api.ExecutionLogResponse;
 import com.flowops.api.ExecutionNodeResponse;
 import com.flowops.api.ExecutionStatsResponse;
 import com.flowops.api.ExecutionSummaryResponse;
+import com.flowops.api.ReplayRequest;
+import com.flowops.api.ReplayResponse;
 import com.flowops.common.error.ApiException;
 import com.flowops.common.error.ErrorCode;
 import com.flowops.domain.ExecutionLog;
@@ -15,6 +18,7 @@ import com.flowops.domain.ExecutionNode;
 import com.flowops.domain.ExecutionStatus;
 import com.flowops.domain.IdempotencyKey;
 import com.flowops.domain.LogLevel;
+import com.flowops.domain.NodeExecutionAttempt;
 import com.flowops.domain.NodeRunStatus;
 import com.flowops.domain.TriggerType;
 import com.flowops.domain.Workflow;
@@ -24,6 +28,7 @@ import com.flowops.repository.ExecutionLogRepository;
 import com.flowops.repository.ExecutionNodeRepository;
 import com.flowops.repository.ExecutionStatRow;
 import com.flowops.repository.IdempotencyKeyRepository;
+import com.flowops.repository.NodeExecutionAttemptRepository;
 import com.flowops.repository.WorkflowExecutionRepository;
 import com.flowops.repository.WorkflowRepository;
 import com.flowops.repository.WorkflowVersionRepository;
@@ -77,6 +82,38 @@ public class ExecutionService {
     private final NodeRegistry nodeRegistry;
     private final ObjectMapper mapper;
     private final IdempotencyKeyRepository idempotencyKeys;
+    private final com.flowops.billing.BillingService billingService;
+    private final NodeExecutionAttemptRepository nodeAttempts;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ExecutionService(
+            WorkflowRepository workflows,
+            WorkflowVersionRepository versions,
+            WorkflowExecutionRepository executions,
+            ExecutionNodeRepository nodes,
+            ExecutionLogRepository logs,
+            QueueService queue,
+            ExecutionEvents events,
+            ExecutionProperties properties,
+            NodeRegistry nodeRegistry,
+            ObjectMapper mapper,
+            IdempotencyKeyRepository idempotencyKeys,
+            com.flowops.billing.BillingService billingService,
+            NodeExecutionAttemptRepository nodeAttempts) {
+        this.workflows = workflows;
+        this.versions = versions;
+        this.executions = executions;
+        this.nodes = nodes;
+        this.logs = logs;
+        this.queue = queue;
+        this.events = events;
+        this.properties = properties;
+        this.nodeRegistry = nodeRegistry;
+        this.mapper = mapper;
+        this.idempotencyKeys = idempotencyKeys;
+        this.billingService = billingService;
+        this.nodeAttempts = nodeAttempts;
+    }
 
     public ExecutionService(
             WorkflowRepository workflows,
@@ -90,17 +127,23 @@ public class ExecutionService {
             NodeRegistry nodeRegistry,
             ObjectMapper mapper,
             IdempotencyKeyRepository idempotencyKeys) {
-        this.workflows = workflows;
-        this.versions = versions;
-        this.executions = executions;
-        this.nodes = nodes;
-        this.logs = logs;
-        this.queue = queue;
-        this.events = events;
-        this.properties = properties;
-        this.nodeRegistry = nodeRegistry;
-        this.mapper = mapper;
-        this.idempotencyKeys = idempotencyKeys;
+        this(workflows, versions, executions, nodes, logs, queue, events, properties, nodeRegistry, mapper, idempotencyKeys, null, null);
+    }
+
+    public ExecutionService(
+            WorkflowRepository workflows,
+            WorkflowVersionRepository versions,
+            WorkflowExecutionRepository executions,
+            ExecutionNodeRepository nodes,
+            ExecutionLogRepository logs,
+            QueueService queue,
+            ExecutionEvents events,
+            ExecutionProperties properties,
+            NodeRegistry nodeRegistry,
+            ObjectMapper mapper,
+            IdempotencyKeyRepository idempotencyKeys,
+            com.flowops.billing.BillingService billingService) {
+        this(workflows, versions, executions, nodes, logs, queue, events, properties, nodeRegistry, mapper, idempotencyKeys, billingService, null);
     }
 
     // ---- start -----------------------------------------------------------
@@ -245,6 +288,24 @@ public class ExecutionService {
             GraphDocument graph,
             JsonNode payload,
             UUID createdByOrNull) {
+
+        long activeTenant = executions.countActiveByOrganizationId(workflow.getOrganizationId());
+        if (activeTenant >= properties.maxTenantConcurrency()) {
+            throw new ApiException(
+                    ErrorCode.CONCURRENCY_LIMIT_EXCEEDED,
+                    "Tenant concurrency limit of " + properties.maxTenantConcurrency() + " active executions reached.");
+        }
+
+        long activeWorkflow = executions.countActiveByWorkflowId(workflow.getId());
+        if (activeWorkflow >= properties.maxWorkflowConcurrency()) {
+            throw new ApiException(
+                    ErrorCode.CONCURRENCY_LIMIT_EXCEEDED,
+                    "Workflow concurrency limit of " + properties.maxWorkflowConcurrency() + " active executions reached.");
+        }
+
+        if (billingService != null) {
+            billingService.assertCanExecute(workflow.getOrganizationId());
+        }
 
         WorkflowExecution execution =
                 WorkflowExecution.create(
@@ -599,6 +660,113 @@ public class ExecutionService {
         return response;
     }
 
+    private static final java.util.Set<String> SIDE_EFFECT_NODE_TYPES = java.util.Set.of(
+            "http_request", "slack", "discord", "teams", "email", "telegram", "gmail",
+            "outbound_webhook", "google_sheets_append_row", "github_create_issue",
+            "jira_create_issue", "linear_create_issue", "salesforce_create_lead",
+            "pagerduty_trigger_incident", "s3_upload", "stripe", "hubspot",
+            "database_insert", "database_update"
+    );
+
+    /**
+     * Replays a workflow execution safely.
+     * Supports:
+     * - Full workflow replay (from start)
+     * - Replay from failed node (reusing outputs of already succeeded nodes)
+     * - Original input replay or modified input replay
+     * - Detection and warning for external side effects before executing
+     */
+    @Transactional
+    public ReplayResponse replay(
+            FlowOpsPrincipal principal,
+            UUID executionId,
+            ReplayRequest request) {
+
+        WorkflowExecution execution = require(principal, executionId);
+        Workflow workflow = workflows.findByIdAndOrganizationId(execution.getWorkflowId(), principal.organizationId())
+                .orElseThrow(() -> new ApiException(ErrorCode.WORKFLOW_NOT_FOUND));
+
+        WorkflowVersion version = versions.findById(execution.getWorkflowVersionId())
+                .orElseThrow(() -> new ApiException(ErrorCode.WORKFLOW_NOT_FOUND));
+
+        GraphDocument graph = parse(version.getGraph());
+        boolean fromFailed = request != null && Boolean.TRUE.equals(request.fromFailedNode());
+
+        List<ExecutionNode> originalNodes = nodes.findByExecutionIdOrderByCreatedAtAsc(executionId);
+        Map<String, ExecutionNode> originalNodeMap = new HashMap<>();
+        for (ExecutionNode on : originalNodes) {
+            originalNodeMap.put(on.getNodeId(), on);
+        }
+
+        List<String> warnings = new ArrayList<>();
+        for (GraphNode gn : graph.nodes()) {
+            if (SIDE_EFFECT_NODE_TYPES.contains(gn.type())) {
+                if (!fromFailed) {
+                    warnings.add("Step \"" + labelOf(gn) + "\" (" + gn.type() + ") produces external side effects.");
+                } else {
+                    ExecutionNode prev = originalNodeMap.get(gn.id());
+                    if (prev == null || prev.getStatus() != NodeRunStatus.SUCCEEDED) {
+                        warnings.add("Step \"" + labelOf(gn) + "\" (" + gn.type() + ") produces external side effects.");
+                    }
+                }
+            }
+        }
+
+        if (!warnings.isEmpty() && (request == null || !Boolean.TRUE.equals(request.forceSideEffects()))) {
+            return new ReplayResponse(null, null, warnings, true);
+        }
+
+        JsonNode payload = (request != null && request.modifiedInput() != null && !request.modifiedInput().isNull())
+                ? request.modifiedInput()
+                : execution.getTriggerPayload();
+
+        long activeTenant = executions.countActiveByOrganizationId(workflow.getOrganizationId());
+        if (activeTenant >= properties.maxTenantConcurrency()) {
+            throw new ApiException(
+                    ErrorCode.CONCURRENCY_LIMIT_EXCEEDED,
+                    "Tenant concurrency limit of " + properties.maxTenantConcurrency() + " active executions reached.");
+        }
+
+        if (billingService != null) {
+            billingService.assertCanExecute(workflow.getOrganizationId());
+        }
+
+        WorkflowExecution newExecution = WorkflowExecution.create(
+                workflow.getOrganizationId(),
+                workflow.getId(),
+                version.getId(),
+                execution.getVersionNumber(),
+                execution.getTriggerType(),
+                payload,
+                principal.userId());
+
+        executions.save(newExecution);
+
+        for (GraphNode gn : graph.nodes()) {
+            ExecutionNode en = ExecutionNode.create(
+                    newExecution.getId(),
+                    gn.id(),
+                    gn.type(),
+                    labelOf(gn));
+
+            if (fromFailed) {
+                ExecutionNode prev = originalNodeMap.get(gn.id());
+                if (prev != null && prev.getStatus() == NodeRunStatus.SUCCEEDED) {
+                    en.succeed(prev.getOutput(), prev.activeHandles());
+                }
+            }
+            nodes.save(en);
+        }
+
+        enqueueAfterCommit(newExecution.getId());
+
+        return new ReplayResponse(
+                newExecution.getId(),
+                detail(newExecution, workflow.getName()),
+                warnings,
+                false);
+    }
+
     /**
      * Cancels a run that is still in flight. Cooperative: the in-flight worker
      * thread sees the terminal status the next time it returns to the engine's
@@ -904,11 +1072,21 @@ public class ExecutionService {
             WorkflowExecution execution,
             String workflowName) {
 
+        Map<String, List<ExecutionAttemptResponse>> attemptsByNode = new HashMap<>();
+        if (nodeAttempts != null) {
+            for (NodeExecutionAttempt att : nodeAttempts.findByExecutionIdOrderByStartedAtAsc(execution.getId())) {
+                attemptsByNode.computeIfAbsent(att.getNodeId(), k -> new ArrayList<>())
+                        .add(ExecutionAttemptResponse.of(att));
+            }
+        }
+
         List<ExecutionNodeResponse> nodeDtos =
                 nodes.findByExecutionIdOrderByCreatedAtAsc(
                                 execution.getId())
                         .stream()
-                        .map(ExecutionNodeResponse::of)
+                        .map(node -> ExecutionNodeResponse.of(
+                                node,
+                                attemptsByNode.getOrDefault(node.getNodeId(), List.of())))
                         .toList();
 
         List<ExecutionLogResponse> logDtos =

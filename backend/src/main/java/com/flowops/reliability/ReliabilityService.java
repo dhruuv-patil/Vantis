@@ -51,6 +51,35 @@ public class ReliabilityService {
     private final WorkflowExecutionRepository executions;
     private final AiServiceClient aiClient;
     private final RecoveryVerificationService recoveryService;
+    private final com.flowops.billing.BillingService billingService;
+    private final com.flowops.repository.WorkflowVersionRepository versions;
+    private final com.flowops.repository.NodeExecutionAttemptRepository nodeAttempts;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ReliabilityService(
+            AnomalyRepository anomalies,
+            NodeExecutionMetricRepository metrics,
+            MetricBaselineRepository baselines,
+            WorkflowRepository workflows,
+            IntegrationWorkflowRepository integrationWorkflows,
+            WorkflowExecutionRepository executions,
+            AiServiceClient aiClient,
+            RecoveryVerificationService recoveryService,
+            com.flowops.billing.BillingService billingService,
+            com.flowops.repository.WorkflowVersionRepository versions,
+            com.flowops.repository.NodeExecutionAttemptRepository nodeAttempts) {
+        this.anomalies = anomalies;
+        this.metrics = metrics;
+        this.baselines = baselines;
+        this.workflows = workflows;
+        this.integrationWorkflows = integrationWorkflows;
+        this.executions = executions;
+        this.aiClient = aiClient;
+        this.recoveryService = recoveryService;
+        this.billingService = billingService;
+        this.versions = versions;
+        this.nodeAttempts = nodeAttempts;
+    }
 
     public ReliabilityService(
             AnomalyRepository anomalies,
@@ -61,14 +90,7 @@ public class ReliabilityService {
             WorkflowExecutionRepository executions,
             AiServiceClient aiClient,
             RecoveryVerificationService recoveryService) {
-        this.anomalies = anomalies;
-        this.metrics = metrics;
-        this.baselines = baselines;
-        this.workflows = workflows;
-        this.integrationWorkflows = integrationWorkflows;
-        this.executions = executions;
-        this.aiClient = aiClient;
-        this.recoveryService = recoveryService;
+        this(anomalies, metrics, baselines, workflows, integrationWorkflows, executions, aiClient, recoveryService, null, null, null);
     }
 
     // =========================================================================
@@ -560,6 +582,9 @@ public class ReliabilityService {
             UUID anomalyId) {
 
         var principal = AuthenticatedUser.require();
+        if (billingService != null) {
+            billingService.assertCanGenerateAi(principal.organizationId());
+        }
 
         Anomaly anomaly =
                 anomalies.findByIdAndOrganizationId(
@@ -627,6 +652,14 @@ public class ReliabilityService {
         anomaly.setEvidence(updatedEvidence);
 
         anomalies.save(anomaly);
+
+        if (billingService != null && result != null && result.configured()) {
+            billingService.recordAiUsage(
+                    principal.organizationId(),
+                    "AI_INVESTIGATION",
+                    1,
+                    "Anomaly " + anomalyId);
+        }
 
         return new ReliabilityEnvelopes.InvestigateResponse(
                 result);
@@ -772,10 +805,37 @@ if (anomaly.getNodeId() != null) {
                                 ? e.getFinishedAt().toString()
                                 : null);
 
-                // Add trigger payload (sanitized - structure only)
-                if (e.getTriggerPayload() != null) {
-                    executionData.put("triggerPayload", e.getTriggerPayload());
+                executionData.put("workflowVersionId", e.getWorkflowVersionId() != null ? e.getWorkflowVersionId().toString() : null);
+                executionData.put("versionNumber", e.getVersionNumber());
+                executionData.put("workerId", e.getWorkerId());
+                executionData.put("queueWaitMs", e.getQueueWaitMs());
+
+                if (nodeAttempts != null) {
+                    List<com.flowops.domain.NodeExecutionAttempt> attempts = nodeAttempts.findByExecutionIdOrderByStartedAtAsc(e.getId());
+                    if (!attempts.isEmpty()) {
+                        List<Map<String, Object>> attemptList = new ArrayList<>();
+                        for (com.flowops.domain.NodeExecutionAttempt att : attempts) {
+                            Map<String, Object> a = new HashMap<>();
+                            a.put("nodeId", att.getNodeId());
+                            a.put("attemptNumber", att.getAttemptNumber());
+                            a.put("status", att.getStatus());
+                            a.put("durationMs", att.getDurationMs());
+                            a.put("error", att.getError());
+                            attemptList.add(a);
+                        }
+                        executionData.put("attempts", attemptList);
+                    }
                 }
+
+                if (versions != null && e.getWorkflowVersionId() != null) {
+                    versions.findById(e.getWorkflowVersionId()).ifPresent(v -> {
+                        evidencePackage.put("workflowVersionNumber", v.getVersionNumber());
+                        evidencePackage.put("workflowVersionCreatedAt", v.getCreatedAt() != null ? v.getCreatedAt().toString() : null);
+                    });
+                }
+
+                // The raw trigger payload is customer data (PII, tokens) and is deliberately
+// NOT sent to the external LLM. Telemetry below carries structure only.
 
                 // Add relevant node metrics for this execution — org-scoped via workflow
                 List<NodeExecutionMetric> executionMetrics =
@@ -795,7 +855,7 @@ if (anomaly.getNodeId() != null) {
                         nodeData.put("inputSize", m.getInputSize());
                         nodeData.put("outputSize", m.getOutputSize());
                         nodeData.put("errorType", m.getErrorType());
-                        nodeData.put("errorMessage", m.getErrorMessage());
+                        // errorMessage is omitted: driver/HTTP errors can embed hosts, SQL and credentials.
                         // Include structural signatures for comparison
                         if (m.getOutputSignature() != null) {
                             nodeData.put("outputSignature", m.getOutputSignature());

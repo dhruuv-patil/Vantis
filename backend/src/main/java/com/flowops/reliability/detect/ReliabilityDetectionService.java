@@ -32,6 +32,7 @@ public class ReliabilityDetectionService {
     private final LatencyDetector latencyDetector;
     private final OutputDetector outputDetector;
     private final BehavioralDetector behavioralDetector;
+    private final BusinessOutcomeDetector businessOutcomeDetector;
     private final AnomalyRecorder recorder;
     private final com.flowops.reliability.RecoveryVerificationService recoveryService;
 
@@ -41,6 +42,7 @@ public class ReliabilityDetectionService {
             LatencyDetector latencyDetector,
             OutputDetector outputDetector,
             BehavioralDetector behavioralDetector,
+            BusinessOutcomeDetector businessOutcomeDetector,
             AnomalyRecorder recorder,
             com.flowops.reliability.RecoveryVerificationService recoveryService) {
         this.metrics = metrics;
@@ -48,6 +50,7 @@ public class ReliabilityDetectionService {
         this.latencyDetector = latencyDetector;
         this.outputDetector = outputDetector;
         this.behavioralDetector = behavioralDetector;
+        this.businessOutcomeDetector = businessOutcomeDetector;
         this.recorder = recorder;
         this.recoveryService = recoveryService;
     }
@@ -73,6 +76,9 @@ public class ReliabilityDetectionService {
                     .ifPresent(findings::add);
             findings.addAll(outputDetector.detect(
                     baseline(workflowId, row.getNodeId(), BaseKey.OUTPUT_SCHEMA),
+                    baseline(workflowId, row.getNodeId(), BaseKey.OUTPUT_SIZE),
+                    row));
+            findings.addAll(businessOutcomeDetector.detect(
                     baseline(workflowId, row.getNodeId(), BaseKey.OUTPUT_SIZE),
                     row));
         }

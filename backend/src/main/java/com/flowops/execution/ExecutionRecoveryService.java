@@ -2,54 +2,20 @@ package com.flowops.execution;
 
 import com.flowops.audit.AuditService;
 import com.flowops.domain.AuditAction;
+import com.flowops.config.ExecutionProperties;
 import com.flowops.repository.WorkflowExecutionRepository;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Startup recovery for executions that were {@code QUEUED} or {@code RUNNING} when
- * the previous JVM exited.
- *
- * <p>The default {@link InMemoryQueueService} lives inside the worker pool: when
- * the process stops, every in-flight task is abandoned. Without this sweep the
- * next boot would find a database full of {@code RUNNING} rows that no worker
- * will ever look at again — the runs would be wedged forever and the user would
- * have no honest way to clear them.
- *
- * <h2>What it does</h2>
- * On {@link ApplicationStartedEvent} (after the context is fully refreshed and
- * Flyway has applied) the service:
- * <ol>
- *   <li>Loads the ids of every non-terminal execution, oldest first.</li>
- *   <li>For each one, resets any per-node {@code RUNNING} or {@code PENDING} rows
- *       back to {@code PENDING} so the engine re-attempts them; terminal node
- *       states ({@code SUCCEEDED}, {@code FAILED}, {@code SKIPPED},
- *       {@code WAITING}) are preserved — the engine is re-entrant and will reuse
- *       their outputs.</li>
- *   <li>Re-enqueues the execution on the same {@link QueueService} used by
- *       manual and webhook starts. The engine treats a re-entry the same as a
- *       resume: idempotent on terminal runs, and it re-uses everything that
- *       already succeeded.</li>
- *   <li>Records one anonymous audit event per re-enqueue, so the operator can
- *       see in the trail that a recovery happened.</li>
- * </ol>
- *
- * <p>{@code WAITING} runs (human approval) are deliberately not in the
- * recoverable set: a parked run is not a crash, and the user can still come
- * back and decide. A future change could re-emit a notification for them, but
- * that is out of scope for the MVP.
- *
- * <h2>Failure handling</h2>
- * The sweep is best-effort. A failure on one execution is logged and the loop
- * continues with the next; nothing throws out of the listener, so a buggy
- * recovery path can never block the application from coming up.
- */
 @Service
 public class ExecutionRecoveryService {
 
@@ -59,16 +25,28 @@ public class ExecutionRecoveryService {
     private final ExecutionStore store;
     private final QueueService queue;
     private final AuditService audit;
+    private final ExecutionProperties properties;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public ExecutionRecoveryService(
+            WorkflowExecutionRepository executions,
+            ExecutionStore store,
+            QueueService queue,
+            AuditService audit,
+            ExecutionProperties properties) {
+        this.executions = executions;
+        this.store = store;
+        this.queue = queue;
+        this.audit = audit;
+        this.properties = properties;
+    }
 
     public ExecutionRecoveryService(
             WorkflowExecutionRepository executions,
             ExecutionStore store,
             QueueService queue,
             AuditService audit) {
-        this.executions = executions;
-        this.store = store;
-        this.queue = queue;
-        this.audit = audit;
+        this(executions, store, queue, audit, ExecutionProperties.defaults());
     }
 
     /**
@@ -131,5 +109,46 @@ public class ExecutionRecoveryService {
         log.info("Startup recovery sweep complete: {}/{} run(s) re-enqueued.",
                 requeued, ids.size());
         return requeued;
+    }
+
+    /**
+     * Periodic sweeper to detect orphaned RUNNING executions whose worker crashed or stopped heartbeating.
+     */
+    @Scheduled(fixedDelayString = "${flowops.execution.recovery-interval:60000}")
+    @Transactional
+    public int sweepStaleExecutions() {
+        try {
+            Instant threshold = Instant.now().minus(properties.staleThreshold());
+            List<UUID> staleIds = executions.findStaleExecutionIds(threshold);
+            if (staleIds.isEmpty()) {
+                return 0;
+            }
+            log.warn("Detected {} stale execution(s) (no heartbeat since {}). Recovering...",
+                    staleIds.size(), threshold);
+            int recovered = 0;
+            for (UUID id : staleIds) {
+                try {
+                    int reset = store.resetStuckNodesForRecovery(id);
+                    queue.enqueue(id);
+                    recovered++;
+                    UUID orgId = store.getExecution(id).getOrganizationId();
+                    audit.record(
+                            orgId,
+                            null,
+                            null,
+                            AuditAction.EXECUTION_RECOVERED,
+                            id.toString(),
+                            "Recovered stale orphaned execution " + id + " (heartbeat stopped before "
+                                    + threshold + "): " + reset + " stuck node(s) reset and re-queued.");
+                    log.info("Successfully recovered orphaned execution {}.", id);
+                } catch (RuntimeException ex) {
+                    log.warn("Failed to recover stale execution {}: {}", id, ex.getMessage());
+                }
+            }
+            return recovered;
+        } catch (Exception e) {
+            log.error("Error during scheduled stale execution sweep: {}", e.getMessage());
+            return 0;
+        }
     }
 }

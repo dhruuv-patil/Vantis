@@ -30,32 +30,52 @@ public class RedisSetExecutor implements NodeExecutor {
         String ttlStr = ctx.configString("ttlSeconds");
         String mode = ctx.configString("mode");
 
-        if (host == null || host.isBlank()) return NodeResult.fail("Redis Set requires 'host'.");
-        if (key == null || key.isBlank()) return NodeResult.fail("Redis Set requires 'key'.");
-        if (value == null) return NodeResult.fail("Redis Set requires 'value'.");
+        if (host == null || host.isBlank())
+            return NodeResult.fail("Redis Set requires 'host'.");
+        if (key == null || key.isBlank())
+            return NodeResult.fail("Redis Set requires 'key'.");
+        if (value == null)
+            return NodeResult.fail("Redis Set requires 'value'.");
 
         int port = 6379;
         if (portStr != null && !portStr.isBlank()) {
-            try { port = Integer.parseInt(portStr); } catch (NumberFormatException ignored) {}
+            try {
+                port = Integer.parseInt(portStr);
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         int db = 0;
         if (dbStr != null && !dbStr.isBlank()) {
-            try { db = Integer.parseInt(dbStr); } catch (NumberFormatException ignored) {}
+            try {
+                db = Integer.parseInt(dbStr);
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         int ttl = 0;
         if (ttlStr != null && !ttlStr.isBlank()) {
-            try { ttl = Integer.parseInt(ttlStr); } catch (NumberFormatException ignored) {}
+            try {
+                ttl = Integer.parseInt(ttlStr);
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         String interpolatedKey = ctx.interpolate(key);
         String interpolatedValue = ctx.interpolate(value);
         String cmd = (mode == null || mode.isBlank() || "SET".equalsIgnoreCase(mode)) ? "SET" : mode.toUpperCase();
 
+        try {
+            com.flowops.common.security.SsrfGuard.validateHost(host);
+        } catch (com.flowops.common.error.ApiException blocked) {
+            return NodeResult.fail("Redis target rejected: " + blocked.getMessage());
+        }
+
         try (Socket socket = new Socket(host, port);
-             BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
-             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
+                BufferedWriter writer = new BufferedWriter(
+                        new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
+                BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8))) {
 
             if (password != null && !password.isBlank()) {
                 sendCommand(writer, "AUTH", password);
@@ -103,10 +123,12 @@ public class RedisSetExecutor implements NodeExecutor {
 
     private String readResponse(BufferedReader reader) throws IOException {
         String line = reader.readLine();
-        if (line == null) return "";
+        if (line == null)
+            return "";
         if (line.startsWith("$")) {
             int len = Integer.parseInt(line.substring(1));
-            if (len == -1) return "$-1";
+            if (len == -1)
+                return "$-1";
             char[] buf = new char[len];
             reader.read(buf, 0, len);
             reader.readLine();

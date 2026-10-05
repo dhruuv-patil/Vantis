@@ -11,6 +11,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class DeadLetterQueueExecutor implements NodeExecutor {
 
+    private final com.flowops.execution.DeadLetterService deadLetterService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public DeadLetterQueueExecutor(com.flowops.execution.DeadLetterService deadLetterService) {
+        this.deadLetterService = deadLetterService;
+    }
+
+    public DeadLetterQueueExecutor() {
+        this(null);
+    }
+
     @Override
     public String type() {
         return "dead_letter_queue";

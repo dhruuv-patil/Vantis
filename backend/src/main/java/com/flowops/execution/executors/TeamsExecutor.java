@@ -34,7 +34,7 @@ public class TeamsExecutor implements NodeExecutor {
         }
 
         String interpolated = ctx.interpolate(message);
-        String interpolatedTitle = title != null ? ctx.interpolate(title) : "FlowOps Notification";
+        String interpolatedTitle = title != null ? ctx.interpolate(title) : "Vantis Notification";
         try {
             java.net.URI uri = java.net.URI.create(webhookUrl);
             java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();

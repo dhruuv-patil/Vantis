@@ -35,8 +35,14 @@ public class SlackExecutor implements NodeExecutor {
         }
 
         String interpolated = ctx.interpolate(message);
+        java.net.URI uri;
         try {
-            java.net.URI uri = java.net.URI.create(webhookUrl);
+            uri = com.flowops.common.security.SsrfGuard.validate(webhookUrl.trim());
+        } catch (IllegalArgumentException | com.flowops.common.error.ApiException blocked) {
+            return NodeResult.fail("Slack webhook target rejected: " + blocked.getMessage());
+        }
+
+        try {
             java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
             String payload = "{\"text\":\"" + interpolated.replace("\"", "\\\"") + "\"}";
             java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()

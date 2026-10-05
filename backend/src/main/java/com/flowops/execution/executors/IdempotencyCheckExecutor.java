@@ -26,7 +26,16 @@ public class IdempotencyCheckExecutor implements NodeExecutor {
         }
 
         String interpolatedKey = ctx.interpolate(key);
-        boolean isDuplicate = seenKeys.putIfAbsent(interpolatedKey, true) != null;
+        boolean isDuplicate;
+        if (ctx.idempotencyService() != null && ctx.organizationId() != null) {
+            isDuplicate = ctx.idempotencyService().checkAndSet(
+                    ctx.organizationId(),
+                    ctx.executionId(),
+                    ctx.node().id(),
+                    interpolatedKey);
+        } else {
+            isDuplicate = seenKeys.putIfAbsent(interpolatedKey, true) != null;
+        }
 
         ObjectNode output = ctx.mapper().createObjectNode();
         output.put("key", interpolatedKey);

@@ -8,7 +8,10 @@ import com.flowops.execution.NodeExecutor;
 import com.flowops.execution.NodeResult;
 import org.springframework.stereotype.Component;
 
-/** MongoDB: runs find/insert against MongoDB. Uses reflection to avoid compile-time dependency. */
+/**
+ * MongoDB: runs find/insert against MongoDB. Uses reflection to avoid
+ * compile-time dependency.
+ */
 @Component
 public class MongoDbExecutor implements NodeExecutor {
 
@@ -27,14 +30,21 @@ public class MongoDbExecutor implements NodeExecutor {
         JsonNode documentNode = ctx.mapper().valueToTree(ctx.config().get("document"));
         String limitStr = ctx.configString("limit");
 
-        if (uri == null || uri.isBlank()) return NodeResult.fail("MongoDB requires 'uri'.");
-        if (database == null || database.isBlank()) return NodeResult.fail("MongoDB requires 'database'.");
-        if (collection == null || collection.isBlank()) return NodeResult.fail("MongoDB requires 'collection'.");
-        if (operation == null || operation.isBlank()) return NodeResult.fail("MongoDB requires 'operation' (find or insertOne).");
+        if (uri == null || uri.isBlank())
+            return NodeResult.fail("MongoDB requires 'uri'.");
+        if (database == null || database.isBlank())
+            return NodeResult.fail("MongoDB requires 'database'.");
+        if (collection == null || collection.isBlank())
+            return NodeResult.fail("MongoDB requires 'collection'.");
+        if (operation == null || operation.isBlank())
+            return NodeResult.fail("MongoDB requires 'operation' (find or insertOne).");
 
         int limit = 100;
         if (limitStr != null && !limitStr.isBlank()) {
-            try { limit = Integer.parseInt(limitStr); } catch (NumberFormatException ignored) {}
+            try {
+                limit = Integer.parseInt(limitStr);
+            } catch (NumberFormatException ignored) {
+            }
         }
 
         try {
@@ -45,21 +55,31 @@ public class MongoDbExecutor implements NodeExecutor {
             Class<?> mongoCollectionClass = Class.forName("com.mongodb.client.MongoCollection");
             Class<?> documentClass = Class.forName("org.bson.Document");
 
-            Object client = mongoClientClass.getMethod("create", String.class).invoke(null, ctx.interpolate(uri));
+            String interpolatedUri = ctx.interpolate(uri);
+
+            try {
+                com.flowops.common.security.SsrfGuard.validateMongoUri(interpolatedUri);
+            } catch (com.flowops.common.error.ApiException blocked) {
+                return NodeResult.fail("MongoDB target rejected: " + blocked.getMessage());
+            }
+
+            Object client = mongoClientClass
+                    .getMethod("create", String.class)
+                    .invoke(null, interpolatedUri);
             Object db = mongoClientInterface.getMethod("getDatabase", String.class).invoke(client, database);
             Object coll = mongoDatabaseClass.getMethod("getCollection", String.class).invoke(db, collection);
 
             if ("find".equalsIgnoreCase(operation)) {
                 Object query = documentClass.getConstructor().newInstance();
                 if (filterNode != null && !filterNode.isNull()) {
-                    query = documentClass.getMethod("parse", String.class).invoke(null, ctx.interpolate(filterNode.toString()));
+                    query = documentClass.getMethod("parse", String.class).invoke(null,
+                            ctx.interpolate(filterNode.toString()));
                 }
 
                 Object findIterable = mongoCollectionClass.getMethod("find", Object.class).invoke(coll, query);
                 if (limit > 0) {
                     findIterable = findIterable.getClass().getMethod("limit", int.class).invoke(findIterable, limit);
                 }
-
 
                 ArrayNode rows = ctx.mapper().createArrayNode();
                 for (Object doc : (Iterable<?>) findIterable) {
@@ -83,7 +103,8 @@ public class MongoDbExecutor implements NodeExecutor {
             } else if ("insertOne".equalsIgnoreCase(operation)) {
                 Object doc = documentClass.getConstructor().newInstance();
                 if (documentNode != null && !documentNode.isNull()) {
-                    doc = documentClass.getMethod("parse", String.class).invoke(null, ctx.interpolate(documentNode.toString()));
+                    doc = documentClass.getMethod("parse", String.class).invoke(null,
+                            ctx.interpolate(documentNode.toString()));
                 }
 
                 mongoCollectionClass.getMethod("insertOne", documentClass).invoke(coll, doc);
