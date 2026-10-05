@@ -1,6 +1,6 @@
-# FlowOps AI Service
+# Vantis AI Service
 
-Isolated Python service that powers FlowOps AI features via a **Google Gemini,
+Isolated Python service that powers Vantis AI features via a **Google Gemini,
 bring-your-own-key** interface. Only the Spring Boot backend calls it — never
 the browser.
 

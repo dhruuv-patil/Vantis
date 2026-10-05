@@ -1,1 +1,1 @@
-"""FlowOps AI service package."""
+"""Vantis AI service package."""

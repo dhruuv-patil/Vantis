@@ -20,8 +20,14 @@ def require_service_token(x_service_token: str | None = Header(default=None)) ->
     settings = get_settings()
     expected = settings.ai_service_token.strip()
     if not expected:
-        # No shared secret configured — accept (dev). Production always sets one.
-        return
+        if settings.ai_allow_unauthenticated:
+            return  # explicit local-dev opt-in
+
+    # Fail closed: a missing secret must never silently open the LLM endpoints.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI service token is not configured.",
+        )
     presented = (x_service_token or "").strip()
     if not presented or not hmac.compare_digest(presented, expected):
         raise HTTPException(

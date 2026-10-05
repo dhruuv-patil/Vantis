@@ -55,7 +55,7 @@ def is_configured() -> bool:
 
 def _generation_system_prompt() -> str:
     return (
-        "You are a workflow architect for FlowOps, a workflow-automation platform. "
+        "You are a workflow architect for Vantis, a reliability infrastructure for automation platform. "
         "Turn the user's request into a directed graph of nodes.\n\n"
         "Available node types (use ONLY these):\n"
         f"{catalog_prompt()}\n\n"
@@ -221,7 +221,7 @@ def complete(req: CompleteRequest) -> CompleteResponse:
 # observed facts, inference, and uncertainty explicitly.
 def _investigation_system_prompt() -> str:
     return (
-        "You are the FlowOps Anomaly Investigator, an SRE-grade reasoning system "
+        "You are the Vantis Anomaly Investigator, an SRE-grade reasoning system "
         "embedded in a workflow automation platform. You receive structured evidence "
         "about a single workflow anomaly and must produce a rigorous, evidence-bound "
         "investigation. You are read by on-call operators who will act on what you say.\n\n"

@@ -1,16 +1,17 @@
-# FlowOps AI Service
+# Vantis AI Service
 #
-# Runs on Python 3.11–3.14. The AI engine is Google Gemini via the google-genai
-# SDK (bring-your-own-key) behind a small provider interface (app/providers), so
-# another provider can be added later. No LangGraph/LangChain.
+# Runs on Python 3.11–3.14.
 fastapi==0.115.6
 uvicorn[standard]==0.34.0
 pydantic==2.12.5
 pydantic-settings==2.7.1
 httpx==0.28.1
 
-# Google Gemini client (function calling + JSON output).
+# Google Gemini client
 google-genai==2.20.0
+
+# OpenAI-compatible provider client (OmniRoute)
+openai==1.109.1
 
 # Dev / test
 pytest==8.3.4

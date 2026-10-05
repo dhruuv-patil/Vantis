@@ -9,7 +9,7 @@ def test_health_ok():
     response = client.get("/health")
     assert response.status_code == 200
     body = response.json()
-    assert body["service"] == "flowops-ai"
+    assert body["service"] == "vantis-ai"
     assert body["status"] == "ok"
     assert "ai_configured" in body
     assert "timestamp" in body

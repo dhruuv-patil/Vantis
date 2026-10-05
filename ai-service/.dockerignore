@@ -1,0 +1,33 @@
+# Git & Tooling
+.git
+
+# Environment files and credentials (CRITICAL: never copy into images)
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.crt
+
+# Python caches and virtual environments
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv
+env
+*.egg-info
+dist
+build
+
+# Test caches and test files
+.pytest_cache
+.coverage
+htmlcov
+.mypy_cache
+.ruff_cache
+tests

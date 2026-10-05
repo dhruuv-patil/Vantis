@@ -46,6 +46,19 @@ def test_is_configured_reads_settings(monkeypatch):
 
 
 def _fake_client(responses):
+    """A stand-in google-genai client whose chat API yields queued responses."""
+    queue = list(responses)
+
+    class FakeChat:
+        def send_message(self, **kwargs):
+            return queue.pop(0)
+
+    def create(**kwargs):
+        return FakeChat()
+
+    return SimpleNamespace(
+        chats=SimpleNamespace(create=create),
+    )
     """A stand-in google-genai client whose generate_content yields queued responses."""
     queue = list(responses)
 
@@ -88,7 +101,13 @@ def test_run_agent_wraps_provider_failure(monkeypatch):
     def failing_generate(**kwargs):
         raise RuntimeError("network down")
 
-    fake = SimpleNamespace(models=SimpleNamespace(generate_content=failing_generate))
+    fake = SimpleNamespace(
+        chats=SimpleNamespace(
+            create=lambda **kwargs: SimpleNamespace(
+                send_message=failing_generate
+            )
+        )
+   )
     monkeypatch.setattr(provider, "_build_client", lambda: fake)
 
     # A transport failure becomes ProviderError (-> 502), never a fake completion.

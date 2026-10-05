@@ -17,7 +17,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    service_name: str = "flowops-ai"
+    service_name: str = "vantis-ai"
     version: str = "0.1.0"
 
     # Which LLM backs the AI endpoints. Kept configurable so another provider can
@@ -43,6 +43,10 @@ class Settings(BaseSettings):
 
     # Shared secret the Spring backend presents when calling this service.
     ai_service_token: str = ""
+
+    # Explicit opt-in to run /ai/* with no service token (local development only).
+    # Without a token AND without this flag every /ai/* call is refused.
+    ai_allow_unauthenticated: bool = False
 
     # Allowed callers (the backend). Comma-separated origins.
     cors_origins: str = "http://localhost:8080"

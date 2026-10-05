@@ -1,4 +1,4 @@
-"""FlowOps AI service — FastAPI entry point.
+"""Vantis AI service — FastAPI entry point.
 
 M0 exposed only health. M4 adds workflow generation (`/ai/generate-workflow`)
 and agent execution (`/ai/agent/run`), both backed by a pluggable LLM provider
@@ -19,9 +19,9 @@ def create_app() -> FastAPI:
     settings = get_settings()
 
     app = FastAPI(
-        title="FlowOps AI Service",
+        title="Vantis AI Service",
         version=settings.version,
-        description="AI workflow generation and agents for FlowOps "
+        description="AI workflow generation and agents for Vantis "
         "(Google Gemini, bring-your-own-key).",
     )
 
