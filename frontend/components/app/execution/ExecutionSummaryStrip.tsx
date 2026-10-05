@@ -64,8 +64,8 @@ export function ExecutionSummaryStrip({
       )}
 
       {skipped > 0 && (
-        <div className="flex items-center gap-1 text-[11px] text-white/30">
-          <Minus className="w-3 h-3 text-white/25" />
+        <div className="flex items-center gap-1 text-[11px] text-white/45">
+          <Minus className="w-3 h-3 text-white/40" />
           <span>{skipped}</span>
           <span>skipped</span>
         </div>

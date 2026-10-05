@@ -340,13 +340,14 @@ function normalizeEdges(
       return edge;
     }
 
-    const definition =
-      defsByType[sourceNode.type];
+    const definition = sourceNode.type
+  ? defsByType[sourceNode.type]
+  : undefined;
 
-    const outputs =
-      definition?.outputs?.length
-        ? definition.outputs
-        : ["out"];
+const outputs =
+  definition?.outputs?.length
+    ? definition.outputs
+    : ["out"];
 
     /*
      * Preserve an existing source handle.
@@ -579,9 +580,8 @@ function ExecutionGraphInner({
               ...node.data,
 
               label:
-                node.data?.label ??
-                node.label ??
-                node.id,
+  node.data?.label ??
+  node.id,
 
               /*
                * FlowNode reads this value directly.
@@ -762,11 +762,11 @@ function ExecutionGraphInner({
     return (
       <div className="flex h-[560px] items-center justify-center rounded-xl border border-white/[0.08] bg-[#050505]">
         <div className="text-center">
-          <p className="text-sm text-white/50">
+          <p className="text-sm font-medium text-white/70">
             No workflow graph available
           </p>
 
-          <p className="mt-1 text-xs text-white/25">
+          <p className="mt-1 text-xs text-white/45">
             This execution does not have a frozen workflow graph.
           </p>
         </div>

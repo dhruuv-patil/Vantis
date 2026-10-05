@@ -27,9 +27,9 @@ function statusMeta(status: NodeRunStatus | ExecutionStatus) {
     case "SKIPPED":
       return { label: "Skipped", color: "text-white/40", icon: "—" };
     case "CANCELED":
-      return { label: "Canceled", color: "text-white/30", icon: "○" };
+      return { label: "Canceled", color: "text-white/45", icon: "○" };
     default:
-      return { label: "Pending", color: "text-white/40", icon: "○" };
+      return { label: "Pending", color: "text-white/45", icon: "○" };
   }
 }
 
@@ -45,7 +45,7 @@ function JsonBlock({ value, label }: { value: unknown; label?: string }) {
 
   if (text === null) {
     return (
-      <div className="text-[12px] text-white/25 italic">
+      <div className="text-[12px] text-white/45 italic">
         No data recorded
       </div>
     );
@@ -54,7 +54,7 @@ function JsonBlock({ value, label }: { value: unknown; label?: string }) {
   return (
     <div className="space-y-1">
       {label && (
-        <div className="text-[10px] uppercase tracking-wider text-white/40">
+        <div className="text-[11px] uppercase tracking-wider text-white/45">
           {label}
         </div>
       )}
@@ -75,7 +75,7 @@ export function ExecutionInspector({
     return (
       <div
         className={cn(
-          "rounded-xl border border-white/[0.08] bg-[#070707] p-5 text-white/30 text-sm",
+          "rounded-xl border border-white/[0.08] bg-[#070707] p-5 text-white/50 text-sm",
           className
         )}
       >
@@ -102,7 +102,7 @@ export function ExecutionInspector({
           <div className="text-[13px] font-medium text-white/90 truncate">
             {node.label ?? node.nodeId}
           </div>
-          <div className="text-[10px] uppercase tracking-wider text-white/35 truncate">
+          <div className="text-[11px] uppercase tracking-wider text-white/45 truncate">
             {node.nodeType}
           </div>
         </div>
@@ -128,13 +128,13 @@ export function ExecutionInspector({
 
         <div className="grid grid-cols-2 gap-2 text-[11px]">
           <div className="rounded-md border border-white/[0.06] bg-black/30 px-2.5 py-2">
-            <div className="text-white/30 mb-0.5">Duration</div>
+            <div className="text-white/45 mb-0.5">Duration</div>
             <div className="font-mono text-white/80">
               {node.durationMs != null ? `${node.durationMs}ms` : "—"}
             </div>
           </div>
           <div className="rounded-md border border-white/[0.06] bg-black/30 px-2.5 py-2">
-            <div className="text-white/30 mb-0.5">Attempt</div>
+            <div className="text-white/45 mb-0.5">Attempt</div>
             <div className="font-mono text-white/80">{node.attempt ?? 1}</div>
           </div>
         </div>
@@ -149,6 +149,49 @@ export function ExecutionInspector({
             </div>
             <div className="rounded-md border border-red-500/20 bg-red-500/5 p-3 text-[11px] leading-relaxed text-red-300/90 font-mono">
               {node.error}
+            </div>
+          </div>
+        )}
+
+        {node.attempts && node.attempts.length > 0 && (
+          <div className="space-y-2">
+            <div className="text-[11px] uppercase tracking-wider text-white/45">
+              Attempt History ({node.attempts.length})
+            </div>
+            <div className="space-y-1.5">
+              {node.attempts.map((att) => (
+                <div
+                  key={att.id || att.attemptNumber}
+                  className="rounded-md border border-white/[0.06] bg-black/40 p-2.5 text-[11px] space-y-1"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-white/80">
+                      Attempt {att.attemptNumber}
+                    </span>
+                    <span
+                      className={cn(
+                        "px-1.5 py-0.5 rounded text-[10px] font-mono",
+                        att.status === "SUCCEEDED"
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                          : att.status === "FAILED"
+                          ? "bg-red-500/10 text-red-400 border border-red-500/20"
+                          : "bg-blue-500/10 text-blue-300 border border-blue-500/20"
+                      )}
+                    >
+                      {att.status}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-white/40 text-[10px]">
+                    <span>{att.durationMs != null ? `${att.durationMs}ms` : "—"}</span>
+                    <span>{new Date(att.startedAt).toLocaleTimeString()}</span>
+                  </div>
+                  {att.error && (
+                    <div className="text-red-300/80 font-mono text-[10px] truncate mt-1 bg-red-950/20 p-1 rounded">
+                      {att.error}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}

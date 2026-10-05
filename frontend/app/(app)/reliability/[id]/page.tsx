@@ -46,6 +46,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  ErrorState,
+  PageContainer,
+  PageHeader,
+  TableSkeleton,
+} from "@/components/app/page-primitives";
 
 import {
   DropdownMenu,
@@ -350,8 +356,8 @@ function InvestigationSection({
 
 function DetailSkeleton() {
   return (
-    <div
-      className="mx-auto max-w-5xl space-y-6 pt-8 pb-10"
+    <PageContainer
+      variant="narrow"
       aria-hidden
     >
       <div className="h-4 w-32 animate-pulse rounded bg-white/[0.06]" />
@@ -367,7 +373,7 @@ function DetailSkeleton() {
 
         <div className="h-72 animate-pulse rounded-xl bg-white/[0.04]" />
       </div>
-    </div>
+    </PageContainer>
   );
 }
 
@@ -509,9 +515,10 @@ export default function AnomalyDetailPage({
     setActiveTab("overview");
 
     void refresh();
+    const reqRef = requestId;
 
     return () => {
-      requestId.current++;
+      reqRef.current++;
     };
   }, [refresh]);
 
@@ -839,40 +846,18 @@ export default function AnomalyDetailPage({
 
   if (error || !anomaly) {
     return (
-      <div className="mx-auto max-w-5xl space-y-5 pt-8 pb-10">
-        <Link
-          href="/reliability"
-          className="inline-flex items-center gap-2 text-sm text-white/44 transition-colors hover:text-white/90"
-        >
-          <ArrowLeft
-            className="size-4"
-            aria-hidden
-          />
-          Anomalies
-        </Link>
-
-        <div
-          role="alert"
-          className="flex items-center justify-between gap-4 rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3"
-        >
-          <p className="text-sm text-red-300">
-            {error ??
-              "This anomaly doesn't exist."}
-          </p>
-
-          {error && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                void refresh()
-              }
-            >
-              Try again
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageContainer variant="narrow">
+        <PageHeader
+          backLink={{ href: "/reliability", label: "Anomalies" }}
+          eyebrow="ANOMALY DETAIL"
+          title="Anomaly not found"
+        />
+        <ErrorState
+          title="Failed to load anomaly"
+          message={error ?? "This anomaly doesn't exist."}
+          onRetry={error ? () => void refresh() : undefined}
+        />
+      </PageContainer>
     );
   }
 
@@ -965,23 +950,12 @@ export default function AnomalyDetailPage({
   /* ------------------------------------------------------------------------ */
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 pt-8 pb-10">
-      {/* Back navigation */}
-      <Link
-        href="/reliability"
-        className="inline-flex items-center gap-2 text-sm text-white/44 transition-colors hover:text-white/90"
-      >
-        <ArrowLeft
-          className="size-4"
-          aria-hidden
-        />
-        Anomalies
-      </Link>
-
-      {/* Header */}
-      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight text-white/90">
+    <PageContainer variant="narrow" className="space-y-6">
+      <PageHeader
+        backLink={{ href: "/reliability", label: "Anomalies" }}
+        eyebrow="ANOMALY DETAIL"
+        title={
+          <span>
             {typeLabel} anomaly in{" "}
             <Link
               href={`/workflows/${anomaly.workflowId}`}
@@ -989,17 +963,12 @@ export default function AnomalyDetailPage({
             >
               {anomaly.workflowName}
             </Link>
-          </h1>
-
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
-            <StatusBadge
-              status={anomaly.status}
-            />
-
-            <SeverityLabel
-              severity={anomaly.severity}
-            />
-
+          </span>
+        }
+        description={
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
+            <StatusBadge status={anomaly.status} />
+            <SeverityLabel severity={anomaly.severity} />
             <span className="text-sm text-white/44">
               Detected{" "}
               <FormattedDate
@@ -1008,110 +977,110 @@ export default function AnomalyDetailPage({
               />
             </span>
           </div>
-        </div>
-
-        {/* Actions */}
-        <div className="flex shrink-0 items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() =>
-              void handleInvestigate()
-            }
-            disabled={
-              pending === "investigate"
-            }
-            className="gap-2"
-          >
-            {pending === "investigate" ? (
-              <Loader2
-                className="size-4 animate-spin"
-                aria-hidden
-              />
-            ) : (
-              <Brain
-                className="size-4"
-                aria-hidden
-              />
-            )}
-
-            {pending === "investigate"
-              ? "Investigating…"
-              : "Investigate with AI"}
-          </Button>
-
-          {(isOpen ||
-            isAcknowledged) && (
+        }
+        actions={
+          <div className="flex shrink-0 items-center gap-2">
             <Button
+              variant="outline"
               onClick={() =>
-                void handleVerify()
+                void handleInvestigate()
               }
               disabled={
-                pending === "verify"
+                pending === "investigate"
               }
               className="gap-2"
             >
-              {pending === "verify" && (
+              {pending === "investigate" ? (
                 <Loader2
                   className="size-4 animate-spin"
                   aria-hidden
                 />
+              ) : (
+                <Brain
+                  className="size-4"
+                  aria-hidden
+                />
               )}
 
-              Verify recovery
+              {pending === "investigate"
+                ? "Investigating…"
+                : "Investigate with AI"}
             </Button>
-          )}
 
-          {isActive && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  aria-label="More actions"
-                >
-                  <MoreHorizontal className="size-4" />
-                </Button>
-              </DropdownMenuTrigger>
-
-              <DropdownMenuContent align="end">
-                {isOpen && (
-                  <DropdownMenuItem
-                    disabled={
-                      pending ===
-                      "acknowledge"
-                    }
-                    onSelect={() =>
-                      void handleAcknowledge()
-                    }
-                  >
-                    Acknowledge
-                  </DropdownMenuItem>
+            {(isOpen ||
+              isAcknowledged) && (
+              <Button
+                onClick={() =>
+                  void handleVerify()
+                }
+                disabled={
+                  pending === "verify"
+                }
+                className="gap-2"
+              >
+                {pending === "verify" && (
+                  <Loader2
+                    className="size-4 animate-spin"
+                    aria-hidden
+                  />
                 )}
 
-                <DropdownMenuItem
-                  onSelect={() =>
-                    setConfirmResolveOpen(
-                      true
-                    )
-                  }
-                >
-                  Resolve without verifying
-                </DropdownMenuItem>
+                Verify recovery
+              </Button>
+            )}
 
-                <DropdownMenuSeparator />
+            {isActive && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    aria-label="More actions"
+                  >
+                    <MoreHorizontal className="size-4" />
+                  </Button>
+                </DropdownMenuTrigger>
 
-                <DropdownMenuItem
-                  onSelect={() =>
-                    setFpOpen(true)
-                  }
-                >
-                  Mark as false positive
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </div>
-      </div>
+                <DropdownMenuContent align="end">
+                  {isOpen && (
+                    <DropdownMenuItem
+                      disabled={
+                        pending ===
+                        "acknowledge"
+                      }
+                      onSelect={() =>
+                        void handleAcknowledge()
+                      }
+                    >
+                      Acknowledge
+                    </DropdownMenuItem>
+                  )}
+
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      setConfirmResolveOpen(
+                        true
+                      )
+                    }
+                  >
+                    Resolve without verifying
+                  </DropdownMenuItem>
+
+                  <DropdownMenuSeparator />
+
+                  <DropdownMenuItem
+                    onSelect={() =>
+                      setFpOpen(true)
+                    }
+                  >
+                    Mark as false positive
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </div>
+        }
+      />
 
       {/* Main body */}
       <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
@@ -1809,6 +1778,6 @@ export default function AnomalyDetailPage({
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   );
 }

@@ -302,7 +302,7 @@ export function WorkflowAnomaliesView({
               onChange={(e) => setSearchTerm(e.target.value)}
               className={cn(
                 "h-9 border-white/[0.08] bg-white/[0.025] pl-9 pr-8 text-[13px]",
-                "placeholder:text-white/30",
+                "placeholder:text-white/45",
                 "focus-visible:border-white/[0.16] focus-visible:ring-0",
                 "focus-visible:ring-offset-0",
               )}
@@ -566,7 +566,7 @@ function AnomalyRow({
             </time>
 
             <span aria-hidden className="text-white/20">/</span>
-            <span className="font-mono text-white/30">
+            <span className="font-mono text-white/45">
               {anomaly.id.slice(0, 8)}
             </span>
           </div>

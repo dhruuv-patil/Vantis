@@ -23,7 +23,18 @@ import type {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  EmptyState,
+  ErrorState,
+  KpiStrip,
+  LoadMoreButton,
+  PageContainer,
+  PageHeader,
+  StatusBadge,
+  TableSkeleton,
+  Toolbar,
+} from "@/components/app/page-primitives";
 
 import {
   DropdownMenu,
@@ -155,23 +166,6 @@ function SeverityLabel({
   );
 }
 
-function StatusBadge({
-  status,
-}: {
-  status: AnomalyStatus;
-}) {
-  const config = STATUS[status];
-
-  return (
-    <Badge
-      variant="secondary"
-      className={config?.className ?? "text-white/60"}
-    >
-      {config?.label ?? status}
-    </Badge>
-  );
-}
-
 function DetectedAt({
   value,
 }: {
@@ -181,7 +175,7 @@ function DetectedAt({
 
   if (!isValid(date)) {
     return (
-      <span className="text-white/20">
+      <span className="text-white/45">
         —
       </span>
     );
@@ -200,32 +194,6 @@ function DetectedAt({
   );
 }
 
-function SkeletonRows() {
-  return (
-    <div
-      className="divide-y divide-white/[0.06]"
-      aria-hidden
-    >
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div
-          key={i}
-          className="flex items-center gap-6 px-4 py-4"
-        >
-          <div className="h-4 w-40 animate-pulse rounded bg-white/[0.06]" />
-
-          <div className="hidden h-4 w-24 animate-pulse rounded bg-white/[0.06] lg:block" />
-
-          <div className="h-4 w-16 animate-pulse rounded bg-white/[0.06]" />
-
-          <div className="h-5 w-20 animate-pulse rounded-full bg-white/[0.06]" />
-
-          <div className="ml-auto hidden h-4 w-20 animate-pulse rounded bg-white/[0.06] md:block" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 /* -------------------------------------------------------------------------- */
 /* Page                                                                       */
 /* -------------------------------------------------------------------------- */
@@ -239,6 +207,7 @@ export default function AnomaliesPage() {
     useState<StatusFilter>(ALL);
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [pageSize, setPageSize] = useState(25);
 
   // Row-level pending state, so one action doesn't lock the whole table.
   const [pendingId, setPendingId] = useState<string | null>(null);
@@ -297,10 +266,11 @@ export default function AnomaliesPage() {
 
   useEffect(() => {
     void loadAnomalies();
+    const reqRef = requestId;
 
     return () => {
       // Invalidate any in-flight request on filter change / unmount.
-      requestId.current++;
+      reqRef.current++;
     };
   }, [loadAnomalies]);
 
@@ -409,239 +379,318 @@ export default function AnomaliesPage() {
     }
   }
 
+  const counts = useMemo(() => {
+    const openCount = anomalies.filter((a) => a.status === "OPEN").length;
+    const criticalCount = anomalies.filter(
+      (a) =>
+        (a.status === "OPEN" || a.status === "ACKNOWLEDGED") &&
+        (a.severity === "CRITICAL" || a.severity === "HIGH"),
+    ).length;
+    const verifyingCount = anomalies.filter(
+      (a) => a.status === "VERIFYING_RECOVERY",
+    ).length;
+    const resolvedCount = anomalies.filter(
+      (a) => a.status === "RESOLVED",
+    ).length;
+    return { openCount, criticalCount, verifyingCount, resolvedCount };
+  }, [anomalies]);
+
   return (
-    <div className="mx-auto max-w-5xl space-y-6 pt-10">
+    <PageContainer variant="wide">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight text-white/90">
-            Anomalies
-          </h1>
+      <PageHeader
+        eyebrow="Reliability"
+        title="Anomalies"
+        description="Unusual behavior detected in your workflow runs."
+      />
 
-          <p className="mt-1 text-sm text-white/44">
-            Unusual behavior detected in your workflow runs.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative w-full sm:w-64">
-            <Label
-              htmlFor="anomaly-search"
-              className="sr-only"
-            >
-              Search anomalies
-            </Label>
-
-            <Search
-              className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-white/44"
-              aria-hidden
-            />
-
-            <Input
-              id="anomaly-search"
-              type="search"
-              placeholder="Search workflow, node, or type"
-              value={searchTerm}
-              onChange={(e) =>
-                setSearchTerm(e.target.value)
-              }
-              className="pl-9"
-            />
-          </div>
-
-          <Select
-            value={statusFilter}
-            onValueChange={(value) =>
-              setStatusFilter(
-                value as StatusFilter
-              )
-            }
-          >
-            <SelectTrigger
-              className="w-full sm:w-[180px]"
-              aria-label="Filter by status"
-            >
-              <SelectValue placeholder="All statuses" />
-            </SelectTrigger>
-
-            <SelectContent>
-              <SelectItem value={ALL}>
-                All statuses
-              </SelectItem>
-
-              {STATUS_OPTIONS.map((status) => (
-                <SelectItem
-                  key={status}
-                  value={status}
-                >
-                  {STATUS[status].label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      {/* KPI Strip */}
+      <div className="mb-6">
+        <KpiStrip
+          items={[
+            {
+              label: "Open anomalies",
+              value: loading ? (
+                <Skeleton className="h-7 w-14" />
+              ) : (
+                counts.openCount.toLocaleString()
+              ),
+              detail: loading
+                ? "Loading"
+                : anomalies.length === 0
+                  ? "No anomalies recorded"
+                  : counts.openCount === 0
+                    ? "All systems normal"
+                    : "Requires investigation",
+              tone:
+                anomalies.length === 0 || counts.openCount === 0
+                  ? "neutral"
+                  : "danger",
+            },
+            {
+              label: "High severity",
+              value: loading ? (
+                <Skeleton className="h-7 w-14" />
+              ) : (
+                counts.criticalCount.toLocaleString()
+              ),
+              detail: loading
+                ? "Loading"
+                : anomalies.length === 0
+                  ? "No anomalies recorded"
+                  : counts.criticalCount === 0
+                    ? "No critical items"
+                    : "High priority",
+              tone:
+                anomalies.length === 0 || counts.criticalCount === 0
+                  ? "neutral"
+                  : "danger",
+            },
+            {
+              label: "Verifying recovery",
+              value: loading ? (
+                <Skeleton className="h-7 w-14" />
+              ) : (
+                counts.verifyingCount.toLocaleString()
+              ),
+              detail: loading
+                ? "Loading"
+                : anomalies.length === 0
+                  ? "No active verifications"
+                  : counts.verifyingCount > 0
+                    ? "Observing test runs"
+                    : "None active",
+              tone: counts.verifyingCount > 0 ? "warning" : "neutral",
+            },
+            {
+              label: "Resolved",
+              value: loading ? (
+                <Skeleton className="h-7 w-14" />
+              ) : (
+                counts.resolvedCount.toLocaleString()
+              ),
+              detail: loading
+                ? "Loading"
+                : anomalies.length === 0
+                  ? "No resolved anomalies"
+                  : counts.resolvedCount > 0
+                    ? "Verified healthy"
+                    : "None resolved",
+              tone: counts.resolvedCount > 0 ? "success" : "neutral",
+            },
+          ]}
+        />
       </div>
 
-      {/* Error */}
-      {error && (
-        <div
-          role="alert"
-          className="flex items-center justify-between gap-4 rounded-xl border border-red-500/20 bg-red-500/[0.06] px-4 py-3"
-        >
-          <p className="text-sm text-red-300">
-            {error}
-          </p>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              void loadAnomalies()
-            }
+      {/* Toolbar */}
+      <Toolbar className="mb-6">
+        <div className="relative min-w-0 flex-1">
+          <Label
+            htmlFor="anomaly-search"
+            className="sr-only"
           >
-            Try again
-          </Button>
+            Search anomalies
+          </Label>
+
+          <Search
+            className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-white/40"
+            aria-hidden
+          />
+
+          <Input
+            id="anomaly-search"
+            type="search"
+            placeholder="Search workflow, node, or type..."
+            value={searchTerm}
+            onChange={(e) =>
+              setSearchTerm(e.target.value)
+            }
+            className="pl-10 text-sm"
+          />
         </div>
+
+        <Select
+          value={statusFilter}
+          onValueChange={(value) =>
+            setStatusFilter(
+              value as StatusFilter
+            )
+          }
+        >
+          <SelectTrigger
+            className="w-full sm:w-[180px]"
+            aria-label="Filter by status"
+          >
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
+
+          <SelectContent>
+            <SelectItem value={ALL}>
+              All statuses
+            </SelectItem>
+
+            {STATUS_OPTIONS.map((status) => (
+              <SelectItem
+                key={status}
+                value={status}
+              >
+                {STATUS[status].label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Toolbar>
+
+      {/* Error when data exists */}
+      {error && anomalies.length > 0 && (
+        <ErrorState
+          title="Unable to refresh anomalies"
+          message={error}
+          onRetry={() => void loadAnomalies()}
+          className="mb-6"
+        />
       )}
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a0a]">
-        {isInitialLoad ? (
-          <SkeletonRows />
-        ) : visibleAnomalies.length === 0 ? (
-          !error && (
-            <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
-              <ShieldCheck
-                className="mb-4 size-8 text-white/20"
-                aria-hidden
-              />
-
-              {isFiltered ? (
-                <>
-                  <p className="text-sm font-medium text-white/80">
-                    No anomalies match your filters
-                  </p>
-
+      {/* Main Content */}
+      {error && anomalies.length === 0 ? (
+        <ErrorState
+          title="Unable to load anomalies"
+          message={error}
+          onRetry={() => void loadAnomalies()}
+        />
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]">
+          {isInitialLoad ? (
+            <TableSkeleton rows={6} />
+          ) : visibleAnomalies.length === 0 ? (
+            <EmptyState
+              icon={ShieldCheck}
+              title={
+                isFiltered
+                  ? "No anomalies match your filters"
+                  : "No anomalies detected"
+              }
+              description={
+                isFiltered
+                  ? "Try changing your status filter or search term."
+                  : "Detection starts once your workflows have enough run history to establish a baseline."
+              }
+              actions={
+                isFiltered ? (
                   <Button
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
-                    className="mt-3"
                     onClick={clearFilters}
                   >
                     Clear filters
                   </Button>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm font-medium text-white/80">
-                    No anomalies detected
-                  </p>
+                ) : undefined
+              }
+            />
+          ) : (
+            <div
+              className={`overflow-x-auto transition-opacity ${
+                loading
+                  ? "opacity-60"
+                  : "opacity-100"
+              }`}
+              aria-busy={loading}
+            >
+              <Table>
+                <TableHeader className="sticky top-0 z-10 bg-[#0c0c0e]/95 backdrop-blur-sm">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead>
+                      Workflow
+                    </TableHead>
 
-                  <p className="mt-1 max-w-sm text-sm text-white/44">
-                    Detection starts once your workflows have enough run
-                    history to establish a baseline.
-                  </p>
-                </>
-              )}
-            </div>
-          )
-        ) : (
-          <div
-            className={`overflow-x-auto transition-opacity ${
-              loading
-                ? "opacity-60"
-                : "opacity-100"
-            }`}
-            aria-busy={loading}
-          >
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead>
-                    Workflow
-                  </TableHead>
+                    <TableHead className="hidden lg:table-cell">
+                      Type
+                    </TableHead>
 
-                  <TableHead className="hidden lg:table-cell">
-                    Type
-                  </TableHead>
+                    <TableHead>
+                      Severity
+                    </TableHead>
 
-                  <TableHead>
-                    Severity
-                  </TableHead>
+                    <TableHead>
+                      Status
+                    </TableHead>
 
-                  <TableHead>
-                    Status
-                  </TableHead>
+                    <TableHead className="hidden md:table-cell">
+                      Detected
+                    </TableHead>
 
-                  <TableHead className="hidden md:table-cell">
-                    Detected
-                  </TableHead>
+                    <TableHead className="w-12">
+                      <span className="sr-only">
+                        Actions
+                      </span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
 
-                  <TableHead className="w-12">
-                    <span className="sr-only">
-                      Actions
-                    </span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
+                <TableBody>
+                  {visibleAnomalies.slice(0, pageSize).map(
+                    (anomaly) => {
+                      const rowPending =
+                        pendingId === anomaly.id;
 
-              <TableBody>
-                {visibleAnomalies.map(
-                  (anomaly) => {
-                    const rowPending =
-                      pendingId === anomaly.id;
+                      const canAcknowledge =
+                        anomaly.status === "OPEN";
 
-                    const canAcknowledge =
-                      anomaly.status === "OPEN";
+                      const canResolve =
+                        anomaly.status === "OPEN" ||
+                        anomaly.status ===
+                          "ACKNOWLEDGED";
 
-                    const canResolve =
-                      anomaly.status === "OPEN" ||
-                      anomaly.status ===
-                        "ACKNOWLEDGED";
+                      const canDismiss =
+                        anomaly.status === "OPEN";
 
-                    const canDismiss =
-                      anomaly.status === "OPEN";
+                      return (
+                        <TableRow
+                          key={anomaly.id}
+                          className="hover:bg-white/[0.03]"
+                          aria-busy={rowPending}
+                        >
+                          <TableCell>
+                            <Link
+                              href={`/workflows/${anomaly.workflowId}`}
+                              title={anomaly.workflowName}
+                              className="block max-w-[200px] truncate font-medium text-white/90 hover:underline focus-visible:underline focus-visible:outline-none sm:max-w-xs"
+                            >
+                              {anomaly.workflowName}
+                            </Link>
 
-                    return (
-                      <TableRow
-                        key={anomaly.id}
-                        className="hover:bg-white/[0.03]"
-                        aria-busy={rowPending}
-                      >
-                        <TableCell>
-                          <Link
-                            href={`/workflows/${anomaly.workflowId}`}
-                            className="font-medium text-white/90 hover:underline focus-visible:underline focus-visible:outline-none"
-                          >
-                            {anomaly.workflowName}
-                          </Link>
+                            {anomaly.nodeId && (
+                              <p
+                                title={anomaly.nodeId}
+                                className="mt-0.5 truncate font-mono text-xs text-white/44"
+                              >
+                                {anomaly.nodeId}
+                              </p>
+                            )}
+                          </TableCell>
 
-                          {anomaly.nodeId && (
-                            <p className="mt-0.5 font-mono text-xs text-white/44">
-                              {anomaly.nodeId}
+                          <TableCell className="hidden lg:table-cell">
+                            <p className="text-sm text-white/70">
+                              {anomaly.type}
                             </p>
-                          )}
-                        </TableCell>
 
-                        <TableCell className="hidden lg:table-cell">
-                          <p className="text-sm text-white/70">
-                            {anomaly.type}
-                          </p>
+                            {anomaly.metric && (
+                              <p
+                                title={anomaly.metric}
+                                className="mt-0.5 max-w-[180px] truncate text-xs text-white/44"
+                              >
+                                {anomaly.metric}
+                              </p>
+                            )}
+                          </TableCell>
 
-                          {anomaly.metric && (
-                            <p className="mt-0.5 text-xs text-white/44">
-                              {anomaly.metric}
-                            </p>
-                          )}
-                        </TableCell>
-
-                        <TableCell>
-                          <SeverityLabel
-                            severity={
-                              anomaly.severity
-                            }
-                          />
-                        </TableCell>
+                          <TableCell>
+                            <SeverityLabel
+                              severity={
+                                anomaly.severity
+                              }
+                            />
+                          </TableCell>
 
                         <TableCell>
                           <StatusBadge
@@ -760,6 +809,13 @@ export default function AnomaliesPage() {
             </div>
           )}
       </div>
+      )}
+
+      <LoadMoreButton
+        loadedCount={Math.min(pageSize, visibleAnomalies.length)}
+        totalCount={visibleAnomalies.length}
+        onLoadMore={() => setPageSize((prev) => prev + 25)}
+      />
 
       {/* False positive dialog */}
       <Dialog
@@ -831,6 +887,6 @@ export default function AnomaliesPage() {
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageContainer>
   );
 }

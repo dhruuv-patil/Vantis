@@ -283,7 +283,7 @@ export function WorkflowExecutionsView({
               aria-label="Search executions"
               className={cn(
                 "h-9 border-white/[0.08] bg-white/[0.025] pl-9 pr-8 text-[13px]",
-                "placeholder:text-white/30",
+                "placeholder:text-white/45",
                 "focus-visible:border-white/[0.16] focus-visible:ring-0",
                 "focus-visible:ring-offset-0",
               )}
