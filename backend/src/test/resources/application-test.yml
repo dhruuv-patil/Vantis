@@ -11,6 +11,23 @@
 # truth for production.
 
 spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test-google-client-id
+            client-secret: test-google-client-secret
+            scope:
+              - openid
+              - profile
+              - email
+          github:
+            client-id: test-github-client-id
+            client-secret: test-github-client-secret
+            scope:
+              - read:user
+              - user:email
   datasource:
     url: jdbc:h2:mem:flowops-test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
     username: sa

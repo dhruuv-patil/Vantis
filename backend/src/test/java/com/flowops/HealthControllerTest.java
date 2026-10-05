@@ -8,12 +8,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 // The context needs a >= 256-bit HS256 secret (JwtService fails fast on a weak
 // key). Production supplies it via ${JWT_SECRET}; tests inject a dedicated,
 // non-production 32+ byte secret here so the property mechanism — and the
 // key-length validation — stay exactly as they are in production.
+@ActiveProfiles("test")
 @SpringBootTest(
         properties =
                 "flowops.auth.jwt-secret=flowops-test-only-jwt-secret-not-for-production-0123456789")
