@@ -56,6 +56,24 @@ public class AnomalyRecorder {
     private final NotificationService notifications;
     private final com.flowops.reliability.SlackAlertService slackAlerts;
     private final WebhookEventDispatcher webhookEvents;
+    private final com.flowops.reliability.IncidentService incidentService;
+
+    public AnomalyRecorder(
+            AnomalyRepository anomalies,
+            SeverityCalculator severityCalculator,
+            ReliabilityProperties properties,
+            NotificationService notifications,
+            com.flowops.reliability.SlackAlertService slackAlerts,
+            WebhookEventDispatcher webhookEvents,
+            com.flowops.reliability.IncidentService incidentService) {
+        this.anomalies = anomalies;
+        this.severityCalculator = severityCalculator;
+        this.properties = properties;
+        this.notifications = notifications;
+        this.slackAlerts = slackAlerts;
+        this.webhookEvents = webhookEvents;
+        this.incidentService = incidentService;
+    }
 
     public AnomalyRecorder(
             AnomalyRepository anomalies,
@@ -64,12 +82,7 @@ public class AnomalyRecorder {
             NotificationService notifications,
             com.flowops.reliability.SlackAlertService slackAlerts,
             WebhookEventDispatcher webhookEvents) {
-        this.anomalies = anomalies;
-        this.severityCalculator = severityCalculator;
-        this.properties = properties;
-        this.notifications = notifications;
-        this.slackAlerts = slackAlerts;
-        this.webhookEvents = webhookEvents;
+        this(anomalies, severityCalculator, properties, notifications, slackAlerts, webhookEvents, null);
     }
 
     /** Records one execution's (or one sweep's) findings. Never throws into the caller. */
@@ -148,6 +161,11 @@ public class AnomalyRecorder {
             }
         }
 
+        Anomaly targetAnomaly = createdAnomaly != null ? createdAnomaly : existingOpt.orElse(null);
+        if (targetAnomaly != null && incidentService != null) {
+            recordIncidentIfEligible(organizationId, workflowId, executionId, f, targetAnomaly);
+        }
+
         // Publish in-app notification when a NEW anomaly is opened (not aggregated)
         if (isNewAnomaly && createdAnomaly != null) {
             publishAnomalyNotification(organizationId, workflowId, executionId, f, createdAnomaly);
@@ -160,6 +178,38 @@ public class AnomalyRecorder {
             payload.put("severity", createdAnomaly.getSeverity().name());
             webhookEvents.dispatch(organizationId,
                     WebhookEventDispatcher.Event.ANOMALY_DETECTED, payload);
+        }
+    }
+
+    private void recordIncidentIfEligible(
+            UUID organizationId,
+            UUID workflowId,
+            UUID executionId,
+            Finding f,
+            Anomaly anomaly) {
+        if (anomaly.getSeverity() == AnomalySeverity.LOW) {
+            return;
+        }
+        try {
+            String nodeLabel = f.nodeId() != null && !f.nodeId().isBlank() ? f.nodeId() : "workflow";
+            String title = "[" + f.type().name() + "] " + f.metric() + " in " + nodeLabel;
+            String description = "Expected: " + f.expectedValue() + ". Actual: " + f.actualValue()
+                    + " (deviation " + DetectorSupport.round(f.deviation(), 2) + "σ, confidence "
+                    + DetectorSupport.round(f.confidence(), 2) + ")";
+
+            incidentService.recordAnomalyIncident(
+                    organizationId,
+                    workflowId,
+                    executionId,
+                    anomaly.getId(),
+                    workflowId + ":" + DetectorSupport.capKey(f.dedupKey()),
+                    title,
+                    description,
+                    anomaly.getSeverity(),
+                    anomaly.getEvidence()
+            );
+        } catch (RuntimeException e) {
+            log.warn("Could not record incident for anomaly {}: {}", anomaly.getId(), e.toString());
         }
     }
 

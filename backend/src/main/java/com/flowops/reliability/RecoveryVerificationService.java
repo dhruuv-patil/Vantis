@@ -64,16 +64,27 @@ public class RecoveryVerificationService {
     private final NodeExecutionMetricRepository metrics;
     private final MetricBaselineRepository baselines;
     private final ReliabilityProperties properties;
+    private final IncidentService incidentService;
+
+    public RecoveryVerificationService(
+            AnomalyRepository anomalies,
+            NodeExecutionMetricRepository metrics,
+            MetricBaselineRepository baselines,
+            ReliabilityProperties properties,
+            IncidentService incidentService) {
+        this.anomalies = anomalies;
+        this.metrics = metrics;
+        this.baselines = baselines;
+        this.properties = properties;
+        this.incidentService = incidentService;
+    }
 
     public RecoveryVerificationService(
             AnomalyRepository anomalies,
             NodeExecutionMetricRepository metrics,
             MetricBaselineRepository baselines,
             ReliabilityProperties properties) {
-        this.anomalies = anomalies;
-        this.metrics = metrics;
-        this.baselines = baselines;
-        this.properties = properties;
+        this(anomalies, metrics, baselines, properties, null);
     }
 
     // =========================================================================
@@ -183,6 +194,13 @@ public class RecoveryVerificationService {
         if (resolved) {
             log.info("Anomaly {} auto-resolved: recovery verified after {} healthy execution(s)",
                     anomaly.getId(), anomaly.getRecoveryHealthyCount());
+            if (incidentService != null) {
+                try {
+                    incidentService.resolveLinkedIncident(anomaly.getOrganizationId(), anomaly.getId());
+                } catch (RuntimeException e) {
+                    log.warn("Could not auto-resolve linked incident for anomaly {}: {}", anomaly.getId(), e.toString());
+                }
+            }
         } else if (healthy) {
             log.debug("Anomaly {}: healthy execution {} ({}/{} required)",
                     anomaly.getId(), executionId,

@@ -97,9 +97,11 @@ public class NotificationService {
         List<UUID> addressees = userId != null
                 ? List.of(userId)
                 : notifications.findAdminUserIds(organizationId);
+        String safeTitle = com.flowops.reliability.SlackAlertService.redactSensitiveData(title);
+        String safeBody = com.flowops.reliability.SlackAlertService.redactSensitiveData(body);
         for (UUID addressee : addressees) {
             notifications.save(
-                    Notification.create(organizationId, addressee, level, title, body, link));
+                    Notification.create(organizationId, addressee, level, safeTitle, safeBody, link));
         }
     }
 

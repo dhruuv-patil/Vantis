@@ -33,6 +33,9 @@ public class Incident {
     @Column(name = "anomaly_id")
     private UUID anomalyId;
 
+    @Column(name = "fingerprint", length = 128)
+    private String fingerprint;
+
     @Column(name = "title", nullable = false, length = 255)
     private String title;
 
@@ -76,6 +79,19 @@ public class Incident {
             String description,
             AnomalySeverity severity,
             Map<String, Object> metadata) {
+        return open(organizationId, workflowId, executionId, anomalyId, null, title, description, severity, metadata);
+    }
+
+    public static Incident open(
+            UUID organizationId,
+            UUID workflowId,
+            UUID executionId,
+            UUID anomalyId,
+            String fingerprint,
+            String title,
+            String description,
+            AnomalySeverity severity,
+            Map<String, Object> metadata) {
 
         Incident incident = new Incident();
 
@@ -84,6 +100,7 @@ public class Incident {
         incident.workflowId = workflowId;
         incident.executionId = executionId;
         incident.anomalyId = anomalyId;
+        incident.fingerprint = fingerprint;
         incident.title = title;
         incident.description = description;
         incident.severity = severity != null ? severity : AnomalySeverity.MEDIUM;
@@ -103,6 +120,44 @@ public class Incident {
 
     private void touch() {
         this.updatedAt = now();
+    }
+
+    public void recordRecurrence(
+            UUID executionId,
+            UUID anomalyId,
+            AnomalySeverity newSeverity,
+            String description,
+            Map<String, Object> newMetadata) {
+        if (executionId != null) {
+            this.executionId = executionId;
+        }
+        if (anomalyId != null) {
+            this.anomalyId = anomalyId;
+        }
+        if (newSeverity != null && newSeverity.ordinal() > this.severity.ordinal()) {
+            this.severity = newSeverity;
+        }
+        if (description != null && !description.isBlank()) {
+            this.description = description;
+        }
+        if (newMetadata != null) {
+            this.metadata = newMetadata;
+        }
+        if (this.status == IncidentStatus.ACKNOWLEDGED) {
+            this.status = IncidentStatus.OPEN;
+        }
+        touch();
+    }
+
+    public void reopen(
+            UUID executionId,
+            UUID anomalyId,
+            AnomalySeverity severity,
+            String description,
+            Map<String, Object> newMetadata) {
+        this.status = IncidentStatus.OPEN;
+        this.resolvedAt = null;
+        recordRecurrence(executionId, anomalyId, severity, description, newMetadata);
     }
 
     public void acknowledge() {
@@ -139,6 +194,10 @@ public class Incident {
 
     public UUID getAnomalyId() {
         return anomalyId;
+    }
+
+    public String getFingerprint() {
+        return fingerprint;
     }
 
     public String getTitle() {
