@@ -9,6 +9,7 @@ import com.flowops.billing.model.PlanDefinition;
 import com.flowops.billing.model.PlanLimits;
 import com.flowops.billing.model.ReservationResult;
 import com.flowops.common.error.ApiException;
+import com.flowops.common.error.ErrorCode;
 import com.flowops.domain.Invitation;
 import com.flowops.domain.Subscription;
 import com.flowops.repository.InvitationRepository;
@@ -60,6 +61,7 @@ public class EntitlementService {
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
     private final MeterRegistry meterRegistry;
+    private final com.flowops.repository.IntegrationRepository integrationRepository;
 
     @Value("${flowops.entitlements.enforcement:${ENTITLEMENTS_ENFORCEMENT:log}}")
     private String enforcementModeConfig = "log";
@@ -75,7 +77,8 @@ public class EntitlementService {
             @Autowired(required = false) BillingNoticeService billingNoticeService,
             @Autowired(required = false) StringRedisTemplate redisTemplate,
             ObjectMapper objectMapper,
-            @Autowired(required = false) MeterRegistry meterRegistry) {
+            @Autowired(required = false) MeterRegistry meterRegistry,
+            @Autowired(required = false) com.flowops.repository.IntegrationRepository integrationRepository) {
         this.subscriptionRepository = subscriptionRepository;
         this.usageMeterService = usageMeterService;
         this.billingPeriodService = billingPeriodService;
@@ -86,6 +89,7 @@ public class EntitlementService {
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
         this.meterRegistry = meterRegistry;
+        this.integrationRepository = integrationRepository;
     }
 
     // Package-private constructor for deterministic testing without mutable state
@@ -101,6 +105,24 @@ public class EntitlementService {
             ObjectMapper objectMapper,
             MeterRegistry meterRegistry,
             String enforcementModeConfig) {
+        this(subscriptionRepository, usageMeterService, billingPeriodService, workflowRepository,
+                invitationRepository, memberRepository, billingNoticeService, redisTemplate, objectMapper,
+                meterRegistry, null, enforcementModeConfig);
+    }
+
+    public EntitlementService(
+            SubscriptionRepository subscriptionRepository,
+            UsageMeterService usageMeterService,
+            BillingPeriodService billingPeriodService,
+            WorkflowRepository workflowRepository,
+            InvitationRepository invitationRepository,
+            OrganizationMemberRepository memberRepository,
+            BillingNoticeService billingNoticeService,
+            StringRedisTemplate redisTemplate,
+            ObjectMapper objectMapper,
+            MeterRegistry meterRegistry,
+            com.flowops.repository.IntegrationRepository integrationRepository,
+            String enforcementModeConfig) {
         this.subscriptionRepository = subscriptionRepository;
         this.usageMeterService = usageMeterService;
         this.billingPeriodService = billingPeriodService;
@@ -111,6 +133,7 @@ public class EntitlementService {
         this.redisTemplate = redisTemplate;
         this.objectMapper = objectMapper;
         this.meterRegistry = meterRegistry;
+        this.integrationRepository = integrationRepository;
         this.enforcementModeConfig = enforcementModeConfig;
     }
 
@@ -133,6 +156,7 @@ public class EntitlementService {
             int workflowVersionsKept,
             Set<String> allowedChannels,
             String maxAnomalyMode,
+            int integrationInstancesLimit,
             Instant periodStart,
             Instant periodEnd) {
     }
@@ -201,6 +225,7 @@ public class EntitlementService {
                     effectiveLimits.workflowVersionsKept(),
                     effectiveLimits.allowedChannels(),
                     effectiveLimits.maxAnomalyMode(),
+                    effectiveLimits.integrationInstances(),
                     period.start(),
                     period.end());
 
@@ -235,6 +260,51 @@ public class EntitlementService {
             } catch (Exception e) {
                 log.warn("Failed to evict entitlements plan cache for org={}: {}", organizationId, e.getMessage());
             }
+        }
+    }
+
+    // =========================================================================
+    // Integration Instance Enforcement
+    // =========================================================================
+
+    public boolean canConnectIntegration(UUID organizationId) {
+        Optional<CachedPlanContext> ctxOpt = resolvePlanContext(organizationId);
+        if (ctxOpt.isEmpty() || integrationRepository == null) {
+            return true;
+        }
+        long connected = integrationRepository.countByOrganizationIdAndStatus(organizationId, com.flowops.domain.Integration.STATUS_CONNECTED);
+        return connected < ctxOpt.get().integrationInstancesLimit();
+    }
+
+    public void assertCanConnectIntegration(UUID organizationId) {
+        EnforcementMode mode = getEnforcementMode();
+        if (mode == EnforcementMode.OFF) {
+            return;
+        }
+
+        Optional<CachedPlanContext> ctxOpt = resolvePlanContext(organizationId);
+        if (ctxOpt.isEmpty() || integrationRepository == null) {
+            return; // Fail open
+        }
+
+        CachedPlanContext ctx = ctxOpt.get();
+        long connected = integrationRepository.countByOrganizationIdAndStatus(organizationId, com.flowops.domain.Integration.STATUS_CONNECTED);
+
+        if (connected >= ctx.integrationInstancesLimit()) {
+            if (mode == EnforcementMode.LOG) {
+                log.info("Entitlements: org={} exceeded integration instance limit (current={}, max={}) in LOG mode",
+                        organizationId, connected, ctx.integrationInstancesLimit());
+                return;
+            }
+
+            throw ApiException.planLimitExceeded(
+                    "integrations",
+                    connected,
+                    ctx.integrationInstancesLimit(),
+                    ctx.planId(),
+                    PlanCatalog.suggestedUpgrade(ctx.planId()),
+                    "Integration instance limit reached for your plan ("
+                            + connected + " / " + ctx.integrationInstancesLimit() + ").");
         }
     }
 

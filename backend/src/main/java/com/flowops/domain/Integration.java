@@ -57,6 +57,9 @@ public class Integration {
     @Column(name = "metadata")
     private Map<String, Object> metadata;
 
+    @Column(name = "disabled_at")
+    private Instant disabledAt;
+
     @Column(name = "created_by", nullable = false, updatable = false)
     private UUID createdBy;
 
@@ -118,6 +121,26 @@ public class Integration {
 
     public boolean isConnected() {
         return STATUS_CONNECTED.equals(status);
+    }
+
+    /** Soft-disables this integration, pausing monitoring without deleting credentials. */
+    public void disable() {
+        this.disabledAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        touch();
+    }
+
+    /** Re-enables a soft-disabled integration. */
+    public void enable() {
+        this.disabledAt = null;
+        touch();
+    }
+
+    public boolean isDisabled() {
+        return disabledAt != null;
+    }
+
+    public Instant getDisabledAt() {
+        return disabledAt;
     }
 
     public UUID getId() {

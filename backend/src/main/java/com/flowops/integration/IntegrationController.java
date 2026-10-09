@@ -34,9 +34,33 @@ import org.springframework.web.bind.annotation.RestController;
 public class IntegrationController {
 
     private final IntegrationService integrationService;
+    private final com.flowops.integration.sync.IntegrationSyncScheduler syncScheduler;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public IntegrationController(
+            IntegrationService integrationService,
+            @org.springframework.beans.factory.annotation.Autowired(required = false)
+            com.flowops.integration.sync.IntegrationSyncScheduler syncScheduler) {
+        this.integrationService = integrationService;
+        this.syncScheduler = syncScheduler;
+    }
 
     public IntegrationController(IntegrationService integrationService) {
-        this.integrationService = integrationService;
+        this(integrationService, null);
+    }
+
+    @GetMapping("/health")
+    @Operation(summary = "Get overall integration sync health and worker status")
+    public IntegrationSyncHealthResponse getHealth() {
+        var principal = AuthenticatedUser.require();
+        var workerHealth = syncScheduler != null ? syncScheduler.getWorkerHealth() : null;
+        boolean serviceHealthy = workerHealth == null || workerHealth.healthy();
+        var summaries = integrationService.getHealthSummaries(principal);
+        return new IntegrationSyncHealthResponse(
+                serviceHealthy,
+                serviceHealthy ? "Monitoring service healthy" : workerHealth.status(),
+                workerHealth,
+                summaries);
     }
 
     @GetMapping
@@ -73,4 +97,41 @@ public class IntegrationController {
         integrationService.disconnect(AuthenticatedUser.requireRole(Role.ADMIN), id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/{id}/disable")
+    @Operation(summary = "Pause monitoring for an integration (soft-disable)")
+    public IntegrationResponse disable(@PathVariable UUID id) {
+        return integrationService.disable(AuthenticatedUser.requireRole(Role.ADMIN), id);
+    }
+
+    @PostMapping("/{id}/enable")
+    @Operation(summary = "Resume monitoring for a soft-disabled integration")
+    public IntegrationResponse enable(@PathVariable UUID id) {
+        return integrationService.enable(AuthenticatedUser.requireRole(Role.ADMIN), id);
+    }
+
+    @GetMapping("/{id}/sync-state")
+    @Operation(summary = "Get the sync state and health for an integration")
+    public com.flowops.domain.IntegrationSyncState getSyncState(@PathVariable UUID id) {
+        return integrationService.getSyncState(AuthenticatedUser.require(), id);
+    }
+
+    public record IntegrationSyncHealthResponse(
+            boolean serviceHealthy,
+            String message,
+            com.flowops.integration.sync.IntegrationSyncScheduler.WorkerHealth workerHealth,
+            java.util.List<IntegrationHealthSummary> integrations
+    ) {}
+
+    public record IntegrationHealthSummary(
+            UUID integrationId,
+            String name,
+            String type,
+            String healthStatus,
+            java.time.Instant lastSuccessfulSyncAt,
+            String lastErrorCategory,
+            boolean disabled,
+            boolean backfilling,
+            int backfillProgress
+    ) {}
 }

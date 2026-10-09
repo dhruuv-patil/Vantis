@@ -59,7 +59,13 @@ public class N8nProvider implements WorkflowProvider {
                 true,   // nodeExecutionData
                 true,   // incrementalSync
                 true,   // webhooks
-                false   // tracing
+                false,  // tracing
+                true,   // outputItemCounts
+                true,   // outputStructure
+                true,   // errorDetails
+                true,   // scheduleDiscovery
+                false,  // rateLimits
+                null    // dataRetentionDays
         );
     }
 

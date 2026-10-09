@@ -66,7 +66,13 @@ public class ZapierProvider implements WorkflowProvider {
                 false,  // nodeExecutionData
                 false,  // incrementalSync
                 true,   // webhooks (one-way: FlowOps → Zapier via webhook URL)
-                false   // tracing
+                false,  // tracing
+                false,  // outputItemCounts
+                false,  // outputStructure
+                false,  // errorDetails
+                false,  // scheduleDiscovery
+                false,  // rateLimits
+                null    // dataRetentionDays
         );
     }
 

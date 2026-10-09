@@ -51,6 +51,11 @@ public final class PlanCatalog {
     public static final int BUSINESS_WORKFLOW_VERSIONS_KEPT = 100;
     public static final String BUSINESS_ANOMALY_MODE = "tunable";
 
+    public static final int FREE_INTEGRATION_INSTANCES = 1;
+    public static final int BETA_INTEGRATION_INSTANCES = 3;
+    public static final int PRO_INTEGRATION_INSTANCES = 5;
+    public static final int BUSINESS_INTEGRATION_INSTANCES = 50;
+
     public static final Set<String> FREE_CHANNELS = Collections.unmodifiableSet(
             Set.of("EMAIL", "IN_APP", "WEBHOOK"));
 
@@ -80,7 +85,8 @@ public final class PlanCatalog {
                         FREE_HISTORY_RETENTION_DAYS,
                         FREE_WORKFLOW_VERSIONS_KEPT,
                         FREE_CHANNELS,
-                        FREE_ANOMALY_MODE)));
+                        FREE_ANOMALY_MODE,
+                        FREE_INTEGRATION_INSTANCES)));
 
         // PRIVATE_BETA: Behaves as PRO with activeWorkflows capped at 10, betaStartedAt, betaEndsAt (45 days)
         map.put("PRIVATE_BETA", new PlanDefinition(
@@ -97,7 +103,8 @@ public final class PlanCatalog {
                         PRO_HISTORY_RETENTION_DAYS,
                         PRO_WORKFLOW_VERSIONS_KEPT,
                         PRO_CHANNELS,
-                        BETA_ANOMALY_MODE)));
+                        BETA_ANOMALY_MODE,
+                        BETA_INTEGRATION_INSTANCES)));
 
         // PRO: activeWorkflows 100, executionsPerMonth 50,000, aiGenerations 500, aiInvestigationsMonthly 50, seats 10, workspaces 5, historyRetentionDays 30, workflowVersionsKept 30
         map.put("PRO", new PlanDefinition(
@@ -114,7 +121,8 @@ public final class PlanCatalog {
                         PRO_HISTORY_RETENTION_DAYS,
                         PRO_WORKFLOW_VERSIONS_KEPT,
                         PRO_CHANNELS,
-                        PRO_ANOMALY_MODE)));
+                        PRO_ANOMALY_MODE,
+                        PRO_INTEGRATION_INSTANCES)));
 
         // BUSINESS: activeWorkflows 1000, executionsPerMonth 1,000,000, aiGenerations 10,000, aiInvestigationsMonthly 1000, seats 100, workspaces 50, historyRetentionDays 90, workflowVersionsKept 100
         map.put("BUSINESS", new PlanDefinition(
@@ -131,7 +139,8 @@ public final class PlanCatalog {
                         BUSINESS_HISTORY_RETENTION_DAYS,
                         BUSINESS_WORKFLOW_VERSIONS_KEPT,
                         BUSINESS_CHANNELS,
-                        BUSINESS_ANOMALY_MODE)));
+                        BUSINESS_ANOMALY_MODE,
+                        BUSINESS_INTEGRATION_INSTANCES)));
 
         PLANS = Collections.unmodifiableMap(map);
     }

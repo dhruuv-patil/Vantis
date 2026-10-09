@@ -34,6 +34,11 @@ public final class ExecutionEventEnvelopes {
             Integer retryCount,
             Integer inputSize,
             Integer outputSize,
+            Integer itemCount,
+            Map<String, Object> outputSignature,
+            Integer httpStatus,
+            String dataCompleteness,
+            Integer runIndex,
             String errorType,
             String errorMessage,
             Map<String, Object> metadata,
@@ -42,6 +47,33 @@ public final class ExecutionEventEnvelopes {
             UUID integrationId,
             /** IntegrationWorkflow.id on the light path; becomes {@code workflow_id}. */
             UUID externalWorkflowRef) {
+
+        /** Backwards-compatible 19-argument constructor for legacy callers. */
+        public IngestExecutionEventRequest(
+                String source,
+                String workflowExternalId,
+                String executionExternalId,
+                String stepExternalId,
+                String stepName,
+                String status,
+                Instant timestamp,
+                Instant startedAt,
+                Instant finishedAt,
+                Long durationMs,
+                Integer retryCount,
+                Integer inputSize,
+                Integer outputSize,
+                String errorType,
+                String errorMessage,
+                Map<String, Object> metadata,
+                String workflowName,
+                UUID integrationId,
+                UUID externalWorkflowRef) {
+            this(source, workflowExternalId, executionExternalId, stepExternalId, stepName, status,
+                    timestamp, startedAt, finishedAt, durationMs, retryCount, inputSize, outputSize,
+                    null, null, null, null, 0, errorType, errorMessage, metadata, workflowName,
+                    integrationId, externalWorkflowRef);
+        }
     }
 
     /** Response for a single ingested event. */
@@ -67,6 +99,11 @@ public final class ExecutionEventEnvelopes {
             Integer retryCount,
             Integer inputSize,
             Integer outputSize,
+            Integer itemCount,
+            Map<String, Object> outputSignature,
+            Integer httpStatus,
+            String dataCompleteness,
+            Integer runIndex,
             String errorType,
             String errorMessage,
             Map<String, Object> metadata,
@@ -89,6 +126,11 @@ public final class ExecutionEventEnvelopes {
                     e.getRetryCount(),
                     e.getInputSize(),
                     e.getOutputSize(),
+                    e.getItemCount(),
+                    e.getOutputSignature(),
+                    e.getHttpStatus(),
+                    e.getDataCompleteness(),
+                    e.getRunIndex(),
                     e.getErrorType(),
                     e.getErrorMessage(),
                     e.getMetadata(),
