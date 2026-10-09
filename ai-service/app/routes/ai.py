@@ -437,6 +437,15 @@ def _investigation_system_prompt() -> str:
         "- source must identify where the evidence came from.\n"
         "- inference must contain only a reasonable interpretation of that observation.\n\n"
 
+        "GROUNDING AND CITATION REQUIREMENTS:\n"
+        "- Every likely cause or contributor MUST cite specific telemetry or evidence fields provided in the context "
+        "(for example: 'baseline.median', 'execution.error.message', 'nodeMetrics[0].durationMs', 'actual', 'expected', 'recoveryStatus').\n"
+        "- Put these field references into the 'citations' array of that likelyCause.\n"
+        "- If a cause makes a hypothesis without supporting evidence or citations, its confidence MUST be strictly capped below 0.4 (e.g. 0.2-0.35). Never report high confidence for ungrounded claims.\n"
+        "- Collect all cited fields in the top-level 'evidenceCitations' array.\n"
+        "- Provide a clear, actionable 'suggestedFix' targeting the identified root cause or dominant contributor.\n"
+        "- Provide a 'verificationChecklist' listing 2-4 concrete, verifiable conditions the operator must verify to confirm that the issue has been resolved.\n\n"
+
         "OUTPUT RULES:\n"
         "Return ONLY one valid JSON object. No markdown. No commentary outside JSON.\n\n"
 
@@ -447,7 +456,8 @@ def _investigation_system_prompt() -> str:
         '      "cause": "specific contributor or cause, clearly worded",\n'
         '      "category": "code-change|provider-change|data-quality|infrastructure|configuration|workflow|external-dependency|unknown",\n'
         '      "confidence": 0.0,\n'
-        '      "uncertainty": "what is not proven"\n'
+        '      "uncertainty": "what is not proven",\n'
+        '      "citations": ["baseline.median", "actual"]\n'
         "    }\n"
         "  ],\n"
         '  "evidence": [\n'
@@ -469,7 +479,11 @@ def _investigation_system_prompt() -> str:
         "  ],\n"
         '  "confidence": 0.0,\n'
         '  "model": "model-name",\n'
-        '  "generatedAt": "ISO-8601 timestamp"\n'
+        '  "generatedAt": "ISO-8601 timestamp",\n'
+        '  "evidenceCitations": ["baseline.median", "actual"],\n'
+        '  "suggestedFix": "Concrete operator fix or configuration update",\n'
+        '  "verificationChecklist": ["Verify next 3 runs succeed", "Check latency is under baseline"],\n'
+        '  "fallback": false\n'
         "}\n\n"
 
         "FINAL QUALITY CHECK:\n"
@@ -501,6 +515,10 @@ def investigate_anomaly(req: InvestigateAnomalyRequest) -> InvestigateAnomalyRes
             confidence=0.0,
             model=None,
             generatedAt=datetime.now(timezone.utc).isoformat(),
+            evidenceCitations=[],
+            suggestedFix=None,
+            verificationChecklist=[],
+            fallback=True,
         )
 
     # Build user prompt from the evidence package
@@ -510,6 +528,7 @@ def investigate_anomaly(req: InvestigateAnomalyRequest) -> InvestigateAnomalyRes
         f"Anomaly ID: {req.anomalyId}\n"
         f"Type: {req.type}\n"
         f"Severity: {req.severity}\n"
+        f"Platform: {req.platformType or 'N/A'}\n"
         f"Metric: {req.metric or 'N/A'}\n"
         f"Expected: {req.expected or 'N/A'}\n"
         f"Actual: {req.actual or 'N/A'}\n"
@@ -518,6 +537,13 @@ def investigate_anomaly(req: InvestigateAnomalyRequest) -> InvestigateAnomalyRes
         f"Affected Executions: {req.affectedExecutions or 'N/A'}\n"
         f"Detected At: {req.detectedAt or 'N/A'}\n"
         f"Evidence Package:\n{evidence_json}\n"
+        f"{'Workflow Details: ' + json.dumps(req.workflow, indent=2) if req.workflow else ''}\n"
+        f"{'Baseline Telemetry: ' + json.dumps(req.baseline, indent=2) if req.baseline else ''}\n"
+        f"{'Node Metrics: ' + json.dumps(req.nodeMetrics, indent=2) if req.nodeMetrics else ''}\n"
+        f"{'Topology: ' + json.dumps(req.topology, indent=2) if req.topology else ''}\n"
+        f"{'Historical Signatures: ' + json.dumps(req.historicalSignatures, indent=2) if req.historicalSignatures else ''}\n"
+        f"{'Recovery Status: ' + json.dumps(req.recoveryStatus, indent=2) if req.recoveryStatus else ''}\n"
+        f"{'Recent Changes: ' + json.dumps(req.recentChanges, indent=2) if req.recentChanges else ''}\n"
         f"{'Execution Context: ' + json.dumps(req.execution, indent=2) if req.execution else ''}"
     )
 
@@ -538,15 +564,24 @@ def investigate_anomaly(req: InvestigateAnomalyRequest) -> InvestigateAnomalyRes
         )
 
     # Parse and validate the structured response
+    all_citations = set(data.get("evidenceCitations", []) or [])
     likely_causes = []
     for cause_data in data.get("likelyCauses", []) or []:
         if isinstance(cause_data, dict):
+            citations = [str(c) for c in (cause_data.get("citations") or []) if c]
+            raw_conf = float(cause_data.get("confidence", 0.0))
+            # Grounding enforcement: If cause has no citations, cap confidence < 0.4
+            if not citations:
+                raw_conf = min(raw_conf, 0.35)
             likely_causes.append(LikelyCause(
                 cause=cause_data.get("cause", ""),
                 category=cause_data.get("category", "unknown"),
-                confidence=cause_data.get("confidence", 0.0),
+                confidence=raw_conf,
                 uncertainty=cause_data.get("uncertainty", ""),
+                citations=citations,
             ))
+            for c in citations:
+                all_citations.add(c)
 
     evidence_items = []
     for item_data in data.get("evidence", []) or []:
@@ -568,6 +603,11 @@ def investigate_anomaly(req: InvestigateAnomalyRequest) -> InvestigateAnomalyRes
                 effort=action_data.get("effort", "medium"),
             ))
 
+    overall_confidence = float(data.get("confidence", 0.0))
+    # If no evidence citations exist at all, cap overall confidence < 0.4
+    if not all_citations and overall_confidence > 0.4:
+        overall_confidence = 0.39
+
     return InvestigateAnomalyResponse(
         configured=True,
         summary=data.get("summary"),
@@ -575,7 +615,11 @@ def investigate_anomaly(req: InvestigateAnomalyRequest) -> InvestigateAnomalyRes
         evidence=evidence_items,
         impact=data.get("impact"),
         recommendedActions=recommended_actions,
-        confidence=data.get("confidence", 0.0),
+        confidence=overall_confidence,
         model=data.get("model", model),
         generatedAt=data.get("generatedAt", datetime.now(timezone.utc).isoformat()),
+        evidenceCitations=sorted(list(all_citations)),
+        suggestedFix=data.get("suggestedFix"),
+        verificationChecklist=[str(x) for x in (data.get("verificationChecklist", []) or []) if x],
+        fallback=data.get("fallback", False),
     )

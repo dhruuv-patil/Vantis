@@ -190,6 +190,7 @@ public class ReliabilityController {
 
         FlowOpsPrincipal principal = AuthenticatedUser.requireRole(Role.MEMBER);
         rateLimiter.check("ai:investigate:" + principal.userId(), 20, Duration.ofMinutes(1));
+        rateLimiter.check("ai:investigate:org:" + principal.organizationId(), 20, Duration.ofHours(1));
 
         com.flowops.billing.service.EntitlementService.InvestigationReservationTicket ticket =
                 com.flowops.billing.service.EntitlementService.InvestigationReservationTicket.notReserved();

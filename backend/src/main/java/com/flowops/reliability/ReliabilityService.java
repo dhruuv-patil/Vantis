@@ -17,6 +17,7 @@ import com.flowops.repository.NodeExecutionMetricRepository;
 import com.flowops.repository.WorkflowExecutionRepository;
 import com.flowops.repository.IntegrationWorkflowRepository;
 import com.flowops.repository.WorkflowRepository;
+import com.flowops.common.security.SensitiveDataRedactor;
 import com.flowops.security.AuthenticatedUser;
 import java.time.Duration;
 import java.time.Instant;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -53,6 +55,14 @@ public class ReliabilityService {
     private final RecoveryVerificationService recoveryService;
     private final com.flowops.repository.WorkflowVersionRepository versions;
     private final com.flowops.repository.NodeExecutionAttemptRepository nodeAttempts;
+
+    private final Map<String, CachedInvestigation> investigationCache = new ConcurrentHashMap<>();
+
+    private record CachedInvestigation(ReliabilityEnvelopes.AIInvestigationResult result, Instant cachedAt) {
+        boolean isExpired() {
+            return Instant.now().isAfter(cachedAt.plus(Duration.ofHours(1)));
+        }
+    }
 
     @org.springframework.beans.factory.annotation.Autowired
     public ReliabilityService(
@@ -654,11 +664,31 @@ public class ReliabilityService {
                                 () -> new ApiException(
                                         ErrorCode.ANOMALY_NOT_FOUND));
 
+        String stateHash = computeInvestigationStateHash(anomaly);
+        String cacheKey = principal.organizationId() + ":" + anomalyId + ":" + stateHash;
+        CachedInvestigation cached = investigationCache.get(cacheKey);
+        if (cached != null && !cached.isExpired()) {
+            return new ReliabilityEnvelopes.InvestigateResponse(cached.result());
+        }
+
         Map<String, Object> evidencePackage =
                 buildEvidencePackage(anomaly);
 
-        ReliabilityEnvelopes.AIInvestigationResult result =
-                aiClient.investigateAnomaly(evidencePackage);
+        Map<String, Object> sanitizedEvidencePackage =
+                SensitiveDataRedactor.redactMap(evidencePackage);
+
+        ReliabilityEnvelopes.AIInvestigationResult result;
+        try {
+            result = aiClient.investigateAnomaly(sanitizedEvidencePackage);
+            if (!result.configured()) {
+                result = buildRuleBasedFallback(anomaly, sanitizedEvidencePackage);
+            }
+        } catch (Exception ex) {
+            log.warn("AI service call failed for anomaly {}, utilizing rule-based fallback: {}", anomalyId, ex.getMessage());
+            result = buildRuleBasedFallback(anomaly, sanitizedEvidencePackage);
+        }
+
+        investigationCache.put(cacheKey, new CachedInvestigation(result, Instant.now()));
 
         Map<String, Object> updatedEvidence =
                 new HashMap<>(
@@ -669,41 +699,19 @@ public class ReliabilityService {
         Map<String, Object> investigation =
                 new HashMap<>();
 
-        investigation.put(
-                "summary",
-                result.summary());
-
-        investigation.put(
-                "likelyCauses",
-                result.likelyCauses());
-
-        investigation.put(
-                "evidence",
-                result.evidence());
-
-        investigation.put(
-                "impact",
-                result.impact());
-
-        investigation.put(
-                "recommendedActions",
-                result.recommendedActions());
-
-        investigation.put(
-                "confidence",
-                result.confidence());
-
-        investigation.put(
-                "configured",
-                result.configured());
-
-        investigation.put(
-                "model",
-                result.model());
-
-        investigation.put(
-                "generatedAt",
-                result.generatedAt());
+        investigation.put("summary", result.summary());
+        investigation.put("likelyCauses", result.likelyCauses());
+        investigation.put("evidence", result.evidence());
+        investigation.put("impact", result.impact());
+        investigation.put("recommendedActions", result.recommendedActions());
+        investigation.put("confidence", result.confidence());
+        investigation.put("configured", result.configured());
+        investigation.put("model", result.model());
+        investigation.put("generatedAt", result.generatedAt());
+        investigation.put("evidenceCitations", result.evidenceCitations());
+        investigation.put("suggestedFix", result.suggestedFix());
+        investigation.put("verificationChecklist", result.verificationChecklist());
+        investigation.put("fallback", result.fallback());
 
         updatedEvidence.put(
                 "investigation",
@@ -715,6 +723,201 @@ public class ReliabilityService {
 
         return new ReliabilityEnvelopes.InvestigateResponse(
                 result);
+    }
+
+    String computeInvestigationStateHash(Anomaly anomaly) {
+        return (anomaly.getExecutionId() != null ? anomaly.getExecutionId().toString() : "no-exec")
+                + ":" + anomaly.getAffectedExecutions()
+                + ":" + (anomaly.getActualValue() != null ? anomaly.getActualValue() : "none")
+                + ":" + (anomaly.getStatus() != null ? anomaly.getStatus().name() : "none");
+    }
+
+    void clearInvestigationCache() {
+        investigationCache.clear();
+    }
+
+    ReliabilityEnvelopes.AIInvestigationResult buildRuleBasedFallback(
+            Anomaly anomaly,
+            Map<String, Object> evidencePackage) {
+
+        String typeName = anomaly.getType() != null ? anomaly.getType().name() : "UNKNOWN";
+        String actual = anomaly.getActualValue() != null ? anomaly.getActualValue() : "N/A";
+        String expected = anomaly.getExpectedValue() != null ? anomaly.getExpectedValue() : "N/A";
+        String metric = anomaly.getMetric() != null ? anomaly.getMetric() : "telemetry";
+
+        String kind = null;
+        if (anomaly.getEvidence() != null && anomaly.getEvidence().get("kind") != null) {
+            kind = String.valueOf(anomaly.getEvidence().get("kind"));
+        }
+
+        String summary = String.format(
+                "Rule-based diagnostic: %s anomaly detected on %s. Observed %s against expected %s.",
+                kind != null ? kind : typeName, metric, actual, expected);
+
+        List<ReliabilityEnvelopes.LikelyCause> causes = new ArrayList<>();
+        List<ReliabilityEnvelopes.EvidenceItem> evidenceItems = new ArrayList<>();
+        List<ReliabilityEnvelopes.RecommendedAction> actions = new ArrayList<>();
+        List<String> citations = new ArrayList<>();
+        citations.add("actual");
+        citations.add("expected");
+        if (anomaly.getDeviation() > 0) {
+            citations.add("deviation");
+        }
+
+        String suggestedFix;
+        List<String> checklist = new ArrayList<>();
+
+        if ("ZERO_OUTPUT".equalsIgnoreCase(kind)) {
+            causes.add(new ReliabilityEnvelopes.LikelyCause(
+                    "Workflow completed technically but produced 0 output items",
+                    "data-quality",
+                    0.85,
+                    "Downstream filtering or upstream empty collection not distinguished",
+                    List.of("actual", "expected")));
+            evidenceItems.add(new ReliabilityEnvelopes.EvidenceItem(
+                    "metric",
+                    "Execution finished with 0 output items vs expected " + expected,
+                    "anomaly.actualValue",
+                    "Zero output collapse detected"));
+            actions.add(new ReliabilityEnvelopes.RecommendedAction(
+                    "Inspect filter nodes and upstream collection sources",
+                    "Determine whether upstream data source was empty or prematurely filtered",
+                    "low",
+                    "low"));
+            suggestedFix = "Verify upstream query returns rows and check branch filter conditions for unintended exclusions.";
+            checklist.add("Verify next execution produces >= 1 output item");
+            checklist.add("Check provider execution log for empty response array");
+        } else if ("OUTPUT_COLLAPSE".equalsIgnoreCase(kind)) {
+            causes.add(new ReliabilityEnvelopes.LikelyCause(
+                    "Output volume dropped precipitously below historical baseline",
+                    "data-quality",
+                    0.80,
+                    "Possible partial batch drop or upstream throttling",
+                    List.of("actual", "expected", "deviation")));
+            evidenceItems.add(new ReliabilityEnvelopes.EvidenceItem(
+                    "metric",
+                    "Output volume collapsed to " + actual + " vs baseline " + expected,
+                    "anomaly.deviation",
+                    "Sudden item drop exceeds MAD threshold"));
+            actions.add(new ReliabilityEnvelopes.RecommendedAction(
+                    "Compare input volume against output volume across recent runs",
+                    "Isolate whether input decreased or items were dropped during processing",
+                    "low",
+                    "medium"));
+            suggestedFix = "Inspect batch processing and pagination loops to ensure all items are being collected.";
+            checklist.add("Verify output item count returns to baseline expected range");
+        } else if ("SCHEMA_DRIFT".equalsIgnoreCase(kind)) {
+            causes.add(new ReliabilityEnvelopes.LikelyCause(
+                    "Output payload structure drifted from established schema baseline",
+                    "code-change",
+                    0.85,
+                    "External API contract change or missing required fields",
+                    List.of("actual", "expected")));
+            evidenceItems.add(new ReliabilityEnvelopes.EvidenceItem(
+                    "signature",
+                    "Structural signature changed from baseline " + expected + " to " + actual,
+                    "anomaly.actualValue",
+                    "Incompatible field type or missing keys"));
+            actions.add(new ReliabilityEnvelopes.RecommendedAction(
+                    "Inspect downstream schema dependencies for breaking field changes",
+                    "Prevent downstream processing failures due to unexpected payload shape",
+                    "medium",
+                    "medium"));
+            suggestedFix = "Update schema mapping or add fallback default values for missing/renamed fields.";
+            checklist.add("Verify downstream nodes parse new payload structure without errors");
+            checklist.add("Confirm structural signature matches expected schema");
+        } else if ("LATENCY_SPIKE".equalsIgnoreCase(kind) || anomaly.getType() == com.flowops.domain.AnomalyType.LATENCY) {
+            causes.add(new ReliabilityEnvelopes.LikelyCause(
+                    "Execution duration significantly exceeded historical median",
+                    "infrastructure",
+                    0.75,
+                    "Specific slow node or external service response latency",
+                    List.of("actual", "expected", "deviation")));
+            evidenceItems.add(new ReliabilityEnvelopes.EvidenceItem(
+                    "metric",
+                    "Execution duration was " + actual + " vs baseline " + expected,
+                    "anomaly.actualValue",
+                    "Latency exceeds threshold"));
+            actions.add(new ReliabilityEnvelopes.RecommendedAction(
+                    "Review step-level durations and external HTTP call timeouts",
+                    "Identify dominant latency contributor among workflow steps",
+                    "low",
+                    "low"));
+            suggestedFix = "Set tighter timeouts and exponential backoff retry policies on external HTTP requests.";
+            checklist.add("Verify subsequent executions complete within normal duration range");
+        } else if ("ERROR_SPIKE".equalsIgnoreCase(kind)) {
+            causes.add(new ReliabilityEnvelopes.LikelyCause(
+                    "Consecutive or elevated execution failure rate detected",
+                    "external-dependency",
+                    0.85,
+                    "External authentication, rate limiting, or service disruption",
+                    List.of("actual", "expected")));
+            evidenceItems.add(new ReliabilityEnvelopes.EvidenceItem(
+                    "signature",
+                    "Failure rate rose to " + actual,
+                    "anomaly.actualValue",
+                    "Consecutive failures triggered error-spike detector"));
+            actions.add(new ReliabilityEnvelopes.RecommendedAction(
+                    "Inspect execution error logs and provider response codes",
+                    "Identify specific failure reason (e.g. 401, 429, 500)",
+                    "low",
+                    "low"));
+            suggestedFix = "Verify credentials and inspect external service status pages for outages.";
+            checklist.add("Verify 3 consecutive executions succeed with status SUCCESS");
+        } else if ("SILENT_STALL".equalsIgnoreCase(kind)) {
+            causes.add(new ReliabilityEnvelopes.LikelyCause(
+                    "Workflow silent stall detected — no executions recorded within expected schedule interval",
+                    "workflow",
+                    0.85,
+                    "Disabled cron trigger, paused workflow, or webhook listener failure",
+                    List.of("actual", "expected")));
+            evidenceItems.add(new ReliabilityEnvelopes.EvidenceItem(
+                    "metric",
+                    "Time since last run was " + actual + " vs expected interval " + expected,
+                    "anomaly.actualValue",
+                    "Schedule interval exceeded threshold"));
+            actions.add(new ReliabilityEnvelopes.RecommendedAction(
+                    "Check external platform workflow active status and trigger configuration",
+                    "Verify webhook endpoint or cron timer is active and enabled",
+                    "low",
+                    "low"));
+            suggestedFix = "Activate workflow trigger on external provider or trigger manual test run.";
+            checklist.add("Verify at least 1 new execution arrives within schedule window");
+        } else {
+            causes.add(new ReliabilityEnvelopes.LikelyCause(
+                    "Workflow telemetry deviated from expected baseline",
+                    "unknown",
+                    0.60,
+                    "Root cause requires manual inspection of execution telemetry",
+                    List.of("actual", "expected")));
+            evidenceItems.add(new ReliabilityEnvelopes.EvidenceItem(
+                    "metric",
+                    "Observed " + actual + " vs expected " + expected,
+                    "anomaly.actualValue",
+                    "Statistical deviation detected"));
+            actions.add(new ReliabilityEnvelopes.RecommendedAction(
+                    "Inspect recent execution logs for this workflow",
+                    "Correlate deviation with changes in input or dependencies",
+                    "low",
+                    "low"));
+            suggestedFix = "Inspect workflow execution history to identify failure pattern.";
+            checklist.add("Verify workflow telemetry returns to normal range");
+        }
+
+        return new ReliabilityEnvelopes.AIInvestigationResult(
+                summary,
+                causes,
+                evidenceItems,
+                "Workflow reliability affected; potential data quality or delivery disruption.",
+                actions,
+                0.75,
+                false,
+                "rule-based-fallback",
+                Instant.now(),
+                citations,
+                suggestedFix,
+                checklist,
+                true);
     }
 
     private Map<String, Object> buildEvidencePackage(
@@ -1050,6 +1253,69 @@ public class ReliabilityService {
                 evidencePackage.put(
                         "execution",
                         executionData);
+            }
+        }
+
+        // Add workflow details and platform type
+        Map<String, Object> workflowData = new HashMap<>();
+        workflowData.put("id", anomaly.getWorkflowId() != null ? anomaly.getWorkflowId().toString() : null);
+        workflowData.put("name", resolveWorkflowName(anomaly.getWorkflowId(), anomaly.getOrganizationId()));
+        String platformType = "INTERNAL";
+        if (anomaly.getWorkflowId() != null) {
+            Optional<com.flowops.domain.IntegrationWorkflow> iwOpt =
+                    integrationWorkflows.findByIdAndOrganizationId(anomaly.getWorkflowId(), anomaly.getOrganizationId());
+            if (iwOpt.isPresent()) {
+                com.flowops.domain.IntegrationWorkflow iw = iwOpt.get();
+                workflowData.put("externalWorkflowId", iw.getProviderWorkflowId());
+                workflowData.put("status", iw.getStatus());
+                workflowData.put("monitoringEnabled", iw.isMonitoringEnabled());
+                if (iw.getMetadata() != null && iw.getMetadata().containsKey("provider")) {
+                    platformType = String.valueOf(iw.getMetadata().get("provider"));
+                }
+            }
+        }
+        workflowData.put("platformType", platformType);
+        evidencePackage.put("workflow", workflowData);
+        evidencePackage.put("platformType", platformType);
+
+        // Add baseline metrics
+        if (anomaly.getMetric() != null && anomaly.getWorkflowId() != null) {
+            Optional<MetricBaseline> baseOpt = anomaly.getNodeId() != null
+                    ? baselines.findByOrganizationIdAndWorkflowIdAndNodeIdAndMetric(
+                            anomaly.getOrganizationId(), anomaly.getWorkflowId(), anomaly.getNodeId(), anomaly.getMetric())
+                    : baselines.findByOrganizationIdAndWorkflowIdAndMetric(
+                            anomaly.getOrganizationId(), anomaly.getWorkflowId(), anomaly.getMetric())
+                            .stream()
+                            .filter(b -> b.getNodeId() == null)
+                            .findFirst();
+            if (baseOpt.isPresent()) {
+                MetricBaseline b = baseOpt.get();
+                Map<String, Object> baseData = new HashMap<>();
+                baseData.put("median", b.getMedian());
+                baseData.put("mad", b.getMad());
+                baseData.put("mean", b.getMean());
+                baseData.put("stddev", b.getStddev());
+                baseData.put("sampleCount", b.getSampleCount());
+                evidencePackage.put("baseline", baseData);
+            }
+        }
+
+        // Add recovery status if available
+        if (recoveryService != null && anomaly.getId() != null) {
+            try {
+                RecoveryVerificationService.RecoveryStatus snap = recoveryService.getRecoveryStatus(
+                        null,
+                        anomaly.getId());
+                if (snap != null) {
+                    Map<String, Object> recData = new HashMap<>();
+                    recData.put("status", snap.anomalyStatus() != null ? snap.anomalyStatus().name() : null);
+                    recData.put("active", snap.verificationActive());
+                    recData.put("healthyCount", snap.healthyCount());
+                    recData.put("observedCount", snap.observedCount());
+                    recData.put("requiredCount", snap.requiredCount());
+                    evidencePackage.put("recoveryStatus", recData);
+                }
+            } catch (Exception ignored) {
             }
         }
 

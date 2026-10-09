@@ -142,14 +142,22 @@ public class AiServiceClient implements AiCompleter {
         Instant generatedAt = Instant.now();
 
         List<ReliabilityEnvelopes.LikelyCause> likelyCauses = new ArrayList<>();
-        JsonNode causesNode = response.get("likely_causes");
+        JsonNode causesNode = response.has("likelyCauses") ? response.get("likelyCauses") : response.get("likely_causes");
         if (causesNode != null && causesNode.isArray()) {
             for (JsonNode cause : causesNode) {
+                List<String> citations = new ArrayList<>();
+                JsonNode citNode = cause.get("citations");
+                if (citNode != null && citNode.isArray()) {
+                    for (JsonNode c : citNode) {
+                        citations.add(c.asText());
+                    }
+                }
                 likelyCauses.add(new ReliabilityEnvelopes.LikelyCause(
                         cause.path("cause").asText(""),
                         cause.path("category").asText(""),
                         cause.path("confidence").asDouble(0.0),
-                        cause.path("uncertainty").asText("")));
+                        cause.path("uncertainty").asText(""),
+                        citations));
             }
         }
 
@@ -166,7 +174,7 @@ public class AiServiceClient implements AiCompleter {
         }
 
         List<ReliabilityEnvelopes.RecommendedAction> recommendedActions = new ArrayList<>();
-        JsonNode actionsNode = response.get("recommended_actions");
+        JsonNode actionsNode = response.has("recommendedActions") ? response.get("recommendedActions") : response.get("recommended_actions");
         if (actionsNode != null && actionsNode.isArray()) {
             for (JsonNode action : actionsNode) {
                 recommendedActions.add(new ReliabilityEnvelopes.RecommendedAction(
@@ -177,9 +185,42 @@ public class AiServiceClient implements AiCompleter {
             }
         }
 
+        List<String> evidenceCitations = new ArrayList<>();
+        JsonNode citNode = response.has("evidenceCitations") ? response.get("evidenceCitations") : response.get("evidence_citations");
+        if (citNode != null && citNode.isArray()) {
+            for (JsonNode c : citNode) {
+                evidenceCitations.add(c.asText());
+            }
+        }
+
+        String suggestedFix = response.hasNonNull("suggestedFix") ? response.get("suggestedFix").asText()
+                : (response.hasNonNull("suggested_fix") ? response.get("suggested_fix").asText() : null);
+
+        List<String> verificationChecklist = new ArrayList<>();
+        JsonNode checkNode = response.has("verificationChecklist") ? response.get("verificationChecklist") : response.get("verification_checklist");
+        if (checkNode != null && checkNode.isArray()) {
+            for (JsonNode c : checkNode) {
+                verificationChecklist.add(c.asText());
+            }
+        }
+
+        boolean fallback = response.path("fallback").asBoolean(false);
+
+        if (response.hasNonNull("generatedAt")) {
+            try {
+                generatedAt = Instant.parse(response.get("generatedAt").asText());
+            } catch (Exception ignored) {
+            }
+        } else if (response.hasNonNull("generated_at")) {
+            try {
+                generatedAt = Instant.parse(response.get("generated_at").asText());
+            } catch (Exception ignored) {
+            }
+        }
+
         return new ReliabilityEnvelopes.AIInvestigationResult(
                 summary, likelyCauses, evidence, impact, recommendedActions, confidence, configured, model,
-                generatedAt);
+                generatedAt, evidenceCitations, suggestedFix, verificationChecklist, fallback);
     }
 
     private JsonNode post(String path, JsonNode body) {
