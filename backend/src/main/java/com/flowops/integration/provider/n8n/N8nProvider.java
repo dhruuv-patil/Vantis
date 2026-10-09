@@ -15,7 +15,9 @@ import com.flowops.integration.provider.ProviderConfigurationException;
 import com.flowops.integration.provider.ProviderUnavailableException;
 import com.flowops.integration.provider.SyncCursor;
 import com.flowops.integration.provider.WorkflowProvider;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -175,14 +177,54 @@ public class N8nProvider implements WorkflowProvider {
             IntegrationContext context,
             ExternalExecution execution) {
 
-        JsonNode response =
-                client.getExecutionData(
-                        context,
-                        execution.externalId());
+        try {
+            JsonNode response =
+                    client.getExecutionData(
+                            context,
+                            execution.externalId());
 
-        return N8nNodeExecutionMapper.toExternal(
-                response,
-                execution.externalId(),
-                execution.workflowExternalId());
+            return N8nNodeExecutionMapper.toExternal(
+                    response,
+                    execution.externalId(),
+                    execution.workflowExternalId());
+        } catch (Exception e) {
+            if (hasCause(e, com.flowops.common.security.http.PayloadTooLargeException.class)) {
+                log.warn("Execution {} payload exceeded size limit, returning truncated execution node", execution.externalId());
+                Map<String, Object> meta = new LinkedHashMap<>();
+                meta.put("nodeType", "execution");
+                meta.put("error", "payload_too_large");
+
+                return List.of(new ExternalNodeExecution(
+                        "execution",
+                        execution.externalId(),
+                        execution.workflowExternalId(),
+                        "Execution",
+                        execution.status(),
+                        execution.startedAt(),
+                        execution.finishedAt(),
+                        null,
+                        null,
+                        null,
+                        Map.of("hash", "truncated", "keys", List.of(), "truncated", true),
+                        null,
+                        "Payload exceeded size limit; telemetry pruned for safety",
+                        "PAYLOAD_TOO_LARGE",
+                        "PAYLOAD_TRUNCATED",
+                        0,
+                        meta
+                ));
+            }
+            throw e;
+        }
+    }
+
+    private boolean hasCause(Throwable t, Class<? extends Throwable> expected) {
+        while (t != null) {
+            if (expected.isInstance(t)) {
+                return true;
+            }
+            t = t.getCause();
+        }
+        return false;
     }
 }

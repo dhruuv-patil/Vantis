@@ -1,0 +1,62 @@
+{
+  "id": "exec-101",
+  "finished": true,
+  "mode": "webhook",
+  "retryOf": null,
+  "retrySuccessId": null,
+  "status": "success",
+  "startedAt": "2024-03-01T10:00:00.000Z",
+  "stoppedAt": "2024-03-01T10:00:01.500Z",
+  "workflowId": "wf-orders-01",
+  "data": {
+    "resultData": {
+      "runData": {
+        "Webhook": [
+          {
+            "startTime": 1709287200000,
+            "executionTime": 15,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "orderId": "ord-9921",
+                      "customerId": "cust-441",
+                      "amount": 149.99,
+                      "currency": "USD",
+                      "status": "PAID"
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ],
+        "Enrich Customer": [
+          {
+            "startTime": 1709287200020,
+            "executionTime": 210,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "customerId": "cust-441",
+                      "name": "Jane Doe",
+                      "email": "jane@example.com",
+                      "tier": "GOLD",
+                      "verified": true
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "lastNodeExecuted": "Enrich Customer"
+    }
+  }
+}

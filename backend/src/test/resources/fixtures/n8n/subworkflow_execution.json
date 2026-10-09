@@ -1,0 +1,66 @@
+{
+  "id": "exec-108",
+  "finished": true,
+  "mode": "webhook",
+  "retryOf": null,
+  "retrySuccessId": null,
+  "status": "success",
+  "startedAt": "2024-03-01T11:45:00.000Z",
+  "stoppedAt": "2024-03-01T11:45:04.500Z",
+  "workflowId": "wf-parent-orchestrator",
+  "data": {
+    "resultData": {
+      "runData": {
+        "Webhook": [
+          {
+            "startTime": 1709293500000,
+            "executionTime": 5,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "datasetId": "ds-44"
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ],
+        "Execute Subworkflow": [
+          {
+            "startTime": 1709293500015,
+            "executionTime": 3200,
+            "executionStatus": "success",
+            "source": [
+              {
+                "previousNode": "Webhook"
+              }
+            ],
+            "metadata": {
+              "subExecutionId": "exec-child-990",
+              "subWorkflowId": "wf-child-processor"
+            },
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "processedRows": 1500,
+                      "status": "COMPLETED",
+                      "childExecutionId": "exec-child-990",
+                      "childWorkflowId": "wf-child-processor"
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "lastNodeExecuted": "Execute Subworkflow"
+    }
+  }
+}

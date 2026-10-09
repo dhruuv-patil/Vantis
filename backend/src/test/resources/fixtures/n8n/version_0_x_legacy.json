@@ -1,0 +1,37 @@
+{
+  "id": "exec-099",
+  "finished": true,
+  "mode": "manual",
+  "retryOf": null,
+  "retrySuccessId": null,
+  "status": "success",
+  "startedAt": "2023-11-01T08:00:00.000Z",
+  "stoppedAt": "2023-11-01T08:00:01.000Z",
+  "workflowData": {
+    "id": "wf-legacy-0",
+    "name": "Legacy Workflow"
+  },
+  "data": {
+    "resultData": {
+      "runData": {
+        "Start": [
+          {
+            "startTime": 1698825600000,
+            "executionTime": 2,
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "legacyId": 1
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}

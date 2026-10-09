@@ -1,0 +1,76 @@
+{
+  "id": "exec-107",
+  "finished": true,
+  "mode": "webhook",
+  "retryOf": null,
+  "retrySuccessId": null,
+  "status": "success",
+  "startedAt": "2024-03-01T11:30:00.000Z",
+  "stoppedAt": "2024-03-01T11:30:00.900Z",
+  "workflowId": "wf-branching",
+  "data": {
+    "resultData": {
+      "runData": {
+        "Webhook": [
+          {
+            "startTime": 1709292600000,
+            "executionTime": 5,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "status": "approved",
+                      "amount": 250
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ],
+        "IF Approved": [
+          {
+            "startTime": 1709292600010,
+            "executionTime": 8,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "status": "approved",
+                      "amount": 250
+                    }
+                  }
+                ],
+                []
+              ]
+            }
+          }
+        ],
+        "Send Approval Email": [
+          {
+            "startTime": 1709292600025,
+            "executionTime": 150,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "sent": true,
+                      "messageId": "msg_8829"
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "lastNodeExecuted": "Send Approval Email"
+    }
+  }
+}
