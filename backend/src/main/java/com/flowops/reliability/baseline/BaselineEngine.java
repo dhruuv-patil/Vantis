@@ -4,17 +4,23 @@ import com.flowops.config.ReliabilityProperties;
 import com.flowops.domain.MetricBaseline;
 import com.flowops.domain.NodeExecutionMetric;
 import com.flowops.domain.NodeRunStatus;
+import com.flowops.repository.AnomalyRepository;
 import com.flowops.repository.MetricBaselineRepository;
 import com.flowops.repository.NodeExecutionMetricRepository;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -55,14 +61,24 @@ public class BaselineEngine {
     private final NodeExecutionMetricRepository metrics;
     private final MetricBaselineRepository baselines;
     private final ReliabilityProperties properties;
+    private final AnomalyRepository anomalies;
 
     public BaselineEngine(
             NodeExecutionMetricRepository metrics,
             MetricBaselineRepository baselines,
             ReliabilityProperties properties) {
+        this(metrics, baselines, properties, null);
+    }
+
+    public BaselineEngine(
+            NodeExecutionMetricRepository metrics,
+            MetricBaselineRepository baselines,
+            ReliabilityProperties properties,
+            @Autowired(required = false) AnomalyRepository anomalies) {
         this.metrics = metrics;
         this.baselines = baselines;
         this.properties = properties;
+        this.anomalies = anomalies;
     }
 
     /**
@@ -117,6 +133,31 @@ public class BaselineEngine {
 
         if (rows.isEmpty()) {
             return;
+        }
+
+        // Exclude executions associated with open anomalies to prevent baseline poisoning
+        Set<UUID> openAnomalyExecutionIds = Collections.emptySet();
+        if (anomalies != null) {
+            try {
+                List<com.flowops.domain.Anomaly> openList =
+                        anomalies.findByWorkflowIdAndStatus(workflowId, com.flowops.domain.AnomalyStatus.OPEN);
+                openAnomalyExecutionIds = openList.stream()
+                        .map(com.flowops.domain.Anomaly::getExecutionId)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toSet());
+            } catch (RuntimeException e) {
+                log.warn("Could not load open anomalies for workflow {}: {}", workflowId, e.toString());
+            }
+        }
+
+        if (!openAnomalyExecutionIds.isEmpty()) {
+            final Set<UUID> excluded = openAnomalyExecutionIds;
+            List<NodeExecutionMetric> cleanRows = rows.stream()
+                    .filter(r -> !excluded.contains(r.getExecutionId()))
+                    .toList();
+            if (!cleanRows.isEmpty()) {
+                rows = cleanRows;
+            }
         }
 
         /*

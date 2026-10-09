@@ -168,6 +168,11 @@ public class NodeExecutionMetric {
         touch();
     }
 
+    public void recordHttpStatus(Integer httpStatus) {
+        this.httpStatus = httpStatus;
+        touch();
+    }
+
     public void recordRetryCount(int retryCount) {
         this.retryCount = retryCount;
         touch();
@@ -265,6 +270,13 @@ public class NodeExecutionMetric {
 
     public Map<String, Object> getOutputSignature() {
         return outputSignature;
+    }
+
+    public Integer getItemCount() {
+        if (outputSignature != null && outputSignature.get("itemCount") instanceof Number n) {
+            return n.intValue();
+        }
+        return null;
     }
 
     public Instant getCreatedAt() {

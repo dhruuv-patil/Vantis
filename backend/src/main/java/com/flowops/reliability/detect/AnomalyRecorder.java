@@ -113,6 +113,13 @@ public class AnomalyRecorder {
             isNewAnomaly = true;
         } else {
             Anomaly existing = existingOpt.get();
+            // Idempotent re-evaluation: if this exact execution was already recorded on the anomaly, skip duplicate processing
+            if (executionId != null && executionId.equals(existing.getExecutionId())) {
+                log.debug("Execution {} already recorded for anomaly dedupKey {}, skipping duplicate aggregation",
+                        executionId, dedupKey);
+                return;
+            }
+
             AnomalyStatus status = existing.getStatus();
             if (status == AnomalyStatus.RESOLVED || status == AnomalyStatus.FALSE_POSITIVE) {
                 // A human closed this; a recurrence is a brand-new anomaly, not a re-open.
