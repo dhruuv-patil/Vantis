@@ -98,7 +98,7 @@ function RegisterPageContent() {
         </p>
       </div>
 
-      <div className="rounded-lg border border-white/[0.10] bg-[#050505] p-7 shadow-none">
+      <div className="rounded-lg border border-border dark:border-white/[0.10] bg-card dark:bg-[#050505] p-7 shadow-sm dark:shadow-none">
         <div className="mb-7">
           <h2 className="text-[22px] font-semibold tracking-[-0.025em]">
             Get started
@@ -134,7 +134,7 @@ function RegisterPageContent() {
               aria-invalid={!!errors.fullName}
               aria-describedby={errors.fullName ? "fullName-error" : undefined}
               placeholder="Your name"
-              className="h-11 rounded-md border-white/[0.11] bg-[#080808]"
+              className="h-11 rounded-md border-input dark:border-white/[0.11] bg-background dark:bg-[#080808]"
               disabled={submitting}
             />
             {errors.fullName ? (
@@ -158,7 +158,7 @@ function RegisterPageContent() {
               aria-invalid={!!errors.email}
               aria-describedby={errors.email ? "email-error" : undefined}
               placeholder="you@company.com"
-              className="h-11 rounded-md border-white/[0.11] bg-[#080808]"
+              className="h-11 rounded-md border-input dark:border-white/[0.11] bg-background dark:bg-[#080808]"
               disabled={submitting}
             />
             {errors.email ? (
@@ -182,7 +182,7 @@ function RegisterPageContent() {
               aria-invalid={!!errors.password}
               aria-describedby={errors.password ? "password-error" : undefined}
               placeholder="Create a password"
-              className="h-11 rounded-md border-white/[0.11] bg-[#080808]"
+              className="h-11 rounded-md border-input dark:border-white/[0.11] bg-background dark:bg-[#080808]"
               disabled={submitting}
             />
             {!errors.password ? (
@@ -211,7 +211,7 @@ function RegisterPageContent() {
               aria-invalid={!!errors.confirmPassword}
               aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
               placeholder="Confirm your password"
-              className="h-11 rounded-md border-white/[0.11] bg-[#080808]"
+              className="h-11 rounded-md border-input dark:border-white/[0.11] bg-background dark:bg-[#080808]"
               disabled={submitting}
             />
             {errors.confirmPassword ? (
@@ -223,7 +223,7 @@ function RegisterPageContent() {
 
           <Button
             type="submit"
-            className="h-11 w-full rounded-md bg-[#f2f2f0] text-sm font-medium text-[#080808] hover:bg-white"
+            className="h-11 w-full rounded-md bg-foreground text-background hover:bg-foreground/90 dark:bg-[#f2f2f0] dark:text-[#080808] dark:hover:bg-white text-sm font-medium"
             disabled={submitting}
           >
             {submitting ? (

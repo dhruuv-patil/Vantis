@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock3,
+  ExternalLink,
   Loader2,
   Plug,
   RefreshCw,
@@ -39,6 +40,7 @@ import { initialsFrom } from "@/lib/utils";
 
 import {
   getProviderCategory,
+  getProviderDocsUrl,
   getProviderIcon,
 } from "@/lib/provider-meta";
 
@@ -134,8 +136,8 @@ function SyncStatus({
     <div
       className={`mt-3 inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[11px] font-medium ${
         failed
-          ? "border-red-400/20 bg-red-400/10 text-red-300"
-          : "border-white/[0.07] bg-white/[0.025] text-white/35"
+          ? "border-red-400/20 bg-red-400/10 text-red-500 dark:text-red-300"
+          : "border-border dark:border-white/[0.07] bg-muted/40 dark:bg-white/[0.025] text-muted-foreground dark:text-white/35"
       }`}
     >
       {failed ? (
@@ -204,6 +206,10 @@ function ProviderCard({
     getProviderCategory(
       provider.type,
     );
+
+  const docsUrl =
+    provider.docsUrl ||
+    getProviderDocsUrl(provider.type);
 
   const testMutation =
     useMutation({
@@ -324,36 +330,48 @@ function ProviderCard({
         className="
           group relative flex h-full min-h-[270px] flex-col
           overflow-hidden rounded-xl
-          border border-white/[0.065]
-          bg-[#0a0a0c]
+          border border-border bg-card text-card-foreground shadow-sm
+          dark:border-white/[0.065] dark:bg-[#0a0a0c] dark:text-white
           transition-colors duration-200
-          hover:border-white/[0.12]
-          hover:bg-[#111114]
+          hover:border-border-strong hover:bg-muted/40
+          dark:hover:border-white/[0.12] dark:hover:bg-[#111114]
         "
       >
         {/* Subtle background detail */}
-        <div className="pointer-events-none absolute -right-16 -top-16 size-36 rounded-full bg-white/[0.02] blur-2xl transition-opacity group-hover:opacity-100" />
+        <div className="pointer-events-none absolute -right-16 -top-16 size-36 rounded-full bg-primary/[0.03] blur-2xl transition-opacity group-hover:opacity-100" />
 
         <div className="relative flex flex-1 flex-col p-5">
           <div className="flex items-start justify-between gap-4">
-            <div className="flex size-12 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04]">
+            <div className="flex size-12 items-center justify-center rounded-lg border border-border bg-background dark:border-white/[0.08] dark:bg-white/[0.04]">
               <ProviderIcon
                 provider={provider.type}
                 name={provider.name}
                 icon={provider.icon || resolvedIcon}
                 className="size-6"
-                theme="dark"
+                theme="auto"
                 fallbackInitials
               />
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="rounded-md border border-white/[0.07] bg-white/[0.025] px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-white/45">
+              <span className="rounded-md border border-border bg-muted/50 dark:border-white/[0.07] dark:bg-white/[0.025] px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground dark:text-white/45">
                 {category.replaceAll(
                   "_",
                   " ",
                 )}
               </span>
+
+              {docsUrl && (
+                <a
+                  href={docsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  title="View API documentation & portal"
+                  className="inline-flex size-6 items-center justify-center rounded-md border border-border dark:border-white/[0.08] bg-muted/40 dark:bg-white/[0.03] text-muted-foreground dark:text-white/40 hover:text-foreground dark:hover:text-white hover:border-foreground/20 transition-colors"
+                >
+                  <ExternalLink className="size-3" />
+                </a>
+              )}
 
               {needsAttention ? (
                 <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-[11px] font-medium text-amber-300">
@@ -366,7 +384,7 @@ function ProviderCard({
                   Connected
                 </span>
               ) : !provider.available ? (
-                <span className="inline-flex items-center rounded-md border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[11px] font-medium text-white/45">
+                <span className="inline-flex items-center rounded-md border border-border bg-muted/40 dark:border-white/[0.08] dark:bg-white/[0.03] px-2.5 py-1 text-[11px] font-medium text-muted-foreground dark:text-white/45">
                   Coming soon
                 </span>
               ) : null}
@@ -376,20 +394,20 @@ function ProviderCard({
           <div className="mt-5">
             <h3
               title={provider.name}
-              className="text-[15px] font-semibold tracking-[-0.01em] text-white/90"
+              className="text-[15px] font-semibold tracking-[-0.01em] text-foreground dark:text-white/90"
             >
               {provider.name}
             </h3>
 
             <p
               title={provider.description}
-              className="mt-2 min-h-[42px] text-[13px] leading-5 text-white/45"
+              className="mt-2 min-h-[42px] text-[13px] leading-5 text-muted-foreground dark:text-white/45"
             >
               {provider.description}
             </p>
 
             {connected?.hint && (
-              <div className="mt-3 inline-flex items-center rounded-md border border-white/[0.06] bg-black/20 px-2 py-1 font-mono text-[10px] text-white/35">
+              <div className="mt-3 inline-flex items-center rounded-md border border-border dark:border-white/[0.06] bg-muted/50 dark:bg-black/20 px-2 py-1 font-mono text-[10px] text-muted-foreground dark:text-white/35">
                 {provider.type ===
                 "slack"
                   ? "Webhook"
@@ -411,7 +429,7 @@ function ProviderCard({
               isWorkflowProvider &&
               provider.capabilities
                 ?.workflowDiscovery && (
-                <div className="mt-2 flex items-center gap-1.5 text-[11px] text-white/35">
+                <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground dark:text-white/35">
                   <CheckCircle2 className="size-3 text-emerald-400/70" />
 
                   {provider
@@ -425,11 +443,11 @@ function ProviderCard({
         </div>
 
         {/* Footer */}
-        <div className="relative mt-auto border-t border-white/[0.065] bg-white/[0.015] p-4">
+        <div className="relative mt-auto border-t border-border dark:border-white/[0.065] bg-muted/20 dark:bg-white/[0.015] p-4">
           {!connected ? (
             <Button
               variant="outline"
-              className="h-9 w-full rounded-md border-white/[0.08] bg-white/[0.025] text-xs font-medium text-white/80 hover:bg-white/[0.07] hover:text-white"
+              className="h-9 w-full rounded-md border-border dark:border-white/[0.08] bg-card dark:bg-white/[0.025] text-xs font-medium text-foreground dark:text-white/80 hover:bg-muted dark:hover:bg-white/[0.07] hover:text-foreground dark:hover:text-white"
               disabled={!isAdmin}
               title={adminTitle}
               onClick={onConnect}
@@ -438,13 +456,13 @@ function ProviderCard({
 
               Connect
 
-              <ArrowUpRight className="ml-auto size-3.5 text-white/40" />
+              <ArrowUpRight className="ml-auto size-3.5 text-muted-foreground dark:text-white/40" />
             </Button>
           ) : isDeliveryChannel ? (
             <div className="grid grid-cols-3 gap-2">
               <Button
                 variant="outline"
-                className="h-9 rounded-md border-white/[0.08] bg-white/[0.025] text-xs hover:bg-white/[0.07]"
+                className="h-9 rounded-md border-border dark:border-white/[0.08] bg-card dark:bg-white/[0.025] text-xs hover:bg-muted dark:hover:bg-white/[0.07]"
                 disabled={
                   !isAdmin ||
                   testing
@@ -464,7 +482,7 @@ function ProviderCard({
 
               <Button
                 variant="outline"
-                className="h-9 rounded-md border-white/[0.08] bg-white/[0.025] text-xs hover:bg-white/[0.07]"
+                className="h-9 rounded-md border-border dark:border-white/[0.08] bg-card dark:bg-white/[0.025] text-xs hover:bg-muted dark:hover:bg-white/[0.07]"
                 disabled={
                   !isAdmin ||
                   sendingTest
@@ -502,7 +520,7 @@ function ProviderCard({
                 ?.workflowDiscovery && (
                 <Button
                   variant="outline"
-                  className="h-9 rounded-md border-white/[0.08] bg-white/[0.025] text-xs hover:bg-white/[0.07]"
+                  className="h-9 rounded-md border-border dark:border-white/[0.08] bg-card dark:bg-white/[0.025] text-xs hover:bg-muted dark:hover:bg-white/[0.07]"
                   onClick={() =>
                     setWorkflowsOpen(
                       true,
@@ -517,7 +535,7 @@ function ProviderCard({
                 ?.executionHistory && (
                 <Button
                   variant="outline"
-                  className="h-9 rounded-md border-white/[0.08] bg-white/[0.025] text-xs hover:bg-white/[0.07]"
+                  className="h-9 rounded-md border-border dark:border-white/[0.08] bg-card dark:bg-white/[0.025] text-xs hover:bg-muted dark:hover:bg-white/[0.07]"
                   disabled={
                     !isAdmin ||
                     syncing
@@ -540,7 +558,29 @@ function ProviderCard({
 
               <Button
                 variant="outline"
-                className="h-9 rounded-md border-white/[0.08] bg-white/[0.025] text-xs hover:bg-white/[0.07]"
+                className="h-9 rounded-md border-border dark:border-white/[0.08] bg-card dark:bg-white/[0.025] text-xs hover:bg-muted dark:hover:bg-white/[0.07]"
+                disabled={
+                  !isAdmin ||
+                  testing
+                }
+                title={adminTitle}
+                onClick={() => {
+                  setTesting(true);
+                  testMutation.mutate();
+                }}
+              >
+                {testing ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="size-3.5" />
+                )}
+
+                Test
+              </Button>
+
+              <Button
+                variant="outline"
+                className="h-9 rounded-md border-border dark:border-white/[0.08] bg-card dark:bg-white/[0.025] text-xs hover:bg-muted dark:hover:bg-white/[0.07]"
                 disabled={!isAdmin}
                 title={adminTitle}
                 onClick={onConnect}
@@ -550,7 +590,7 @@ function ProviderCard({
 
               <Button
                 variant="outline"
-                className="h-9 rounded-md border-red-400/10 bg-red-400/[0.025] text-xs text-red-300 hover:bg-red-400/[0.08] hover:text-red-200"
+                className="col-span-2 h-9 rounded-md border-red-400/10 bg-red-400/[0.025] text-xs text-red-300 hover:bg-red-400/[0.08] hover:text-red-200"
                 disabled={!isAdmin}
                 title={adminTitle}
                 onClick={() =>
@@ -636,7 +676,7 @@ function DisconnectDialog({
       open={!!integration}
       onOpenChange={onOpenChange}
     >
-      <DialogContent className="border-white/[0.08] bg-[#0a0a0c]">
+      <DialogContent className="border-border dark:border-white/[0.08] bg-card dark:bg-[#0a0a0c]">
         <DialogHeader>
           <DialogTitle>
             Disconnect{" "}
@@ -889,7 +929,7 @@ export default function IntegrationsPage() {
       {/* Search toolbar */}
       <Toolbar className="mb-4">
         <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-white/40" />
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground dark:text-white/40" />
 
           <Input
             placeholder="Search integrations…"
@@ -939,18 +979,18 @@ export default function IntegrationsPage() {
                   <div className="flex items-end justify-between gap-4">
                     <div>
                       <div className="flex items-center gap-2">
-                        <h2 className="text-sm font-semibold text-white/85">
+                        <h2 className="text-sm font-semibold text-foreground dark:text-white/85">
                           Connected
                         </h2>
 
-                        <span className="rounded-md bg-emerald-400/10 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
+                        <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-300">
                           {
                             connectedProviders.length
                           }
                         </span>
                       </div>
 
-                      <p className="mt-1 text-xs text-white/45">
+                      <p className="mt-1 text-xs text-muted-foreground dark:text-white/45">
                         Active connections
                         in this workspace.
                       </p>
@@ -990,20 +1030,20 @@ export default function IntegrationsPage() {
                 <div className="flex items-end justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-sm font-semibold text-white/85">
+                      <h2 className="text-sm font-semibold text-foreground dark:text-white/85">
                         {connectedProviders.length
                           ? "Available"
                           : "Integration catalog"}
                       </h2>
 
-                      <span className="rounded-md bg-white/[0.05] px-2 py-0.5 text-[10px] font-medium text-white/45">
+                      <span className="rounded-md bg-muted dark:bg-white/[0.05] px-2 py-0.5 text-[10px] font-medium text-muted-foreground dark:text-white/45">
                         {
                           availableProviders.length
                         }
                       </span>
                     </div>
 
-                    <p className="mt-1 text-xs text-white/45">
+                    <p className="mt-1 text-xs text-muted-foreground dark:text-white/45">
                       Connect a service
                       and make it
                       available to your
@@ -1068,7 +1108,7 @@ export default function IntegrationsPage() {
                 )}
               </section>
 
-              <div className="flex items-center justify-center gap-2 pb-3 text-[11px] text-white/45">
+              <div className="flex items-center justify-center gap-2 pb-3 text-[11px] text-muted-foreground dark:text-white/45">
                 <CheckCircle2 className="size-3.5" />
 
                 Connections are

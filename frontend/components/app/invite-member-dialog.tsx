@@ -8,9 +8,11 @@ import { toast } from "sonner";
 import {
   getErrorMessage,
   getFieldErrors,
+  getPlanLimitDetail,
   inviteMember,
 } from "@/lib/api";
-import type { InvitationSecret, Role } from "@/types";
+import type { InvitationSecret, PlanLimitDetail, Role } from "@/types";
+import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +34,7 @@ export function InviteMemberDialog({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [secret, setSecret] = useState<InvitationSecret | null>(null);
   const [copied, setCopied] = useState(false);
+  const [limitDetail, setLimitDetail] = useState<PlanLimitDetail | null>(null);
 
   const inviteLink =
     secret && typeof window !== "undefined"
@@ -52,24 +55,31 @@ export function InviteMemberDialog({
 
       setSecret(data);
       setCopied(false);
+      setLimitDetail(null);
 
       toast.success("Invitation created.");
     },
 
     onError: (err) => {
+      // 1. Failure alerts are never blocked
       const fieldErrors = getFieldErrors(err);
 
       if (Object.keys(fieldErrors).length > 0) {
         setErrors(fieldErrors);
-        return;
+      } else {
+        toast.error(
+          getErrorMessage(
+            err,
+            "Could not create the invitation.",
+          ),
+        );
       }
 
-      toast.error(
-        getErrorMessage(
-          err,
-          "Could not create the invitation.",
-        ),
-      );
+      // 2. Structured limit details for seats trigger
+      const limit = getPlanLimitDetail(err);
+      if (limit) {
+        setLimitDetail(limit);
+      }
     },
   });
 
@@ -79,6 +89,7 @@ export function InviteMemberDialog({
     setErrors({});
     setSecret(null);
     setCopied(false);
+    setLimitDetail(null);
     mutation.reset();
   }
 
@@ -135,13 +146,13 @@ export function InviteMemberDialog({
         {secret ? (
           <>
             <DialogHeader className="min-w-0 pr-8">
-              <DialogTitle className="text-white/90">
+              <DialogTitle className="text-foreground dark:text-white/90">
                 Invitation ready
               </DialogTitle>
 
-              <DialogDescription className="min-w-0 text-white/40">
+              <DialogDescription className="min-w-0 text-muted-foreground dark:text-white/40">
                 Share this link with{" "}
-                <strong className="text-white/65">
+                <strong className="text-foreground/90 dark:text-white/65">
                   {secret.email}
                 </strong>
                 . They redeem it while signed in with that email. It is
@@ -150,9 +161,9 @@ export function InviteMemberDialog({
             </DialogHeader>
 
             <div className="min-w-0 space-y-3 py-2">
-              <div className="min-w-0 max-w-full overflow-hidden rounded-lg border border-white/[0.08] bg-white/[0.018]">
-                <div className="flex min-w-0 items-center justify-between gap-3 border-b border-white/[0.06] px-3 py-2.5">
-                  <p className="min-w-0 text-xs font-medium text-white/60">
+              <div className="min-w-0 max-w-full overflow-hidden rounded-lg border border-border dark:border-white/[0.08] bg-muted/20 dark:bg-white/[0.018]">
+                <div className="flex min-w-0 items-center justify-between gap-3 border-b border-border dark:border-white/[0.06] px-3 py-2.5">
+                  <p className="min-w-0 text-xs font-medium text-foreground/80 dark:text-white/60">
                     Invitation link
                   </p>
 
@@ -177,16 +188,16 @@ export function InviteMemberDialog({
                   </Button>
                 </div>
 
-                <div className="min-w-0 max-w-full bg-black/35 p-3">
-                  <code className="block min-w-0 max-w-full whitespace-normal break-all font-mono text-[11px] leading-5 text-white/60">
+                <div className="min-w-0 max-w-full bg-muted/60 dark:bg-black/35 p-3">
+                  <code className="block min-w-0 max-w-full whitespace-normal break-all font-mono text-[11px] leading-5 text-foreground/80 dark:text-white/60">
                     {inviteLink}
                   </code>
                 </div>
               </div>
 
-              <p className="text-xs leading-5 text-white/50">
+              <p className="text-xs leading-5 text-muted-foreground dark:text-white/50">
                 Grants the{" "}
-                <strong className="text-white/80">
+                <strong className="text-foreground dark:text-white/80">
                   {secret.role}
                 </strong>{" "}
                 role. Expires{" "}
@@ -214,16 +225,25 @@ export function InviteMemberDialog({
         ) : (
           <form onSubmit={onSubmit}>
             <DialogHeader className="pr-8">
-              <DialogTitle className="text-white/90">
+              <DialogTitle className="text-foreground dark:text-white/90">
                 Invite a member
               </DialogTitle>
 
-              <DialogDescription className="text-white/40">
+              <DialogDescription className="text-muted-foreground dark:text-white/40">
                 We generate a one-time invitation link — no email is sent.
                 Bound to the address you enter; only that account can redeem
                 it.
               </DialogDescription>
             </DialogHeader>
+
+            {limitDetail && (
+              <UpgradePrompt
+                trigger="seats"
+                structuredError={limitDetail}
+                variant="inline"
+                onDismiss={() => setLimitDetail(null)}
+              />
+            )}
 
             <div className="space-y-4 py-4">
               <div className="space-y-2">
@@ -273,7 +293,7 @@ export function InviteMemberDialog({
                   onChange={(e) =>
                     setRole(e.target.value as Role)
                   }
-                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  className="flex h-9 w-full rounded-md border border-input bg-background dark:bg-transparent text-foreground px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   {INVITABLE_ROLES.map((r) => (
                     <option key={r} value={r}>

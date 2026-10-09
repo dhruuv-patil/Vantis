@@ -10,7 +10,8 @@ import java.util.UUID;
 
 /**
  * Authoritative workspace subscription record.
- * Holds plan, status, regional currency, billing country, and period bounds.
+ * Holds plan, status, regional currency, billing country, period bounds,
+ * and lifecycle fields (private beta, provider, dunning).
  */
 @Entity
 @Table(name = "subscriptions")
@@ -32,7 +33,7 @@ public class Subscription {
     @Column(name = "currency", nullable = false, length = 3)
     private String currency;
 
-    @Column(name = "billing_country", nullable = false, length = 2)
+    @Column(name = "billing_country", length = 2)
     private String billingCountry;
 
     @Column(name = "billing_interval", nullable = false, length = 16)
@@ -44,11 +45,32 @@ public class Subscription {
     @Column(name = "current_period_end", nullable = false)
     private Instant currentPeriodEnd;
 
+    @Column(name = "provider", nullable = false, length = 32)
+    private String provider = "NOOP";
+
+    @Column(name = "cancel_at_period_end", nullable = false)
+    private boolean cancelAtPeriodEnd = false;
+
+    @Column(name = "past_due_since")
+    private Instant pastDueSince;
+
+    @Column(name = "beta_started_at")
+    private Instant betaStartedAt;
+
+    @Column(name = "beta_ends_at")
+    private Instant betaEndsAt;
+
+    @Column(name = "founding_offer_eligible_until")
+    private Instant foundingOfferEligibleUntil;
+
     @Column(name = "provider_customer_id")
     private String providerCustomerId;
 
     @Column(name = "provider_subscription_id")
     private String providerSubscriptionId;
+
+    @Column(name = "last_webhook_event_at")
+    private Instant lastWebhookEventAt;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -79,7 +101,14 @@ public class Subscription {
         sub.billingInterval = billingInterval;
         sub.currentPeriodStart = currentPeriodStart;
         sub.currentPeriodEnd = currentPeriodEnd;
+        sub.provider = "NOOP";
+        sub.cancelAtPeriodEnd = false;
         Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        if ("PRIVATE_BETA".equalsIgnoreCase(plan)) {
+            sub.betaStartedAt = now;
+            sub.betaEndsAt = sub.betaStartedAt.plus(45, ChronoUnit.DAYS);
+            sub.foundingOfferEligibleUntil = sub.betaEndsAt;
+        }
         sub.createdAt = now;
         sub.updatedAt = now;
         return sub;
@@ -156,6 +185,60 @@ public class Subscription {
         this.updatedAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
     }
 
+    public String getProvider() {
+        return provider;
+    }
+
+    public void setProvider(String provider) {
+        this.provider = provider;
+        this.updatedAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    }
+
+    public boolean isCancelAtPeriodEnd() {
+        return cancelAtPeriodEnd;
+    }
+
+    public void setCancelAtPeriodEnd(boolean cancelAtPeriodEnd) {
+        this.cancelAtPeriodEnd = cancelAtPeriodEnd;
+        this.updatedAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    }
+
+    public Instant getPastDueSince() {
+        return pastDueSince;
+    }
+
+    public void setPastDueSince(Instant pastDueSince) {
+        this.pastDueSince = pastDueSince;
+        this.updatedAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    }
+
+    public Instant getBetaStartedAt() {
+        return betaStartedAt;
+    }
+
+    public void setBetaStartedAt(Instant betaStartedAt) {
+        this.betaStartedAt = betaStartedAt;
+        this.updatedAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    }
+
+    public Instant getBetaEndsAt() {
+        return betaEndsAt;
+    }
+
+    public void setBetaEndsAt(Instant betaEndsAt) {
+        this.betaEndsAt = betaEndsAt;
+        this.updatedAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    }
+
+    public Instant getFoundingOfferEligibleUntil() {
+        return foundingOfferEligibleUntil;
+    }
+
+    public void setFoundingOfferEligibleUntil(Instant foundingOfferEligibleUntil) {
+        this.foundingOfferEligibleUntil = foundingOfferEligibleUntil;
+        this.updatedAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+    }
+
     public String getProviderCustomerId() {
         return providerCustomerId;
     }
@@ -170,6 +253,15 @@ public class Subscription {
 
     public void setProviderSubscriptionId(String providerSubscriptionId) {
         this.providerSubscriptionId = providerSubscriptionId;
+    }
+
+    public Instant getLastWebhookEventAt() {
+        return lastWebhookEventAt;
+    }
+
+    public void setLastWebhookEventAt(Instant lastWebhookEventAt) {
+        this.lastWebhookEventAt = lastWebhookEventAt;
+        this.updatedAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
     }
 
     public Instant getCreatedAt() {

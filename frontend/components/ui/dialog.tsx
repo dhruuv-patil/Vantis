@@ -45,8 +45,7 @@ const DialogContent = React.forwardRef<
         "overflow-x-hidden overflow-y-auto",
         "grid gap-4",
         "rounded-xl",
-        "border border-white/[0.10]",
-        "bg-[#0c0c0c]",
+        "border border-border bg-card text-card-foreground shadow-2xl dark:border-white/[0.10] dark:bg-[#0c0c0c]",
         "p-6",
         "shadow-[0_24px_70px_rgba(0,0,0,0.46)]",
         "duration-200",
@@ -131,7 +130,7 @@ const DialogDescription = React.forwardRef<
   <DialogPrimitive.Description
     ref={ref}
     className={cn(
-      "min-w-0 text-sm text-white/44",
+      "min-w-0 text-sm text-muted-foreground dark:text-white/44",
       className,
     )}
     {...props}

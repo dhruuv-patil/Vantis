@@ -52,6 +52,7 @@ public class SecurityConfig {
         "/api/auth/refresh",
         "/api/auth/logout",
         "/api/billing/plans",
+        "/api/billing/webhook/**",
         // A user who forgot their password is by definition logged out, so the
         // two reset endpoints must be reachable anonymously. Their protection is
         // the per-IP+email rate limit and the mandatory application/json content

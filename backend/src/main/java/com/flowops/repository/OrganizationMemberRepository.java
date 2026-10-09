@@ -36,6 +36,21 @@ public interface OrganizationMemberRepository
     long countByOrganizationIdAndRole(UUID organizationId, Role role);
 
     /**
+     * Finds the user id of the owner of an organization for notification and alert routing.
+     */
+    @Query("""
+            SELECT m.userId FROM OrganizationMember m
+            WHERE m.organizationId = :organizationId AND m.role = com.flowops.domain.Role.OWNER
+            ORDER BY m.joinedAt ASC
+            """)
+    List<UUID> findOwnerUserIds(@Param("organizationId") UUID organizationId);
+
+    default Optional<UUID> findOwnerUserId(UUID organizationId) {
+        List<UUID> owners = findOwnerUserIds(organizationId);
+        return owners.isEmpty() ? Optional.empty() : Optional.of(owners.get(0));
+    }
+
+    /**
      * The earliest-joined membership: the current org on login, and the fallback
      * when a session's org is no longer one the user belongs to (contract §2.2).
      * The {@code organizationId} tiebreaker makes it deterministic.

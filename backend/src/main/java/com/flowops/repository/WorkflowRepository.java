@@ -53,8 +53,20 @@ public interface WorkflowRepository extends JpaRepository<Workflow, UUID> {
     @Query("""
             SELECT COUNT(w) FROM Workflow w
             WHERE w.organizationId = :organizationId
-              AND w.status <> com.flowops.domain.WorkflowStatus.ARCHIVED
+              AND w.status = com.flowops.domain.WorkflowStatus.PUBLISHED
             """)
     long countActiveByOrganizationId(@Param("organizationId") UUID organizationId);
+
+    /**
+     * Deterministic query for published workflows ordered by oldest-created first (createdAt ASC, id ASC).
+     * Used for workflow limit enforcement on plan downgrade.
+     */
+    @Query("""
+            SELECT w FROM Workflow w
+            WHERE w.organizationId = :organizationId
+              AND w.status = com.flowops.domain.WorkflowStatus.PUBLISHED
+            ORDER BY w.createdAt ASC, w.id ASC
+            """)
+    List<Workflow> findPublishedByOrganizationIdOrderByCreatedAtAscIdAsc(@Param("organizationId") UUID organizationId);
 }
 

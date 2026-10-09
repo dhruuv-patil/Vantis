@@ -18,9 +18,12 @@ public interface InvitationRepository extends JpaRepository<Invitation, UUID> {
 
     Optional<Invitation> findByIdAndOrganizationId(UUID id, UUID organizationId);
 
-    /** The upsert target for (re)issuing an invite to an address in an org. */
     Optional<Invitation> findByOrganizationIdAndEmailIgnoreCaseAndStatus(
             UUID organizationId, String email, Invitation.Status status);
+
+    /** Count active/unexpired pending invitations for entitlement team limit checks. */
+    long countByOrganizationIdAndStatusAndExpiresAtAfter(
+            UUID organizationId, Invitation.Status status, java.time.Instant expiresAt);
 
     /** Accept path only: no principal exists yet for the target org. */
     Optional<Invitation> findByTokenHash(String tokenHash);

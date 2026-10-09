@@ -15,6 +15,7 @@ import {
 } from "@xyflow/react";
 
 import "@xyflow/react/dist/style.css";
+import { useTheme } from "next-themes";
 
 import { fetchNodeTypes } from "@/lib/api";
 
@@ -398,6 +399,9 @@ function ExecutionGraphInner({
       FlowEdge
     >();
 
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme !== "light";
+
   /* ------------------------------------------------------------------------
      NODE DEFINITIONS
      ------------------------------------------------------------------------ */
@@ -649,7 +653,9 @@ function ExecutionGraphInner({
               ...(edge.style ?? {}),
 
               stroke:
-                "rgba(255,255,255,0.16)",
+                isDark
+                  ? "rgba(255,255,255,0.16)"
+                  : "rgba(0,0,0,0.22)",
 
               strokeWidth: 1.4,
 
@@ -760,13 +766,13 @@ function ExecutionGraphInner({
     nodes.length === 0
   ) {
     return (
-      <div className="flex h-[560px] items-center justify-center rounded-xl border border-white/[0.08] bg-[#050505]">
+      <div className="flex h-[560px] items-center justify-center rounded-xl border border-border bg-card dark:border-white/[0.08] dark:bg-[#050505]">
         <div className="text-center">
-          <p className="text-sm font-medium text-white/70">
+          <p className="text-sm font-medium text-foreground dark:text-white/70">
             No workflow graph available
           </p>
 
-          <p className="mt-1 text-xs text-white/45">
+          <p className="mt-1 text-xs text-muted-foreground dark:text-white/45">
             This execution does not have a frozen workflow graph.
           </p>
         </div>
@@ -785,7 +791,7 @@ function ExecutionGraphInner({
       <NodeDefsContext.Provider
         value={defsByType}
       >
-        <div className="relative h-[560px] w-full overflow-hidden rounded-xl border border-white/[0.08] bg-[#050505]">
+        <div className="relative h-[560px] w-full overflow-hidden rounded-xl border border-border bg-background dark:border-white/[0.08] dark:bg-[#050505]">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -806,10 +812,10 @@ function ExecutionGraphInner({
             proOptions={{
               hideAttribution: true,
             }}
-            className="bg-[#050505]"
+            className="bg-background dark:bg-[#050505]"
           >
             <Background
-              className="!bg-white/[0.04]"
+              className="!bg-muted/30 dark:!bg-white/[0.04]"
               gap={16}
             />
 
@@ -831,7 +837,7 @@ function ExecutionGraphInner({
               EXECUTION LEGEND
               ================================================================ */}
 
-          <div className="pointer-events-none absolute bottom-4 left-4 z-10 flex items-center gap-3 rounded-lg border border-white/[0.07] bg-[#090909]/90 px-3 py-2 backdrop-blur">
+          <div className="pointer-events-none absolute bottom-4 left-4 z-10 flex items-center gap-3 rounded-lg border border-border bg-card/90 px-3 py-2 backdrop-blur shadow-sm dark:border-white/[0.07] dark:bg-[#090909]/90">
             <LegendItem
               dotClass="bg-emerald-400"
               label="Succeeded"
@@ -843,7 +849,7 @@ function ExecutionGraphInner({
             />
 
             <LegendItem
-              dotClass="bg-white/30"
+              dotClass="bg-muted-foreground/40 dark:bg-white/30"
               label="Skipped"
             />
 
@@ -875,7 +881,7 @@ function LegendItem({
         className={`size-1.5 rounded-full ${dotClass}`}
       />
 
-      <span className="text-[10px] text-white/40">
+      <span className="text-[10px] text-muted-foreground dark:text-white/40">
         {label}
       </span>
     </div>

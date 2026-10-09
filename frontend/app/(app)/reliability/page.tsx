@@ -86,23 +86,23 @@ const SEVERITY: Record<
 > = {
   LOW: {
     label: "Low",
-    dot: "bg-green-400",
-    text: "text-white/60",
+    dot: "bg-green-500 dark:bg-green-400",
+    text: "text-emerald-700 dark:text-white/60",
   },
   MEDIUM: {
     label: "Medium",
-    dot: "bg-yellow-400",
-    text: "text-white/70",
+    dot: "bg-yellow-500 dark:bg-yellow-400",
+    text: "text-amber-700 dark:text-white/70",
   },
   HIGH: {
     label: "High",
-    dot: "bg-orange-400",
-    text: "text-white/80",
+    dot: "bg-orange-500 dark:bg-orange-400",
+    text: "text-orange-700 dark:text-white/80",
   },
   CRITICAL: {
     label: "Critical",
-    dot: "bg-red-400",
-    text: "text-red-300",
+    dot: "bg-red-500 dark:bg-red-400",
+    text: "text-red-700 dark:text-red-300",
   },
 };
 
@@ -112,23 +112,23 @@ const STATUS: Record<
 > = {
   OPEN: {
     label: "Open",
-    className: "bg-blue-500/10 text-blue-400 border-blue-500/20",
+    className: "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20",
   },
   ACKNOWLEDGED: {
     label: "Acknowledged",
-    className: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+    className: "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20",
   },
   VERIFYING_RECOVERY: {
     label: "Verifying recovery",
-    className: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+    className: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20",
   },
   RESOLVED: {
     label: "Resolved",
-    className: "bg-green-500/10 text-green-400 border-green-500/20",
+    className: "bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20",
   },
   FALSE_POSITIVE: {
     label: "False positive",
-    className: "bg-gray-500/10 text-gray-400 border-gray-500/20",
+    className: "bg-muted text-muted-foreground border-border dark:bg-gray-500/10 dark:text-gray-400 dark:border-gray-500/20",
   },
 };
 
@@ -147,7 +147,7 @@ function SeverityLabel({
 
   if (!config) {
     return (
-      <span className="text-white/44">
+      <span className="text-muted-foreground dark:text-white/44">
         {severity}
       </span>
     );
@@ -175,7 +175,7 @@ function DetectedAt({
 
   if (!isValid(date)) {
     return (
-      <span className="text-white/45">
+      <span className="text-muted-foreground dark:text-white/45">
         —
       </span>
     );
@@ -493,7 +493,7 @@ export default function AnomaliesPage() {
           </Label>
 
           <Search
-            className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-white/40"
+            className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground dark:text-white/40"
             aria-hidden
           />
 
@@ -559,7 +559,7 @@ export default function AnomaliesPage() {
           onRetry={() => void loadAnomalies()}
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]">
+        <div className="overflow-hidden rounded-xl border border-border dark:border-white/[0.065] bg-card dark:bg-[#0a0a0c]">
           {isInitialLoad ? (
             <TableSkeleton rows={6} />
           ) : visibleAnomalies.length === 0 ? (
@@ -597,7 +597,7 @@ export default function AnomaliesPage() {
               aria-busy={loading}
             >
               <Table>
-                <TableHeader className="sticky top-0 z-10 bg-[#0c0c0e]/95 backdrop-blur-sm">
+                <TableHeader className="sticky top-0 z-10 bg-card/95 dark:bg-[#0c0c0e]/95 backdrop-blur-sm">
                   <TableRow className="hover:bg-transparent">
                     <TableHead>
                       Workflow
@@ -647,14 +647,14 @@ export default function AnomaliesPage() {
                       return (
                         <TableRow
                           key={anomaly.id}
-                          className="hover:bg-white/[0.03]"
+                          className="hover:bg-muted/40 dark:hover:bg-white/[0.03]"
                           aria-busy={rowPending}
                         >
                           <TableCell>
                             <Link
                               href={`/workflows/${anomaly.workflowId}`}
                               title={anomaly.workflowName}
-                              className="block max-w-[200px] truncate font-medium text-white/90 hover:underline focus-visible:underline focus-visible:outline-none sm:max-w-xs"
+                              className="block max-w-[200px] truncate font-medium text-foreground/90 hover:underline focus-visible:underline focus-visible:outline-none sm:max-w-xs"
                             >
                               {anomaly.workflowName}
                             </Link>
@@ -662,7 +662,7 @@ export default function AnomaliesPage() {
                             {anomaly.nodeId && (
                               <p
                                 title={anomaly.nodeId}
-                                className="mt-0.5 truncate font-mono text-xs text-white/44"
+                                className="mt-0.5 truncate font-mono text-xs text-muted-foreground dark:text-white/44"
                               >
                                 {anomaly.nodeId}
                               </p>
@@ -670,14 +670,14 @@ export default function AnomaliesPage() {
                           </TableCell>
 
                           <TableCell className="hidden lg:table-cell">
-                            <p className="text-sm text-white/70">
+                            <p className="text-sm text-foreground/80 dark:text-white/70">
                               {anomaly.type}
                             </p>
 
                             {anomaly.metric && (
                               <p
                                 title={anomaly.metric}
-                                className="mt-0.5 max-w-[180px] truncate text-xs text-white/44"
+                                className="mt-0.5 max-w-[180px] truncate text-xs text-muted-foreground dark:text-white/44"
                               >
                                 {anomaly.metric}
                               </p>
@@ -700,7 +700,7 @@ export default function AnomaliesPage() {
                           />
                         </TableCell>
 
-                        <TableCell className="hidden text-sm text-white/44 md:table-cell">
+                        <TableCell className="hidden text-sm text-muted-foreground dark:text-white/44 md:table-cell">
                           <DetectedAt
                             value={
                               anomaly.detectedAt
@@ -716,7 +716,7 @@ export default function AnomaliesPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="size-8"
+                                className="size-8 text-muted-foreground/60 hover:text-foreground"
                                 disabled={
                                   rowPending
                                 }
@@ -798,7 +798,7 @@ export default function AnomaliesPage() {
 
         {!isInitialLoad &&
           visibleAnomalies.length > 0 && (
-            <div className="border-t border-white/[0.08] px-4 py-3 text-xs text-white/44">
+            <div className="border-t border-border dark:border-white/[0.08] px-4 py-3 text-xs text-muted-foreground dark:text-white/44">
               {isFiltered
                 ? `Showing ${visibleAnomalies.length} of ${anomalies.length}`
                 : `${anomalies.length} ${

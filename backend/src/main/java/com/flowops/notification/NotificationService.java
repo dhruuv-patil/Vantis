@@ -83,8 +83,10 @@ public class NotificationService {
      * Server-side publish. Addresses the run's creator when it has one; a webhook-started
      * run has {@code created_by = null}, so it goes to the org's owners and admins instead
      * — the people who can act on it. Never called from a client-facing endpoint.
+     * Uses REQUIRES_NEW so published notifications commit independently and survive
+     * outer transaction rollbacks (e.g. when PLAN_LIMIT_EXCEEDED rolls back execution creation).
      */
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void publish(
             UUID organizationId,
             UUID userId,

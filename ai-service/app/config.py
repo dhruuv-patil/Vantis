@@ -11,6 +11,7 @@ logged, never returned to the backend/frontend, and never persisted.
 
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,17 +24,29 @@ class Settings(BaseSettings):
     # Which LLM backs the AI endpoints. Kept configurable so another provider can
     # be added later (implement app.providers.base.LLMProvider and register it in
     # app.providers.get_provider) without touching the routes.
-    ai_provider: str = "gemini"
+    ai_provider: str = "omniroute"
 
     # Google Gemini (bring-your-own-key). Get a key at https://aistudio.google.com/apikey.
     # The default is a current Gemini Flash model suited to the free API tier.
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.6-flash"
 
-    # OmniRoute (bring-your-own-key). Get a key at https://platform.openai.com/signup.
+    # OmniRoute (bring-your-own-key).
     omniroute_api_key: str = ""
-    omniroute_base_url: str = "http://localhost:20128/v1"
+    omniroute_base_url: str = "http://host.docker.internal:20128/v1"
     omniroute_model: str = "auto/best-chat"
+
+    @field_validator("ai_provider")
+    @classmethod
+    def validate_provider(cls, v: str) -> str:
+        provider = (v or "").strip().lower()
+        if not provider:
+            raise ValueError("AI_PROVIDER is required and cannot be empty.")
+        if provider not in ("omniroute", "gemini"):
+            raise ValueError(
+                f"Invalid AI_PROVIDER: {v!r}. Supported providers are 'omniroute' and 'gemini'."
+            )
+        return provider
 
     # Per-request timeout (seconds) for provider calls.
     provider_timeout_seconds: float = 60.0
@@ -61,7 +74,7 @@ class Settings(BaseSettings):
             return bool(self.gemini_api_key.strip())
 
         if provider == "omniroute":
-            return bool(self.omniroute_api_key.strip())
+            return bool(self.omniroute_base_url.strip() and self.omniroute_api_key.strip())
 
         return False
 

@@ -47,6 +47,11 @@ management:
       enabled: false
 
 flowops:
+  billing:
+    enabled: ${BILLING_ENABLED:false}
+    provider: ${BILLING_PROVIDER:noop}
+  entitlements:
+    enforcement: ${ENTITLEMENTS_ENFORCEMENT:log}
   auth:
     refresh-cookie:
       # The cookie is only ever set over HTTPS in prod. A HTTP request cannot

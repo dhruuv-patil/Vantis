@@ -88,8 +88,12 @@ public class MonitoredWorkflowController {
         DecryptedCredentials credentials =
                 new DecryptedCredentials(decrypted);
 
-        WorkflowProvider provider =
-                providerRegistry.getByWire(integration.getType());
+        WorkflowProvider provider;
+        try {
+            provider = providerRegistry.getByWire(integration.getType());
+        } catch (Exception e) {
+            return new MonitoredWorkflowsResponse(List.of());
+        }
 
         IntegrationContext context =
                 new IntegrationContext(

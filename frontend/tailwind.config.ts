@@ -21,19 +21,19 @@ const config: Config = {
 
         /* Surface tokens (Single source of truth) */
         surface: {
-          page: "#000000",
-          shell: "#050505",
-          card: "#0a0a0c",
-          inset: "#111114",
-          hover: "rgba(255, 255, 255, 0.04)",
-          active: "rgba(255, 255, 255, 0.07)",
+          page: "var(--surface-page)",
+          shell: "var(--surface-shell)",
+          card: "var(--surface-card)",
+          inset: "var(--surface-inset)",
+          hover: "var(--surface-hover)",
+          active: "var(--surface-active)",
         },
 
         /* Legacy surface aliases */
-        "surface-0": "#000000",
-        "surface-1": "#050505",
-        "surface-2": "#0a0a0c",
-        "surface-3": "#111114",
+        "surface-0": "var(--surface-page)",
+        "surface-1": "var(--surface-shell)",
+        "surface-2": "var(--surface-card)",
+        "surface-3": "var(--surface-inset)",
         "bone-white": "#fafafa",
         "off-white": "#e4e4e7",
         "mute-gray": "#71717a",
@@ -48,11 +48,11 @@ const config: Config = {
 
         /* Text contrast tokens */
         txt: {
-          primary: "rgba(255, 255, 255, 0.90)",
-          body: "rgba(255, 255, 255, 0.65)",
-          secondary: "rgba(255, 255, 255, 0.45)",
-          muted: "rgba(255, 255, 255, 0.45)",
-          faint: "rgba(255, 255, 255, 0.35)",
+          primary: "var(--txt-primary)",
+          body: "var(--txt-body)",
+          secondary: "var(--txt-secondary)",
+          muted: "var(--txt-muted)",
+          faint: "var(--txt-faint)",
         },
 
         /* Status colors */
@@ -104,9 +104,9 @@ const config: Config = {
         /* shadcn/ui HSL mappings */
         border: {
           DEFAULT: "hsl(var(--border))",
-          subtle: "rgba(255, 255, 255, 0.065)",
-          strong: "rgba(255, 255, 255, 0.12)",
-          hover: "rgba(255, 255, 255, 0.16)",
+          subtle: "var(--border-subtle)",
+          strong: "var(--border-strong)",
+          hover: "var(--border-hover)",
         },
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

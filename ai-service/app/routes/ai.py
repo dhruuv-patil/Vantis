@@ -12,7 +12,7 @@ import json
 import logging
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from app.node_catalog import catalog_prompt
 from app.providers import ProviderError, get_provider
@@ -106,25 +106,52 @@ def _coerce_graph(data: dict) -> GeneratedGraph:
 
 
 @router.post("/generate-workflow", response_model=GenerateWorkflowResponse)
-def generate_workflow(req: GenerateWorkflowRequest) -> GenerateWorkflowResponse:
+def generate_workflow(
+    req: GenerateWorkflowRequest,
+    x_request_id: str | None = Header(None, alias="X-Request-Id"),
+) -> GenerateWorkflowResponse:
     if not is_configured():
         return GenerateWorkflowResponse(configured=False)
 
-    try:
-        content = get_provider().generate_json(_generation_system_prompt(), req.prompt).strip()
-    except ProviderError as exc:
-        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc))
+    from app.providers.gemini import GeminiProvider
+    from app.providers.omniroute import OmniRouteProvider
+    from app.providers.router import ProviderRouter
+    from app.workflow_generator import WorkflowGenerator, WorkflowGenerationError
 
+    primary_provider = get_provider()
+    fallback_provider = None
     try:
-        data = json.loads(content) if content else {}
-    except json.JSONDecodeError:
+        pname = getattr(primary_provider, "name", "").lower()
+        if pname == "omniroute":
+            g = GeminiProvider()
+            if g.is_configured():
+                fallback_provider = g
+        elif pname == "gemini":
+            o = OmniRouteProvider()
+            if o.is_configured():
+                fallback_provider = o
+    except Exception:
+        fallback_provider = None
+
+    router = ProviderRouter(primary=primary_provider, fallback=fallback_provider)
+    generator = WorkflowGenerator(router)
+    try:
+        normalized_data = generator.generate(req.prompt, correlation_id=x_request_id)
+    except WorkflowGenerationError as exc:
+        if exc.code == "AI_NOT_CONFIGURED":
+            return GenerateWorkflowResponse(configured=False)
+        if exc.code == "PROVIDER_ERROR":
+            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=exc.message)
+        # Validation failure after repair
         raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="The AI provider returned an unparseable response.",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=exc.message,
         )
 
-    graph = _coerce_graph(data)
-    notes = data.get("notes") if isinstance(data.get("notes"), str) else None
+    nodes = [GeneratedNode.model_validate(n) for n in normalized_data.get("nodes", [])]
+    edges = [GeneratedEdge.model_validate(e) for e in normalized_data.get("edges", [])]
+    graph = GeneratedGraph(nodes=nodes, edges=edges)
+    notes = normalized_data.get("notes")
     return GenerateWorkflowResponse(configured=True, graph=graph, notes=notes)
 
 

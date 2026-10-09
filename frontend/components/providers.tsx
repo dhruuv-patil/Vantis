@@ -35,11 +35,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
         {children}
         <Toaster
           position="bottom-right"
-          theme="dark"
+          theme="system"
           toastOptions={{
             className:
-              "!bg-[#0a0a0c] !text-white !border-white/[0.08] !shadow-2xl !rounded-xl !text-xs",
-            descriptionClassName: "!text-white/50 !text-[11px]",
+              "!bg-popover !text-popover-foreground !border-border !shadow-2xl !rounded-xl !text-xs dark:!bg-[#0a0a0c] dark:!text-white dark:!border-white/[0.08]",
+            descriptionClassName: "!text-muted-foreground !text-[11px] dark:!text-white/50",
           }}
           closeButton
         />

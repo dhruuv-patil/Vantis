@@ -51,7 +51,6 @@ public class ReliabilityService {
     private final WorkflowExecutionRepository executions;
     private final AiServiceClient aiClient;
     private final RecoveryVerificationService recoveryService;
-    private final com.flowops.billing.BillingService billingService;
     private final com.flowops.repository.WorkflowVersionRepository versions;
     private final com.flowops.repository.NodeExecutionAttemptRepository nodeAttempts;
 
@@ -65,9 +64,9 @@ public class ReliabilityService {
             WorkflowExecutionRepository executions,
             AiServiceClient aiClient,
             RecoveryVerificationService recoveryService,
-            com.flowops.billing.BillingService billingService,
             com.flowops.repository.WorkflowVersionRepository versions,
             com.flowops.repository.NodeExecutionAttemptRepository nodeAttempts) {
+
         this.anomalies = anomalies;
         this.metrics = metrics;
         this.baselines = baselines;
@@ -76,21 +75,8 @@ public class ReliabilityService {
         this.executions = executions;
         this.aiClient = aiClient;
         this.recoveryService = recoveryService;
-        this.billingService = billingService;
         this.versions = versions;
         this.nodeAttempts = nodeAttempts;
-    }
-
-    public ReliabilityService(
-            AnomalyRepository anomalies,
-            NodeExecutionMetricRepository metrics,
-            MetricBaselineRepository baselines,
-            WorkflowRepository workflows,
-            IntegrationWorkflowRepository integrationWorkflows,
-            WorkflowExecutionRepository executions,
-            AiServiceClient aiClient,
-            RecoveryVerificationService recoveryService) {
-        this(anomalies, metrics, baselines, workflows, integrationWorkflows, executions, aiClient, recoveryService, null, null, null);
     }
 
     // =========================================================================
@@ -259,8 +245,14 @@ public class ReliabilityService {
             UUID anomalyId,
             Integer requiredCount) {
 
-        Anomaly anomaly = recoveryService.startVerification(user, anomalyId, requiredCount);
-        return new ReliabilityEnvelopes.VerifyRecoveryResponse(toDetail(anomaly));
+        Anomaly anomaly =
+                recoveryService.startVerification(
+                        user,
+                        anomalyId,
+                        requiredCount);
+
+        return new ReliabilityEnvelopes.VerifyRecoveryResponse(
+                toDetail(anomaly));
     }
 
     @Transactional(readOnly = true)
@@ -272,21 +264,24 @@ public class ReliabilityService {
                 recoveryService.getRecoveryStatus(user, anomalyId);
 
         ReliabilityEnvelopes.BaselineSnapshot baselineEnv = null;
+
         if (snapshot.baseline() != null) {
-            baselineEnv = new ReliabilityEnvelopes.BaselineSnapshot(
-                    snapshot.baseline().baseline(),
-                    snapshot.baseline().threshold(),
-                    snapshot.baseline().sampleCount());
+            baselineEnv =
+                    new ReliabilityEnvelopes.BaselineSnapshot(
+                            snapshot.baseline().baseline(),
+                            snapshot.baseline().threshold(),
+                            snapshot.baseline().sampleCount());
         }
 
-        ReliabilityEnvelopes.RecoveryStatus env = new ReliabilityEnvelopes.RecoveryStatus(
-                snapshot.anomalyStatus(),
-                snapshot.verificationActive(),
-                snapshot.healthyCount(),
-                snapshot.observedCount(),
-                snapshot.requiredCount(),
-                snapshot.startedAt(),
-                baselineEnv);
+        ReliabilityEnvelopes.RecoveryStatus env =
+                new ReliabilityEnvelopes.RecoveryStatus(
+                        snapshot.anomalyStatus(),
+                        snapshot.verificationActive(),
+                        snapshot.healthyCount(),
+                        snapshot.observedCount(),
+                        snapshot.requiredCount(),
+                        snapshot.startedAt(),
+                        baselineEnv);
 
         return new ReliabilityEnvelopes.RecoveryStatusResponse(env);
     }
@@ -307,13 +302,26 @@ public class ReliabilityService {
         // workflows) from an integration_workflows mapping. We 404 only when neither
         // record exists, so external anomalies/health resolve the real remote name.
         String workflowName =
-                workflows.findByIdAndOrganizationId(workflowId, organizationId)
+                workflows.findByIdAndOrganizationId(
+                                workflowId,
+                                organizationId)
                         .map(Workflow::getName)
                         .orElse(null);
+
         if (workflowName == null) {
-            workflowName = integrationWorkflows.findByIdAndOrganizationId(workflowId, organizationId)
-                    .map(w -> (w.getName() != null && !w.getName().isBlank()) ? w.getName() : null)
-                    .orElseThrow(() -> new ApiException(ErrorCode.WORKFLOW_NOT_FOUND));
+            workflowName =
+                    integrationWorkflows
+                            .findByIdAndOrganizationId(
+                                    workflowId,
+                                    organizationId)
+                            .map(w ->
+                                    (w.getName() != null
+                                            && !w.getName().isBlank())
+                                            ? w.getName()
+                                            : null)
+                            .orElseThrow(
+                                    () -> new ApiException(
+                                            ErrorCode.WORKFLOW_NOT_FOUND));
         }
 
         List<Anomaly> openAnomalies =
@@ -347,10 +355,11 @@ public class ReliabilityService {
                         successRate,
                         openAnomalies);
 
-        // Get the most recent execution timestamp for this workflow in this org
         Instant lastExecutionAt =
-                executions.findTopByWorkflowIdAndOrganizationIdOrderByFinishedAtDesc(
-                        workflowId, organizationId)
+                executions
+                        .findTopByWorkflowIdAndOrganizationIdOrderByFinishedAtDesc(
+                                workflowId,
+                                organizationId)
                         .map(WorkflowExecution::getFinishedAt)
                         .orElse(null);
 
@@ -456,38 +465,60 @@ public class ReliabilityService {
 
         // Build time-series from baselines and recent telemetry
         // Latency series (from LATENCY baselines per node) — org-scoped
-        List<ReliabilityEnvelopes.MetricSeries> latencySeries = baselines
-                .findByOrganizationIdAndWorkflowIdAndMetric(organizationId, workflowId, "LATENCY")
-                .stream()
-                .map(b -> buildMetricSeriesFromBaseline(b, "latency_ms"))
-                .filter(java.util.Optional::isPresent)
-                .map(java.util.Optional::get)
-                .toList();
+        List<ReliabilityEnvelopes.MetricSeries> latencySeries =
+                baselines
+                        .findByOrganizationIdAndWorkflowIdAndMetric(
+                                organizationId,
+                                workflowId,
+                                "LATENCY")
+                        .stream()
+                        .map(b ->
+                                buildMetricSeriesFromBaseline(
+                                        b,
+                                        "latency_ms"))
+                        .filter(java.util.Optional::isPresent)
+                        .map(java.util.Optional::get)
+                        .toList();
 
         // Output size series (from OUTPUT_SIZE baselines per node) — org-scoped
-        List<ReliabilityEnvelopes.MetricSeries> outputSizeSeries = baselines
-                .findByOrganizationIdAndWorkflowIdAndMetric(organizationId, workflowId, "OUTPUT_SIZE")
-                .stream()
-                .map(b -> buildMetricSeriesFromBaseline(b, "output_bytes"))
-                .filter(java.util.Optional::isPresent)
-                .map(java.util.Optional::get)
-                .toList();
+        List<ReliabilityEnvelopes.MetricSeries> outputSizeSeries =
+                baselines
+                        .findByOrganizationIdAndWorkflowIdAndMetric(
+                                organizationId,
+                                workflowId,
+                                "OUTPUT_SIZE")
+                        .stream()
+                        .map(b ->
+                                buildMetricSeriesFromBaseline(
+                                        b,
+                                        "output_bytes"))
+                        .filter(java.util.Optional::isPresent)
+                        .map(java.util.Optional::get)
+                        .toList();
 
         // Volume series (from VOLUME baseline - workflow-scoped) — org-scoped
-        List<ReliabilityEnvelopes.MetricSeries> volumeSeries = baselines
-                .findByOrganizationIdAndWorkflowIdAndNodeIdAndMetric(organizationId, workflowId, "", "VOLUME")
-                .map(b -> buildVolumeSeries(b))
-                .map(List::of)
-                .orElse(List.of());
+        List<ReliabilityEnvelopes.MetricSeries> volumeSeries =
+                baselines
+                        .findByOrganizationIdAndWorkflowIdAndNodeIdAndMetric(
+                                organizationId,
+                                workflowId,
+                                "",
+                                "VOLUME")
+                        .map(this::buildVolumeSeries)
+                        .map(List::of)
+                        .orElse(List.of());
 
-        // Success rate series (from recent executions - we'll compute from execution stats)
-        List<ReliabilityEnvelopes.MetricSeries> successRateSeries = buildSuccessRateSeries(workflowId);
+        // Success rate series
+        List<ReliabilityEnvelopes.MetricSeries> successRateSeries =
+                buildSuccessRateSeries(workflowId);
 
-        // Anomaly frequency series (from anomaly counts over time)
-        List<ReliabilityEnvelopes.MetricSeries> anomalyFrequencySeries = buildAnomalyFrequencySeries(workflowId);
+        // Anomaly frequency series
+        List<ReliabilityEnvelopes.MetricSeries> anomalyFrequencySeries =
+                buildAnomalyFrequencySeries(workflowId);
 
-        // Reliability score history (from workflow health computations over time)
-        List<ReliabilityEnvelopes.MetricSeries> reliabilityScoreHistory = buildReliabilityScoreHistory(workflowId);
+        // Reliability score history
+        List<ReliabilityEnvelopes.MetricSeries> reliabilityScoreHistory =
+                buildReliabilityScoreHistory(workflowId);
 
         return new ReliabilityEnvelopes.WorkflowMetricsResponse(
                 new ReliabilityEnvelopes.WorkflowMetrics(
@@ -499,76 +530,108 @@ public class ReliabilityService {
                         reliabilityScoreHistory));
     }
 
-    private Optional<ReliabilityEnvelopes.MetricSeries> buildMetricSeriesFromBaseline(
-            MetricBaseline baseline, String metricLabel) {
-        if (baseline.getP50() == null && baseline.getP95() == null && baseline.getMedian() == null) {
+    private Optional<ReliabilityEnvelopes.MetricSeries>
+            buildMetricSeriesFromBaseline(
+                    MetricBaseline baseline,
+                    String metricLabel) {
+
+        if (baseline.getP50() == null
+                && baseline.getP95() == null
+                && baseline.getMedian() == null) {
             return Optional.empty();
         }
-        // For now, return a single point showing the current baseline values
-        // A full implementation would track baseline evolution over time
+
+        // For now, return a single point showing the current baseline values.
+        // A full implementation would track baseline evolution over time.
         List<ReliabilityEnvelopes.Point> points = new ArrayList<>();
         Instant now = Instant.now();
 
         if (baseline.getMedian() != null) {
-            points.add(new ReliabilityEnvelopes.Point(
-                    now,
-                    baseline.getMedian(),
-                    "p50 (median)"));
-        }
-        if (baseline.getP95() != null) {
-            points.add(new ReliabilityEnvelopes.Point(
-                    now,
-                    baseline.getP95(),
-                    "p95"));
-        }
-        if (baseline.getP99() != null) {
-            points.add(new ReliabilityEnvelopes.Point(
-                    now,
-                    baseline.getP99(),
-                    "p99"));
+            points.add(
+                    new ReliabilityEnvelopes.Point(
+                            now,
+                            baseline.getMedian(),
+                            "p50 (median)"));
         }
 
-        return Optional.of(new ReliabilityEnvelopes.MetricSeries(
-                metricLabel,
-                baseline.getNodeId(),
-                points));
+        if (baseline.getP95() != null) {
+            points.add(
+                    new ReliabilityEnvelopes.Point(
+                            now,
+                            baseline.getP95(),
+                            "p95"));
+        }
+
+        if (baseline.getP99() != null) {
+            points.add(
+                    new ReliabilityEnvelopes.Point(
+                            now,
+                            baseline.getP99(),
+                            "p99"));
+        }
+
+        return Optional.of(
+                new ReliabilityEnvelopes.MetricSeries(
+                        metricLabel,
+                        baseline.getNodeId(),
+                        points));
     }
 
-    private ReliabilityEnvelopes.MetricSeries buildVolumeSeries(MetricBaseline baseline) {
-        // VOLUME baseline stores recent per-window counts in signature
+    private ReliabilityEnvelopes.MetricSeries buildVolumeSeries(
+            MetricBaseline baseline) {
+
+        // VOLUME baseline stores recent per-window counts in signature.
         List<ReliabilityEnvelopes.Point> points = new ArrayList<>();
+
         if (baseline.getSignature() != null) {
-            Object recent = baseline.getSignature().get("recentCounts");
+            Object recent =
+                    baseline.getSignature().get("recentCounts");
+
             if (recent instanceof List<?> counts) {
                 for (int i = 0; i < counts.size(); i++) {
                     Object count = counts.get(i);
+
                     if (count instanceof Number n) {
-                        points.add(new ReliabilityEnvelopes.Point(
-                                Instant.now().minusSeconds((counts.size() - i) * 300), // 5-min windows
-                                n.doubleValue(),
-                                "executions"));
+                        points.add(
+                                new ReliabilityEnvelopes.Point(
+                                        Instant.now()
+                                                .minusSeconds(
+                                                        (counts.size() - i)
+                                                                * 300),
+                                        n.doubleValue(),
+                                        "executions"));
                     }
                 }
             }
         }
-        return new ReliabilityEnvelopes.MetricSeries("executions_per_window", "", points);
+
+        return new ReliabilityEnvelopes.MetricSeries(
+                "executions_per_window",
+                "",
+                points);
     }
 
-    private List<ReliabilityEnvelopes.MetricSeries> buildSuccessRateSeries(UUID workflowId) {
-        // Query recent executions and bucket by time window
-        // For now return empty - requires time-series aggregation query
+    private List<ReliabilityEnvelopes.MetricSeries>
+            buildSuccessRateSeries(UUID workflowId) {
+
+        // Query recent executions and bucket by time window.
+        // For now return empty - requires time-series aggregation query.
         return List.of();
     }
 
-    private List<ReliabilityEnvelopes.MetricSeries> buildAnomalyFrequencySeries(UUID workflowId) {
-        // Query anomalies grouped by time window
-        // For now return empty - requires time-series aggregation query
+    private List<ReliabilityEnvelopes.MetricSeries>
+            buildAnomalyFrequencySeries(UUID workflowId) {
+
+        // Query anomalies grouped by time window.
+        // For now return empty - requires time-series aggregation query.
         return List.of();
     }
 
-    private List<ReliabilityEnvelopes.MetricSeries> buildReliabilityScoreHistory(UUID workflowId) {
-        // Would track reliability score over time
-        // For now return empty - requires historical persistence
+    private List<ReliabilityEnvelopes.MetricSeries>
+            buildReliabilityScoreHistory(UUID workflowId) {
+
+        // Would track reliability score over time.
+        // For now return empty - requires historical persistence.
         return List.of();
     }
 
@@ -582,9 +645,6 @@ public class ReliabilityService {
             UUID anomalyId) {
 
         var principal = AuthenticatedUser.require();
-        if (billingService != null) {
-            billingService.assertCanGenerateAi(principal.organizationId());
-        }
 
         Anomaly anomaly =
                 anomalies.findByIdAndOrganizationId(
@@ -653,14 +713,6 @@ public class ReliabilityService {
 
         anomalies.save(anomaly);
 
-        if (billingService != null && result != null && result.configured()) {
-            billingService.recordAiUsage(
-                    principal.organizationId(),
-                    "AI_INVESTIGATION",
-                    1,
-                    "Anomaly " + anomalyId);
-        }
-
         return new ReliabilityEnvelopes.InvestigateResponse(
                 result);
     }
@@ -690,28 +742,33 @@ public class ReliabilityService {
                         : null);
 
         evidencePackage.put(
-        "metric",
-        anomaly.getMetric());
+                "metric",
+                anomaly.getMetric());
 
-evidencePackage.put(
-        "expected",
-        anomaly.getExpectedValue());
+        evidencePackage.put(
+                "expected",
+                anomaly.getExpectedValue());
 
-evidencePackage.put(
-        "actual",
-        anomaly.getActualValue());
+        evidencePackage.put(
+                "actual",
+                anomaly.getActualValue());
 
-evidencePackage.put(
-        "deviation",
-        anomaly.getDeviation());
+        evidencePackage.put(
+                "deviation",
+                anomaly.getDeviation());
 
-evidencePackage.put(
-        "metricScope",
-        anomaly.getNodeId() != null ? "NODE" : "WORKFLOW");
+        evidencePackage.put(
+                "metricScope",
+                anomaly.getNodeId() != null
+                        ? "NODE"
+                        : "WORKFLOW");
 
-if (anomaly.getNodeId() != null) {
-    evidencePackage.put("metricNodeId", anomaly.getNodeId());
-}
+        if (anomaly.getNodeId() != null) {
+            evidencePackage.put(
+                    "metricNodeId",
+                    anomaly.getNodeId());
+        }
+
         evidencePackage.put(
                 "confidence",
                 anomaly.getConfidence());
@@ -730,37 +787,63 @@ if (anomaly.getNodeId() != null) {
                         ? anomaly.getDetectedAt().toString()
                         : null);
 
-        // Add affected step/node information
+        // Add affected step/node information.
         if (anomaly.getNodeId() != null) {
-            evidencePackage.put("affectedNodeId", anomaly.getNodeId());
-            // Try to get node type from telemetry
-            Optional<NodeExecutionMetric> metricOpt = metrics
-                    .findByExecutionIdAndNodeIdAndOrganizationId(
+
+            evidencePackage.put(
+                    "affectedNodeId",
+                    anomaly.getNodeId());
+
+            Optional<NodeExecutionMetric> metricOpt =
+                    metrics.findByExecutionIdAndNodeIdAndOrganizationId(
                             anomaly.getExecutionId(),
                             anomaly.getNodeId(),
                             anomaly.getOrganizationId());
+
             if (metricOpt.isPresent()) {
-                NodeExecutionMetric m = metricOpt.get();
-                evidencePackage.put("affectedNodeType", m.getNodeType());
-                // Include before/after structural info from the anomaly's evidence
-                Map<String, Object> anomEvidence = anomaly.getEvidence();
+
+                NodeExecutionMetric m =
+                        metricOpt.get();
+
+                evidencePackage.put(
+                        "affectedNodeType",
+                        m.getNodeType());
+
+                Map<String, Object> anomEvidence =
+                        anomaly.getEvidence();
+
                 if (anomEvidence != null) {
-                    // Include structural comparison details
+
                     if (anomEvidence.containsKey("kind")) {
-                        evidencePackage.put("findingKind", anomEvidence.get("kind"));
+                        evidencePackage.put(
+                                "findingKind",
+                                anomEvidence.get("kind"));
                     }
+
                     if (anomEvidence.containsKey("expectedType")) {
-                        evidencePackage.put("expectedType", anomEvidence.get("expectedType"));
+                        evidencePackage.put(
+                                "expectedType",
+                                anomEvidence.get("expectedType"));
                     }
+
                     if (anomEvidence.containsKey("actualType")) {
-                        evidencePackage.put("actualType", anomEvidence.get("actualType"));
+                        evidencePackage.put(
+                                "actualType",
+                                anomEvidence.get("actualType"));
                     }
+
                     if (anomEvidence.containsKey("field")) {
-                        evidencePackage.put("affectedField", anomEvidence.get("field"));
+                        evidencePackage.put(
+                                "affectedField",
+                                anomEvidence.get("field"));
                     }
-                    // Include the severity rationale
-                    if (anomEvidence.containsKey("severityRationale")) {
-                        evidencePackage.put("severityRationale", anomEvidence.get("severityRationale"));
+
+                    if (anomEvidence.containsKey(
+                            "severityRationale")) {
+                        evidencePackage.put(
+                                "severityRationale",
+                                anomEvidence.get(
+                                        "severityRationale"));
                     }
                 }
             }
@@ -805,64 +888,163 @@ if (anomaly.getNodeId() != null) {
                                 ? e.getFinishedAt().toString()
                                 : null);
 
-                executionData.put("workflowVersionId", e.getWorkflowVersionId() != null ? e.getWorkflowVersionId().toString() : null);
-                executionData.put("versionNumber", e.getVersionNumber());
-                executionData.put("workerId", e.getWorkerId());
-                executionData.put("queueWaitMs", e.getQueueWaitMs());
+                executionData.put(
+                        "workflowVersionId",
+                        e.getWorkflowVersionId() != null
+                                ? e.getWorkflowVersionId().toString()
+                                : null);
+
+                executionData.put(
+                        "versionNumber",
+                        e.getVersionNumber());
+
+                executionData.put(
+                        "workerId",
+                        e.getWorkerId());
+
+                executionData.put(
+                        "queueWaitMs",
+                        e.getQueueWaitMs());
 
                 if (nodeAttempts != null) {
-                    List<com.flowops.domain.NodeExecutionAttempt> attempts = nodeAttempts.findByExecutionIdOrderByStartedAtAsc(e.getId());
+
+                    List<com.flowops.domain.NodeExecutionAttempt>
+                            attempts =
+                            nodeAttempts
+                                    .findByExecutionIdOrderByStartedAtAsc(
+                                            e.getId());
+
                     if (!attempts.isEmpty()) {
-                        List<Map<String, Object>> attemptList = new ArrayList<>();
-                        for (com.flowops.domain.NodeExecutionAttempt att : attempts) {
-                            Map<String, Object> a = new HashMap<>();
-                            a.put("nodeId", att.getNodeId());
-                            a.put("attemptNumber", att.getAttemptNumber());
-                            a.put("status", att.getStatus());
-                            a.put("durationMs", att.getDurationMs());
-                            a.put("error", att.getError());
+
+                        List<Map<String, Object>> attemptList =
+                                new ArrayList<>();
+
+                        for (
+                                com.flowops.domain.NodeExecutionAttempt att
+                                        : attempts) {
+
+                            Map<String, Object> a =
+                                    new HashMap<>();
+
+                            a.put(
+                                    "nodeId",
+                                    att.getNodeId());
+
+                            a.put(
+                                    "attemptNumber",
+                                    att.getAttemptNumber());
+
+                            a.put(
+                                    "status",
+                                    att.getStatus());
+
+                            a.put(
+                                    "durationMs",
+                                    att.getDurationMs());
+
+                            a.put(
+                                    "error",
+                                    att.getError());
+
                             attemptList.add(a);
                         }
-                        executionData.put("attempts", attemptList);
+
+                        executionData.put(
+                                "attempts",
+                                attemptList);
                     }
                 }
 
-                if (versions != null && e.getWorkflowVersionId() != null) {
-                    versions.findById(e.getWorkflowVersionId()).ifPresent(v -> {
-                        evidencePackage.put("workflowVersionNumber", v.getVersionNumber());
-                        evidencePackage.put("workflowVersionCreatedAt", v.getCreatedAt() != null ? v.getCreatedAt().toString() : null);
-                    });
+                if (versions != null
+                        && e.getWorkflowVersionId() != null) {
+
+                    versions.findById(
+                            e.getWorkflowVersionId())
+                            .ifPresent(v -> {
+
+                                evidencePackage.put(
+                                        "workflowVersionNumber",
+                                        v.getVersionNumber());
+
+                                evidencePackage.put(
+                                        "workflowVersionCreatedAt",
+                                        v.getCreatedAt() != null
+                                                ? v.getCreatedAt().toString()
+                                                : null);
+                            });
                 }
 
                 // The raw trigger payload is customer data (PII, tokens) and is deliberately
-// NOT sent to the external LLM. Telemetry below carries structure only.
+                // NOT sent to the external LLM. Telemetry below carries structure only.
 
-                // Add relevant node metrics for this execution — org-scoped via workflow
+                // Add relevant node metrics for this execution — org-scoped via workflow.
                 List<NodeExecutionMetric> executionMetrics =
-                        metrics.findByOrganizationIdAndWorkflowIdAndStartedAtAfterOrderByStartedAtAsc(
-                                anomaly.getOrganizationId(),
-                                anomaly.getWorkflowId(),
-                                Instant.EPOCH);
+                        metrics
+                                .findByOrganizationIdAndWorkflowIdAndStartedAtAfterOrderByStartedAtAsc(
+                                        anomaly.getOrganizationId(),
+                                        anomaly.getWorkflowId(),
+                                        Instant.EPOCH);
+
                 if (!executionMetrics.isEmpty()) {
-                    List<Map<String, Object>> nodeMetrics = new ArrayList<>();
-                    for (NodeExecutionMetric m : executionMetrics) {
-                        Map<String, Object> nodeData = new HashMap<>();
-                        nodeData.put("nodeId", m.getNodeId());
-                        nodeData.put("nodeType", m.getNodeType());
-                        nodeData.put("status", m.getStatus() != null ? m.getStatus().name() : null);
-                        nodeData.put("durationMs", m.getDurationMs());
-                        nodeData.put("retryCount", m.getRetryCount());
-                        nodeData.put("inputSize", m.getInputSize());
-                        nodeData.put("outputSize", m.getOutputSize());
-                        nodeData.put("errorType", m.getErrorType());
-                        // errorMessage is omitted: driver/HTTP errors can embed hosts, SQL and credentials.
-                        // Include structural signatures for comparison
+
+                    List<Map<String, Object>> nodeMetrics =
+                            new ArrayList<>();
+
+                    for (NodeExecutionMetric m
+                            : executionMetrics) {
+
+                        Map<String, Object> nodeData =
+                                new HashMap<>();
+
+                        nodeData.put(
+                                "nodeId",
+                                m.getNodeId());
+
+                        nodeData.put(
+                                "nodeType",
+                                m.getNodeType());
+
+                        nodeData.put(
+                                "status",
+                                m.getStatus() != null
+                                        ? m.getStatus().name()
+                                        : null);
+
+                        nodeData.put(
+                                "durationMs",
+                                m.getDurationMs());
+
+                        nodeData.put(
+                                "retryCount",
+                                m.getRetryCount());
+
+                        nodeData.put(
+                                "inputSize",
+                                m.getInputSize());
+
+                        nodeData.put(
+                                "outputSize",
+                                m.getOutputSize());
+
+                        nodeData.put(
+                                "errorType",
+                                m.getErrorType());
+
+                        // errorMessage is omitted: driver/HTTP errors can embed
+                        // hosts, SQL and credentials.
+
                         if (m.getOutputSignature() != null) {
-                            nodeData.put("outputSignature", m.getOutputSignature());
+                            nodeData.put(
+                                    "outputSignature",
+                                    m.getOutputSignature());
                         }
+
                         nodeMetrics.add(nodeData);
                     }
-                    executionData.put("nodeMetrics", nodeMetrics);
+
+                    executionData.put(
+                            "nodeMetrics",
+                            nodeMetrics);
                 }
 
                 evidencePackage.put(
@@ -879,37 +1061,63 @@ if (anomaly.getNodeId() != null) {
     // =========================================================================
 
     /**
-     * Resolves a display name for a workflow referenced by an anomaly. Internal
-     * anomalies carry a {@code workflows.id}; external (provider) anomalies carry an
-     * {@code integration_workflows.id} that has no FlowOps-native workflow, so we
-     * fall back to the integration-workflow name. Falls back to a short id stem when
-     * neither record exists.
+     * Resolves a display name for a workflow referenced by an anomaly.
+     *
+     * Internal anomalies carry a workflows.id; external provider anomalies carry
+     * an integration_workflows.id that has no FlowOps-native workflow.
      */
-    private String resolveWorkflowName(UUID workflowId, UUID organizationId) {
+    private String resolveWorkflowName(
+            UUID workflowId,
+            UUID organizationId) {
+
         try {
+
             Optional<Workflow> workflow =
-                    workflows.findByIdAndOrganizationId(workflowId, organizationId);
+                    workflows.findByIdAndOrganizationId(
+                            workflowId,
+                            organizationId);
+
             if (workflow.isPresent()) {
                 return workflow.get().getName();
             }
+
         } catch (RuntimeException ex) {
-            log.debug("Unable to resolve internal workflow name for {}", workflowId, ex);
+
+            log.debug(
+                    "Unable to resolve internal workflow name for {}",
+                    workflowId,
+                    ex);
         }
 
         try {
-            Optional<com.flowops.domain.IntegrationWorkflow> integrationWorkflow =
-                    integrationWorkflows.findByIdAndOrganizationId(workflowId, organizationId);
+
+            Optional<com.flowops.domain.IntegrationWorkflow>
+                    integrationWorkflow =
+                    integrationWorkflows
+                            .findByIdAndOrganizationId(
+                                    workflowId,
+                                    organizationId);
+
             if (integrationWorkflow.isPresent()) {
-                String name = integrationWorkflow.get().getName();
+
+                String name =
+                        integrationWorkflow.get().getName();
+
                 if (name != null && !name.isBlank()) {
                     return name;
                 }
             }
+
         } catch (RuntimeException ex) {
-            log.debug("Unable to resolve integration workflow name for {}", workflowId, ex);
+
+            log.debug(
+                    "Unable to resolve integration workflow name for {}",
+                    workflowId,
+                    ex);
         }
 
-        return "Workflow " + workflowId.toString().substring(0, 8);
+        return "Workflow "
+                + workflowId.toString().substring(0, 8);
     }
 
     private ReliabilityEnvelopes.AnomalySummary toSummary(

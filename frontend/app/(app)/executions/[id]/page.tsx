@@ -80,8 +80,8 @@ const ExecutionGraph = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[420px] w-full items-center justify-center rounded-xl border border-white/[0.08] bg-[#0a0a0c]">
-        <div className="size-6 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+      <div className="flex h-[420px] w-full items-center justify-center rounded-xl border border-border dark:border-white/[0.08] bg-card dark:bg-[#0a0a0c]">
+        <div className="size-6 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-foreground dark:border-white/20 dark:border-t-white" />
       </div>
     ),
   },
@@ -746,7 +746,7 @@ export default function ExecutionDetailPage() {
           </Link>
         }
         description={
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/50">
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground dark:text-white/50">
             <StatusBadge status={state.status} />
             <span>v{meta.versionNumber}</span>
             <span>{meta.triggerType.toLowerCase()} trigger</span>
@@ -756,8 +756,8 @@ export default function ExecutionDetailPage() {
             <span>·</span>
             <span>{formatDuration(state.durationMs)}</span>
             {connected && live && (
-              <span className="inline-flex items-center gap-1 text-emerald-400">
-                <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
+              <span className="inline-flex items-center gap-1 text-emerald-500 dark:text-emerald-400">
+                <span className="size-1.5 animate-pulse rounded-full bg-emerald-500 dark:bg-emerald-400" />
                 Live
               </span>
             )}
@@ -797,8 +797,8 @@ export default function ExecutionDetailPage() {
       {/* disconnected banner */}
 
       {disconnected && (
-        <div className="flex items-center justify-between gap-3 rounded-md border border-white/[0.08] bg-white/[0.03] px-4 py-2.5 text-sm">
-          <span className="text-white/44">
+        <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-muted/30 px-4 py-2.5 text-sm dark:border-white/[0.08] dark:bg-white/[0.03]">
+          <span className="text-muted-foreground dark:text-white/44">
             Live updates disconnected.
           </span>
 
@@ -879,7 +879,7 @@ export default function ExecutionDetailPage() {
 
       {/* view tabs */}
 
-      <div className="flex items-center gap-1 border-b border-white/[0.08]">
+      <div className="flex items-center gap-1 border-b border-border dark:border-white/[0.08]">
         <button
           type="button"
           onClick={() =>
@@ -889,8 +889,8 @@ export default function ExecutionDetailPage() {
             "flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px",
 
             view === "graph"
-              ? "border-white/60 text-white/90"
-              : "border-transparent text-white/44 hover:text-white/70",
+              ? "border-foreground text-foreground dark:border-white/60 dark:text-white/90"
+              : "border-transparent text-muted-foreground hover:text-foreground dark:text-white/44 dark:hover:text-white/70",
           )}
         >
           <LayoutGrid className="size-4" />
@@ -907,8 +907,8 @@ export default function ExecutionDetailPage() {
             "flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px",
 
             view === "timeline"
-              ? "border-white/60 text-white/90"
-              : "border-transparent text-white/44 hover:text-white/70",
+              ? "border-foreground text-foreground dark:border-white/60 dark:text-white/90"
+              : "border-transparent text-muted-foreground hover:text-foreground dark:text-white/44 dark:hover:text-white/70",
           )}
         >
           <List className="size-4" />
@@ -942,7 +942,7 @@ export default function ExecutionDetailPage() {
             <div className="space-y-1.5">
               {nodesForTimeline.length ===
               0 ? (
-                <p className="rounded-xl border border-dashed border-white/[0.10] px-4 py-8 text-center text-sm text-white/44">
+                <p className="rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground dark:border-white/[0.10] dark:text-white/44">
                   This run has no nodes.
                 </p>
               ) : (
@@ -966,16 +966,16 @@ export default function ExecutionDetailPage() {
           {view ===
             "timeline" &&
             !triggerPayloadEmpty && (
-              <details className="group rounded-xl border border-white/[0.08] [&_summary::-webkit-details-marker]:hidden">
-                <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-sm">
-                  <ChevronDown className="size-4 text-white/44 transition-transform group-open:rotate-180" />
+              <details className="group rounded-xl border border-border dark:border-white/[0.08] [&_summary::-webkit-details-marker]:hidden">
+                <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-sm text-foreground">
+                  <ChevronDown className="size-4 text-muted-foreground dark:text-white/44 transition-transform group-open:rotate-180" />
 
                   <span className="font-medium">
                     Trigger payload
                   </span>
                 </summary>
 
-                <div className="border-t border-white/[0.06] p-4">
+                <div className="border-t border-border dark:border-white/[0.06] p-4">
                   <JsonBlock
                     value={
                       meta.triggerPayload
@@ -1044,7 +1044,7 @@ function ApprovalPanel({
     React.useState("");
 
   return (
-    <Card className="border-amber-500/40 bg-amber-500/5 bg-[#0a0a0a]">
+    <Card className="border-amber-500/40 bg-amber-500/5">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <PauseCircle className="size-4 text-amber-600 dark:text-amber-400" />
@@ -1118,14 +1118,14 @@ function JsonBlock({
     value === undefined
   ) {
     return (
-      <p className="text-xs text-white/44">
+      <p className="text-xs text-muted-foreground dark:text-white/44">
         None recorded.
       </p>
     );
   }
 
   return (
-    <pre className="max-h-64 overflow-auto rounded-md border border-white/[0.08] bg-[#0a0a0a] p-3 text-xs leading-relaxed font-mono">
+    <pre className="max-h-64 overflow-auto rounded-md border border-border dark:border-white/[0.08] bg-muted/40 dark:bg-[#0a0a0a] text-foreground/90 dark:text-white/80 p-3 text-xs leading-relaxed font-mono">
       {JSON.stringify(
         value,
         null,
@@ -1143,13 +1143,13 @@ function logLevelClass(
       return "text-destructive";
 
     case "WARN":
-      return "text-amber-400";
+      return "text-amber-600 dark:text-amber-400";
 
     case "DEBUG":
-      return "text-white/45";
+      return "text-muted-foreground dark:text-white/45";
 
     default:
-      return "text-white/60";
+      return "text-foreground/80 dark:text-white/60";
   }
 }
 
@@ -1178,16 +1178,16 @@ function LogPanel({
   }, [logs.length]);
 
   return (
-    <Card className="lg:sticky lg:top-6 bg-[#0a0a0a] border-white/[0.08]">
+    <Card className="lg:sticky lg:top-6 bg-card dark:bg-[#0a0a0a] border-border dark:border-white/[0.08]">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base text-white/90">
+        <CardTitle className="text-base text-foreground dark:text-white/90">
           Logs
         </CardTitle>
       </CardHeader>
 
       <CardContent>
         {logs.length === 0 ? (
-          <p className="text-sm text-white/44">
+          <p className="text-sm text-muted-foreground dark:text-white/44">
             No log output yet.
           </p>
         ) : (
@@ -1211,7 +1211,7 @@ function LogPanel({
                   {log.level}
                 </span>
 
-                <span className="min-w-0 flex-1 whitespace-pre-wrap break-words text-white/60">
+                <span className="min-w-0 flex-1 whitespace-pre-wrap break-words text-foreground/80 dark:text-white/60">
                   {log.message}
                 </span>
               </li>

@@ -22,13 +22,17 @@ class GeneratedNode(BaseModel):
     id: str
     type: str
     label: str | None = None
+    position: dict[str, Any] | None = None
+    data: dict[str, Any] | None = None
     config: dict[str, Any] = Field(default_factory=dict)
 
 
 class GeneratedEdge(BaseModel):
+    id: str | None = None
     source: str
     target: str
     source_handle: str | None = None
+    sourceHandle: str | None = None
 
 
 class GeneratedGraph(BaseModel):

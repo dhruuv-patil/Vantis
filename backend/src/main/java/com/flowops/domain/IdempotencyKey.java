@@ -30,7 +30,7 @@ public class IdempotencyKey {
     private UUID id;
 
     /** Composite key: "webhook:{workflowId}:{callerKey}" — scoped to prevent cross-workflow collisions. */
-    @Column(name = "idempotency_key", nullable = false, updatable = false, length = 256)
+    @Column(name = "idempotency_key", nullable = false, updatable = false, length = 256, unique = true)
     private String key;
 
     /** The execution id that was created for this key. */

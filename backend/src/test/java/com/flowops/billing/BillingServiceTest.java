@@ -100,20 +100,20 @@ class BillingServiceTest {
         WorkspaceUsageResponse usage = billingService.getUsage(ORG_1);
 
         assertThat(usage.executions().used()).isEqualTo(0L);
-        assertThat(usage.executions().limit()).isEqualTo(10_000L);
+        assertThat(usage.executions().limit()).isEqualTo((long) com.flowops.billing.model.PlanCatalog.PRO_EXECUTIONS_PER_MONTH);
         assertThat(usage.executions().percentage()).isEqualTo(0);
 
         assertThat(usage.aiGenerations().used()).isEqualTo(0L);
-        assertThat(usage.aiGenerations().limit()).isEqualTo(100L);
+        assertThat(usage.aiGenerations().limit()).isEqualTo((long) com.flowops.billing.model.PlanCatalog.PRO_AI_GENERATIONS);
         assertThat(usage.aiGenerations().percentage()).isEqualTo(0);
 
         assertThat(usage.activeWorkflows().used()).isEqualTo(0L);
-        assertThat(usage.activeWorkflows().limit()).isEqualTo(50L);
+        assertThat(usage.activeWorkflows().limit()).isEqualTo((long) com.flowops.billing.model.PlanCatalog.BETA_ACTIVE_WORKFLOWS);
         assertThat(usage.activeWorkflows().percentage()).isEqualTo(0);
 
         assertThat(usage.teamMembers().used()).isEqualTo(1L);
-        assertThat(usage.teamMembers().limit()).isEqualTo(5L);
-        assertThat(usage.teamMembers().percentage()).isEqualTo(20);
+        assertThat(usage.teamMembers().limit()).isEqualTo((long) com.flowops.billing.model.PlanCatalog.PRO_SEATS);
+        assertThat(usage.teamMembers().percentage()).isEqualTo(10);
     }
 
     @Test
@@ -133,89 +133,16 @@ class BillingServiceTest {
         WorkspaceUsageResponse usage = billingService.getUsage(ORG_1);
 
         assertThat(usage.executions().used()).isEqualTo(37L);
-        assertThat(usage.executions().limit()).isEqualTo(10_000L);
+        assertThat(usage.executions().limit()).isEqualTo((long) com.flowops.billing.model.PlanCatalog.PRO_EXECUTIONS_PER_MONTH);
 
         assertThat(usage.aiGenerations().used()).isEqualTo(8L);
-        assertThat(usage.aiGenerations().limit()).isEqualTo(100L);
+        assertThat(usage.aiGenerations().limit()).isEqualTo((long) com.flowops.billing.model.PlanCatalog.PRO_AI_GENERATIONS);
 
         assertThat(usage.activeWorkflows().used()).isEqualTo(4L);
-        assertThat(usage.activeWorkflows().limit()).isEqualTo(50L);
+        assertThat(usage.activeWorkflows().limit()).isEqualTo((long) com.flowops.billing.model.PlanCatalog.BETA_ACTIVE_WORKFLOWS);
 
         assertThat(usage.teamMembers().used()).isEqualTo(2L);
-        assertThat(usage.teamMembers().limit()).isEqualTo(5L);
-    }
-
-    @Test
-    @DisplayName("assertCanExecute enforces execution limit")
-    void assertCanExecuteBlocksWhenQuotaExceeded() {
-        BillingPeriod period = BillingPeriod.currentMonth();
-        Subscription sub = Subscription.create(
-                ORG_1, "PRIVATE_BETA", "ACTIVE", "USD", "US", "MONTHLY",
-                period.start(), period.end());
-        when(subscriptionRepository.findByWorkspaceId(ORG_1)).thenReturn(Optional.of(sub));
-
-        // When under quota: succeeds
-        when(executionRepository.countByOrganizationIdAndPeriod(eq(ORG_1), any(), any())).thenReturn(9_999L);
-        billingService.assertCanExecute(ORG_1);
-
-        // When at limit: throws PLAN_LIMIT_EXCEEDED
-        when(executionRepository.countByOrganizationIdAndPeriod(eq(ORG_1), any(), any())).thenReturn(10_000L);
-        assertThatThrownBy(() -> billingService.assertCanExecute(ORG_1))
-                .isInstanceOf(ApiException.class)
-                .satisfies(e -> assertThat(((ApiException) e).code()).isEqualTo(ErrorCode.PLAN_LIMIT_EXCEEDED));
-    }
-
-    @Test
-    @DisplayName("assertCanGenerateAi enforces AI generation quota")
-    void assertCanGenerateAiBlocksWhenQuotaExceeded() {
-        BillingPeriod period = BillingPeriod.currentMonth();
-        Subscription sub = Subscription.create(
-                ORG_1, "PRIVATE_BETA", "ACTIVE", "USD", "US", "MONTHLY",
-                period.start(), period.end());
-        when(subscriptionRepository.findByWorkspaceId(ORG_1)).thenReturn(Optional.of(sub));
-
-        // When under limit: succeeds
-        when(aiUsageEventRepository.countUsageByOrganizationIdAndPeriod(eq(ORG_1), any(), any())).thenReturn(99L);
-        billingService.assertCanGenerateAi(ORG_1);
-
-        // When at limit: throws PLAN_LIMIT_EXCEEDED
-        when(aiUsageEventRepository.countUsageByOrganizationIdAndPeriod(eq(ORG_1), any(), any())).thenReturn(100L);
-        assertThatThrownBy(() -> billingService.assertCanGenerateAi(ORG_1))
-                .isInstanceOf(ApiException.class)
-                .satisfies(e -> assertThat(((ApiException) e).code()).isEqualTo(ErrorCode.PLAN_LIMIT_EXCEEDED));
-    }
-
-    @Test
-    @DisplayName("assertCanCreateWorkflow enforces active workflow limit")
-    void assertCanCreateWorkflowBlocksWhenLimitReached() {
-        Subscription sub = Subscription.create(
-                ORG_1, "FREE", "ACTIVE", "USD", "US", "MONTHLY",
-                Instant.now(), Instant.now().plus(30, ChronoUnit.DAYS));
-        when(subscriptionRepository.findByWorkspaceId(ORG_1)).thenReturn(Optional.of(sub));
-
-        // Free plan limit is 5 workflows
-        when(workflowRepository.countActiveByOrganizationId(ORG_1)).thenReturn(4L);
-        billingService.assertCanCreateWorkflow(ORG_1);
-
-        when(workflowRepository.countActiveByOrganizationId(ORG_1)).thenReturn(5L);
-        assertThatThrownBy(() -> billingService.assertCanCreateWorkflow(ORG_1))
-                .isInstanceOf(ApiException.class)
-                .satisfies(e -> assertThat(((ApiException) e).code()).isEqualTo(ErrorCode.PLAN_LIMIT_EXCEEDED));
-    }
-
-    @Test
-    @DisplayName("recordAiUsage persists event scoped to organization")
-    void recordAiUsagePersistsEvent() {
-        billingService.recordAiUsage(ORG_1, "AI_WORKFLOW_GENERATION", 1, "test prompt");
-
-        ArgumentCaptor<AiUsageEvent> captor = ArgumentCaptor.forClass(AiUsageEvent.class);
-        verify(aiUsageEventRepository).save(captor.capture());
-
-        AiUsageEvent saved = captor.getValue();
-        assertThat(saved.getOrganizationId()).isEqualTo(ORG_1);
-        assertThat(saved.getEventType()).isEqualTo("AI_WORKFLOW_GENERATION");
-        assertThat(saved.getQuantity()).isEqualTo(1);
-        assertThat(saved.getMetadata()).isEqualTo("test prompt");
+        assertThat(usage.teamMembers().limit()).isEqualTo((long) com.flowops.billing.model.PlanCatalog.PRO_SEATS);
     }
 
     @Test

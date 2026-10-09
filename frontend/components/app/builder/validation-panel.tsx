@@ -31,8 +31,8 @@ export function ValidationPanel({
   const warnings = result.issues.filter((i) => i.severity === "WARNING");
 
   return (
-    <div className="absolute inset-x-0 bottom-0 z-20 max-h-[45%] overflow-hidden rounded-t-lg border-t border-white/[0.075] bg-[#0a0a0a] shadow-lg">
-      <div className="flex items-center gap-2 border-b border-white/[0.075] px-4 py-2">
+    <div className="absolute inset-x-0 bottom-0 z-20 max-h-[45%] overflow-hidden rounded-t-lg border-t border-border bg-card shadow-lg dark:border-white/[0.075] dark:bg-[#0a0a0a]">
+      <div className="flex items-center gap-2 border-b border-border px-4 py-2 dark:border-white/[0.075]">
         <span className="text-sm font-semibold">Validation</span>
         {result.valid ? (
           <Badge variant="success">Valid</Badge>
@@ -92,7 +92,7 @@ function IssueRow({
         onClick={() => issue.nodeId && onFocusNode(issue.nodeId)}
         className={cn(
           "flex w-full items-start gap-2 rounded-md px-2 py-2 text-left text-sm transition-colors",
-          clickable ? "hover:bg-white/[0.06]" : "cursor-default",
+          clickable ? "hover:bg-muted dark:hover:bg-white/[0.06]" : "cursor-default",
         )}
       >
         {isError ? (

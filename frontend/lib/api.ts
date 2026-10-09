@@ -101,6 +101,16 @@ import type {
   PlanId,
   SubscriptionRecord,
   WorkspaceUsageData,
+  PlanLimitDetail,
+  SubscriptionSummaryResponse,
+  BillingInvoice,
+  BillingStatusResponse,
+  FoundingOfferResponse,
+  CheckoutResponse,
+  PortalResponse,
+  ChangePlanResponse,
+  CancelSubscriptionResponse,
+  ResumeSubscriptionResponse,
 } from "@/types";
 
 export const API_BASE_URL =
@@ -179,6 +189,18 @@ export function getErrorCode(error: unknown): ErrorCode | null {
 }
 
 /**
+ * Machine-readable details for PLAN_LIMIT_EXCEEDED errors.
+ * Never requires clients to parse human-facing message strings.
+ */
+export function getPlanLimitDetail(error: unknown): PlanLimitDetail | null {
+  const envelope = getApiError(error);
+  if (envelope?.code === "PLAN_LIMIT_EXCEEDED" && envelope.details) {
+    return envelope.details;
+  }
+  return null;
+}
+
+/**
  * A human-readable message safe to show in a toast. Falls back to a generic
  * line for transport-level failures, which carry no server message.
  */
@@ -192,6 +214,20 @@ export function getErrorMessage(
 
   if (axios.isAxiosError(error) && !error.response) {
     return "Cannot reach the Vantis API. Check that the server is running.";
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as any).message === "string" &&
+    (error as any).message.trim().length > 0
+  ) {
+    return (error as any).message;
   }
 
   return fallback;
@@ -468,6 +504,19 @@ export async function renameCurrentOrganization(
     await api.patch<CurrentOrganizationResponse>(
       "/api/organizations/current",
       { name },
+    );
+
+  return data;
+}
+
+/** `POST /api/organizations` → creates a new organization. */
+export async function createOrganization(payload: {
+  organizationName: string;
+}): Promise<CreateOrganizationResponse> {
+  const { data } =
+    await api.post<CreateOrganizationResponse>(
+      "/api/organizations",
+      payload,
     );
 
   return data;
@@ -1496,35 +1545,102 @@ export async function fetchBillingCurrency(country?: string): Promise<BillingCur
 }
 
 export async function createBillingCheckout(payload: {
-  workspaceId: string;
-  plan: PlanId;
-  interval: BillingInterval;
+  workspaceId?: string;
+  plan: string;
+  interval: string;
+  currency?: string;
   successUrl?: string;
   cancelUrl?: string;
-}): Promise<{ sessionId: string; url?: string; status: string; message?: string }> {
-  const res = await fetch("/api/billing/checkout", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message || "Checkout unavailable");
+}): Promise<CheckoutResponse> {
+  try {
+    const { data } = await api.post<CheckoutResponse>("/api/billing/checkout", payload);
+    return data;
+  } catch (err) {
+    const res = await fetch("/api/billing/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || "Checkout unavailable");
+    }
+    return {
+      sessionId: data.sessionId,
+      checkoutUrl: data.url || data.checkoutUrl,
+      provider: data.provider || "noop",
+      status: data.status,
+      message: data.message,
+    };
   }
-  return data;
 }
 
 export async function cancelBillingSubscription(
-  subscriptionId: string,
-): Promise<SubscriptionRecord> {
-  const res = await fetch("/api/billing/cancel", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ subscriptionId }),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message || "Cancellation unavailable");
+  subscriptionIdOrOptions?: string | { atPeriodEnd?: boolean },
+): Promise<CancelSubscriptionResponse> {
+  const atPeriodEnd = typeof subscriptionIdOrOptions === "object" ? subscriptionIdOrOptions.atPeriodEnd : true;
+  try {
+    const { data } = await api.post<CancelSubscriptionResponse>("/api/billing/cancel", { atPeriodEnd });
+    return data;
+  } catch (err) {
+    const res = await fetch("/api/billing/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subscriptionId: typeof subscriptionIdOrOptions === "string" ? subscriptionIdOrOptions : undefined,
+        atPeriodEnd,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || "Cancellation unavailable");
+    }
+    return {
+      status: data.status || "CANCELED",
+      cancelAtPeriodEnd: atPeriodEnd ?? true,
+      message: data.message || "Subscription cancelled",
+    };
   }
+}
+
+export async function fetchBillingSubscription(): Promise<SubscriptionSummaryResponse> {
+  const { data } = await api.get<SubscriptionSummaryResponse>("/api/billing/subscription");
+  return data;
+}
+
+export async function fetchBillingStatus(): Promise<BillingStatusResponse> {
+  const { data } = await api.get<BillingStatusResponse>("/api/billing/status");
+  return data;
+}
+
+export async function fetchBillingInvoices(): Promise<BillingInvoice[]> {
+  try {
+    const { data } = await api.get<BillingInvoice[]>("/api/billing/invoices");
+    return data;
+  } catch {
+    return [];
+  }
+}
+
+export async function createBillingPortalSession(returnUrl?: string): Promise<PortalResponse> {
+  const { data } = await api.post<PortalResponse>("/api/billing/portal", { returnUrl });
+  return data;
+}
+
+export async function changeBillingPlan(payload: {
+  plan: string;
+  interval?: string;
+}): Promise<ChangePlanResponse> {
+  const { data } = await api.post<ChangePlanResponse>("/api/billing/change-plan", payload);
+  return data;
+}
+
+export async function resumeBillingSubscription(): Promise<ResumeSubscriptionResponse> {
+  const { data } = await api.post<ResumeSubscriptionResponse>("/api/billing/resume", {});
+  return data;
+}
+
+export async function claimFoundingOffer(): Promise<FoundingOfferResponse> {
+  const { data } = await api.post<FoundingOfferResponse>("/api/billing/founding-offer", {});
   return data;
 }

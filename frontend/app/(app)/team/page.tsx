@@ -74,7 +74,7 @@ export default function TeamPage() {
 
         {isAdmin && (
           <>
-            <Separator className="border-white/[0.065]" />
+            <Separator className="border-border dark:border-white/[0.065]" />
             <PendingInvitations />
           </>
         )}
@@ -113,10 +113,10 @@ function MemberList({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-medium text-white/50">
+      <h2 className="text-sm font-medium text-muted-foreground dark:text-white/50">
         {members.length} member{members.length === 1 ? "" : "s"}
       </h2>
-      <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]">
+      <ul className="divide-y divide-border dark:divide-white/[0.05] overflow-hidden rounded-xl border border-border dark:border-white/[0.065] bg-card dark:bg-[#0a0a0c]">
         {members.slice(0, pageSize).map((member) => (
           <MemberRow
             key={member.userId}
@@ -162,25 +162,25 @@ function MemberRow({
   const canManage = isAdmin && !isSelf && member.role !== "OWNER";
 
   return (
-    <li className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-white/[0.02]">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-xs font-semibold text-white/80">
+    <li className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-muted/40 dark:hover:bg-white/[0.02]">
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted dark:bg-white/[0.06] text-xs font-semibold text-foreground/80 dark:text-white/80">
         {initialsFrom(member.fullName)}
       </span>
       <div className="min-w-0 flex-1">
         <p
           title={member.fullName}
-          className="truncate text-sm font-medium text-white/90"
+          className="truncate text-sm font-medium text-foreground dark:text-white/90"
         >
           {member.fullName}
           {isSelf && (
-            <span className="ml-2 text-xs font-normal text-white/40">
+            <span className="ml-2 text-xs font-normal text-muted-foreground dark:text-white/40">
               (you)
             </span>
           )}
         </p>
         <p
           title={member.email}
-          className="truncate text-xs text-white/40"
+          className="truncate text-xs text-muted-foreground dark:text-white/40"
         >
           {member.email}
         </p>
@@ -192,7 +192,7 @@ function MemberRow({
           value={member.role}
           disabled={roleMutation.isPending}
           onChange={(e) => roleMutation.mutate(e.target.value as Role)}
-          className="h-8 rounded-lg border border-white/[0.08] bg-[#0a0a0c] px-2 text-xs text-white/80 outline-none transition-colors hover:text-white focus-visible:border-white/20 disabled:opacity-50"
+          className="h-8 rounded-lg border border-border dark:border-white/[0.08] bg-card dark:bg-[#0a0a0c] px-2 text-xs text-foreground dark:text-white/80 outline-none transition-colors hover:text-foreground dark:hover:text-white focus-visible:border-ring dark:focus-visible:border-white/20 disabled:opacity-50"
         >
           {ASSIGNABLE_ROLES.map((r) => (
             <option key={r} value={r}>
@@ -212,7 +212,7 @@ function MemberRow({
           size="icon"
           aria-label={`Remove ${member.fullName}`}
           onClick={() => setRemoveOpen(true)}
-          className="size-8 text-white/40 hover:text-red-400"
+          className="size-8 text-muted-foreground hover:text-red-500 dark:text-white/40 dark:hover:text-red-400"
         >
           <X className="size-4" />
         </Button>
@@ -250,10 +250,10 @@ function RemoveMemberDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-white/[0.08] bg-[#0a0a0c] text-white">
+      <DialogContent className="border-border dark:border-white/[0.08] bg-card dark:bg-[#0a0a0c]">
         <DialogHeader>
           <DialogTitle>Remove {member.fullName}?</DialogTitle>
-          <DialogDescription className="text-white/50">
+          <DialogDescription className="text-muted-foreground dark:text-white/50">
             They lose access to this organization immediately. Their workflows and
             past executions are preserved. This cannot be undone.
           </DialogDescription>
@@ -310,7 +310,7 @@ function PendingInvitations() {
 
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-medium text-white/50">
+      <h2 className="text-sm font-medium text-muted-foreground dark:text-white/50">
         Pending invitations
       </h2>
       {pending.length === 0 ? (
@@ -320,7 +320,7 @@ function PendingInvitations() {
           description="Invite a teammate to get started."
         />
       ) : (
-        <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]">
+        <ul className="divide-y divide-border dark:divide-white/[0.05] overflow-hidden rounded-xl border border-border dark:border-white/[0.065] bg-card dark:bg-[#0a0a0c]">
           {pending.map((invitation) => (
             <InvitationRow
               key={invitation.id}
@@ -346,15 +346,15 @@ function InvitationRow({
 }) {
   const expired = new Date(invitation.expiresAt).getTime() < Date.now();
   return (
-    <li className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-white/[0.02]">
+    <li className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-muted/40 dark:hover:bg-white/[0.02]">
       <div className="min-w-0 flex-1">
         <p
           title={invitation.email}
-          className="truncate text-sm font-medium text-white/90"
+          className="truncate text-sm font-medium text-foreground dark:text-white/90"
         >
           {invitation.email}
         </p>
-        <p className="truncate text-xs text-white/40">
+        <p className="truncate text-xs text-muted-foreground dark:text-white/40">
           {invitation.role} ·{" "}
           {expired
             ? "Expired"
@@ -369,7 +369,7 @@ function InvitationRow({
         size="sm"
         onClick={onRevoke}
         disabled={revoking}
-        className="text-white/40 hover:text-red-400"
+        className="text-muted-foreground hover:text-red-500 dark:text-white/40 dark:hover:text-red-400"
       >
         Revoke
       </Button>
@@ -420,7 +420,7 @@ function AcceptInvitationHandler() {
   if (!token || dismissed) return null;
 
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-white/44">
+    <div className="flex items-center gap-2 rounded-lg border border-border dark:border-white/[0.08] bg-muted/30 dark:bg-white/[0.03] px-4 py-3 text-sm text-muted-foreground dark:text-white/44">
       <Loader2 className="size-4 animate-spin" />
       Redeeming your invitation…
     </div>

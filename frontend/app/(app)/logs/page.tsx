@@ -132,7 +132,7 @@ function RunLogs() {
       {/* Standard Toolbar */}
       <Toolbar className="mb-4">
         <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-white/40" />
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground dark:text-white/40" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -197,7 +197,7 @@ function RunLogs() {
         />
       ) : (
         <>
-          <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]">
+          <ul className="divide-y divide-border dark:divide-white/[0.05] overflow-hidden rounded-xl border border-border dark:border-white/[0.065] bg-card dark:bg-[#0a0a0c]">
             {filteredLogs.slice(0, pageSize).map((entry) => (
               <LogRow key={entry.id} entry={entry} />
             ))}
@@ -219,10 +219,10 @@ function RunLogs() {
    ========================================================= */
 
 const LEVEL_TONE: Record<LogLevel, string> = {
-  DEBUG: "text-white/40",
-  INFO: "text-white/85",
-  WARN: "text-amber-400",
-  ERROR: "text-red-400",
+  DEBUG: "text-muted-foreground dark:text-white/40",
+  INFO: "text-foreground/90 dark:text-white/85",
+  WARN: "text-amber-600 dark:text-amber-400",
+  ERROR: "text-red-600 dark:text-red-400",
 };
 
 /* =========================================================
@@ -234,7 +234,7 @@ function LogRow({ entry }: { entry: LogEntry }) {
     <li>
       <Link
         href={`/executions/${entry.executionId}`}
-        className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-white/[0.02] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20"
+        className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/40 dark:hover:bg-white/[0.02] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring dark:focus-visible:ring-white/20"
       >
         <span
           className={cn(
@@ -248,21 +248,21 @@ function LogRow({ entry }: { entry: LogEntry }) {
         <span className="min-w-0 flex-1">
           <span
             title={entry.message}
-            className="block break-words font-mono text-xs leading-relaxed text-white/80"
+            className="block break-words font-mono text-xs leading-relaxed text-foreground/80 dark:text-white/80"
           >
             {entry.message}
           </span>
 
           <span
             title={`${entry.workflowName ?? ""}${entry.nodeId ? ` · node ${entry.nodeId}` : ""}`}
-            className="mt-1 block truncate text-xs text-white/40"
+            className="mt-1 block truncate text-xs text-muted-foreground dark:text-white/40"
           >
             {entry.workflowName}
             {entry.nodeId ? ` · node ${entry.nodeId}` : ""}
           </span>
         </span>
 
-        <span className="hidden shrink-0 text-right font-mono text-xs text-white/40 sm:block">
+        <span className="hidden shrink-0 text-right font-mono text-xs text-muted-foreground dark:text-white/40 sm:block">
           {formatRelativeTime(entry.createdAt)}
         </span>
       </Link>
@@ -310,7 +310,7 @@ function AuditTrail() {
 
   return (
     <>
-      <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]">
+      <ul className="divide-y divide-border dark:divide-white/[0.05] overflow-hidden rounded-xl border border-border dark:border-white/[0.065] bg-card dark:bg-[#0a0a0c]">
         {entries.slice(0, pageSize).map((entry) => (
           <AuditRow key={entry.id} entry={entry} />
         ))}
@@ -334,7 +334,7 @@ function AuditRow({ entry }: { entry: AuditLogEntry }) {
   const failed = entry.action === "WEBHOOK_AUTH_FAILED";
 
   return (
-    <li className="flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-white/[0.02]">
+    <li className="flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-muted/40 dark:hover:bg-white/[0.02]">
       <Badge
         variant={failed ? "destructive" : "secondary"}
         className="shrink-0 font-mono text-[10px]"
@@ -345,13 +345,13 @@ function AuditRow({ entry }: { entry: AuditLogEntry }) {
       <span className="min-w-0 flex-1">
         <span
           title={entry.summary ?? undefined}
-          className="block text-sm text-white/85"
+          className="block text-sm text-foreground/90 dark:text-white/85"
         >
           {entry.summary}
         </span>
         <span
           title={`${actor}${entry.ip ? ` · ${entry.ip}` : ""}${entry.targetType ? ` · ${entry.targetType}` : ""}`}
-          className="mt-0.5 block truncate text-xs text-white/40"
+          className="mt-0.5 block truncate text-xs text-muted-foreground dark:text-white/40"
         >
           {actor}
           {entry.ip ? ` · ${entry.ip}` : ""}
@@ -359,7 +359,7 @@ function AuditRow({ entry }: { entry: AuditLogEntry }) {
         </span>
       </span>
 
-      <span className="hidden shrink-0 text-right font-mono text-xs text-white/40 sm:block">
+      <span className="hidden shrink-0 text-right font-mono text-xs text-muted-foreground dark:text-white/40 sm:block">
         {formatRelativeTime(entry.createdAt)}
       </span>
     </li>

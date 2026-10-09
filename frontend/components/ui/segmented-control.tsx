@@ -65,7 +65,7 @@ export function SegmentedControl<T extends string = string>({
       role="radiogroup"
       aria-label={label}
       className={cn(
-        "inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-[#0a0a0c] p-1 transition-all duration-200",
+        "inline-flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1 transition-all duration-200 dark:border-white/[0.08] dark:bg-[#0a0a0c]",
         size === "sm" ? "h-8" : "h-10",
         disabled && "opacity-50 pointer-events-none",
         className,
@@ -86,11 +86,11 @@ export function SegmentedControl<T extends string = string>({
             className={cn(
               "relative z-10 inline-flex items-center justify-center gap-1.5 rounded-md px-3 font-medium transition-all duration-150 ease-out",
               size === "sm" ? "h-6 text-[11px]" : "h-8 text-xs",
-              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20",
+              "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
               "disabled:opacity-40 disabled:pointer-events-none",
               active
-                ? "bg-white text-black font-semibold shadow-sm"
-                : "text-white/45 hover:text-white/80 hover:bg-white/[0.04]",
+                ? "bg-background text-foreground font-semibold shadow-sm dark:bg-white dark:text-black"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/50 dark:text-white/45 dark:hover:text-white/80 dark:hover:bg-white/[0.04]",
             )}
           >
             {item.icon && (

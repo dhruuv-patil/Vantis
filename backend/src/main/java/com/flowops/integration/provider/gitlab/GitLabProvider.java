@@ -6,7 +6,7 @@ import java.util.List;
 
 @Component
 public class GitLabProvider implements WorkflowProvider {
-    @Override public IntegrationType type() { return IntegrationType.CUSTOM; } // Will need custom type if requested
+    @Override public IntegrationType type() { return IntegrationType.GITLAB; }
     @Override public String displayName() { return "GitLab"; }
     @Override public String description() { return "Connect to GitLab issues/pipelines."; }
     @Override public ProviderCapabilities capabilities() { return new ProviderCapabilities(true, true, true, false, true, true); }

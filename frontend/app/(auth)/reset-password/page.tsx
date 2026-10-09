@@ -96,7 +96,7 @@ function ResetPasswordPageContent() {
       </div>
 
       {/* Reset password card */}
-      <div className="rounded-lg border border-white/[0.10] bg-[#050505] p-7 shadow-none">
+      <div className="rounded-lg border border-border dark:border-white/[0.10] bg-card dark:bg-[#050505] p-7 shadow-sm dark:shadow-none">
         <div className="mb-7">
           <h2 className="text-[22px] font-semibold tracking-[-0.025em]">
             Set your new password
@@ -147,7 +147,7 @@ function ResetPasswordPageContent() {
                 errors.password ? "password-error" : undefined
               }
               placeholder="Create a new password"
-              className="h-11 rounded-md border-white/[0.11] bg-[#080808]"
+              className="h-11 rounded-md border-input dark:border-white/[0.11] bg-background dark:bg-[#080808]"
               disabled={submitting}
             />
 
@@ -185,7 +185,7 @@ function ResetPasswordPageContent() {
                 errors.confirmPassword ? "confirmPassword-error" : undefined
               }
               placeholder="Confirm your new password"
-              className="h-11 rounded-md border-white/[0.11] bg-[#080808]"
+              className="h-11 rounded-md border-input dark:border-white/[0.11] bg-background dark:bg-[#080808]"
               disabled={submitting}
             />
 
@@ -200,7 +200,7 @@ function ResetPasswordPageContent() {
           <Button
             type="submit"
             disabled={submitting}
-            className="h-11 w-full rounded-md bg-[#f3f3f1] text-sm font-medium text-[#080808] hover:bg-white"
+            className="h-11 w-full rounded-md bg-foreground text-background hover:bg-foreground/90 dark:bg-[#f3f3f1] dark:text-[#080808] dark:hover:bg-white text-sm font-medium"
           >
             {submitting ? (
               <>
@@ -215,11 +215,11 @@ function ResetPasswordPageContent() {
 
         {/* Divider */}
         <div className="my-6 flex items-center gap-3">
-          <div className="h-px flex-1 bg-white/[0.08]" />
+          <div className="h-px flex-1 bg-border dark:bg-white/[0.08]" />
           <span className="text-[11px] text-muted-foreground/60">
             OR
           </span>
-          <div className="h-px flex-1 bg-white/[0.08]" />
+          <div className="h-px flex-1 bg-border dark:bg-white/[0.08]" />
         </div>
 
         {/* Back to login */}

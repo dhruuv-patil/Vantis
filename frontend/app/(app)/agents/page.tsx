@@ -68,7 +68,7 @@ function AgentsPageContent() {
 
       <Toolbar className="mb-6">
         <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-white/40" />
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground dark:text-white/40" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -118,29 +118,29 @@ function AgentsPageContent() {
         />
       ) : (
         <>
-          <div className="overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]">
-            <ul className="divide-y divide-white/[0.05]">
+          <div className="overflow-hidden rounded-xl border border-border dark:border-white/[0.065] bg-card dark:bg-[#0a0a0c]">
+            <ul className="divide-y divide-border dark:divide-white/[0.05]">
               {agents.slice(0, pageSize).map((a) => (
                 <li key={a.id}>
                   <Link
                     href={`/agents/${a.id}`}
-                    className="flex items-center gap-4 px-4 py-3.5 transition-colors duration-150 hover:bg-white/[0.04]"
+                    className="flex items-center gap-4 px-4 py-3.5 transition-colors duration-150 hover:bg-muted/40 dark:hover:bg-white/[0.04]"
                   >
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.025] text-white/60">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border dark:border-white/[0.08] bg-muted/40 dark:bg-white/[0.025] text-muted-foreground dark:text-white/60">
                       <Bot className="size-4" />
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-2">
                         <span
                           title={a.name}
-                          className="truncate font-medium text-white/90"
+                          className="truncate font-medium text-foreground dark:text-white/90"
                         >
                           {a.name}
                         </span>
                         {a.model && (
                           <Badge
                             variant="outline"
-                            className="font-mono text-[10px] text-white/50"
+                            className="font-mono text-[10px] text-muted-foreground dark:text-white/50"
                           >
                             {a.model}
                           </Badge>
@@ -148,12 +148,12 @@ function AgentsPageContent() {
                       </span>
                       <span
                         title={a.description || undefined}
-                        className="block truncate text-xs text-white/45"
+                        className="block truncate text-xs text-muted-foreground dark:text-white/45"
                       >
                         {a.description || "No description provided"}
                       </span>
                     </span>
-                    <span className="hidden shrink-0 text-right text-xs text-white/40 sm:block">
+                    <span className="hidden shrink-0 text-right text-xs text-muted-foreground dark:text-white/40 sm:block">
                       {a.tools.length} {a.tools.length === 1 ? "tool" : "tools"}
                     </span>
                   </Link>

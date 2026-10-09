@@ -90,7 +90,7 @@ function LoginPageContent() {
       </div>
 
       {/* Login card */}
-      <div className="rounded-lg border border-white/[0.10] bg-[#050505] p-7 shadow-none">
+      <div className="rounded-lg border border-border dark:border-white/[0.10] bg-card dark:bg-[#050505] p-7 shadow-sm dark:shadow-none">
         <div className="mb-7">
           <h2 className="text-[22px] font-semibold tracking-[-0.025em]">
             Welcome back
@@ -136,7 +136,7 @@ function LoginPageContent() {
               aria-invalid={!!errors.email}
               aria-describedby={errors.email ? "email-error" : undefined}
               placeholder="you@company.com"
-              className="h-11 rounded-md border-white/[0.11] bg-[#080808]"
+              className="h-11 rounded-md border-input dark:border-white/[0.11] bg-background dark:bg-[#080808]"
               disabled={submitting}
             />
 
@@ -182,7 +182,7 @@ function LoginPageContent() {
                 errors.password ? "password-error" : undefined
               }
               placeholder="Enter your password"
-              className="h-11 rounded-md border-white/[0.11] bg-[#080808]"
+              className="h-11 rounded-md border-input dark:border-white/[0.11] bg-background dark:bg-[#080808]"
               disabled={submitting}
             />
 
@@ -197,7 +197,7 @@ function LoginPageContent() {
           <Button
             type="submit"
             disabled={submitting}
-            className="h-11 w-full rounded-md bg-[#f3f3f1] text-sm font-medium text-[#080808] hover:bg-white"
+            className="h-11 w-full rounded-md bg-foreground text-background hover:bg-foreground/90 dark:bg-[#f3f3f1] dark:text-[#080808] dark:hover:bg-white text-sm font-medium"
           >
             {submitting ? (
               <>

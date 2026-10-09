@@ -169,11 +169,14 @@ class GoldenPathIntegrationTest {
                 + "  {\"id\":\"h\",\"type\":\"human_approval\","
                 + "   \"data\":{\"config\":{\"prompt\":\"ship it?\"}}},"
                 + "  {\"id\":\"n\",\"type\":\"notification\","
-                + "   \"data\":{\"config\":{\"channel\":\"email\",\"message\":\"ok\"}}}"
+                + "   \"data\":{\"config\":{\"channel\":\"email\",\"message\":\"ok\"}}},"
+                + "  {\"id\":\"r\",\"type\":\"notification\","
+                + "   \"data\":{\"config\":{\"channel\":\"email\",\"message\":\"no\"}}}"
                 + "],"
                 + "\"edges\":["
                 + "  {\"id\":\"e1\",\"source\":\"t\",\"target\":\"h\"},"
-                + "  {\"id\":\"e2\",\"source\":\"h\",\"target\":\"n\",\"sourceHandle\":\"approved\"}"
+                + "  {\"id\":\"e2\",\"source\":\"h\",\"target\":\"n\",\"sourceHandle\":\"approved\"},"
+                + "  {\"id\":\"e3\",\"source\":\"h\",\"target\":\"r\",\"sourceHandle\":\"rejected\"}"
                 + "]"
                 + "}";
 

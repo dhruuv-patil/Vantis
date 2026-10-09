@@ -30,11 +30,11 @@ export function AppGuard({ children }: { children: React.ReactNode }) {
 
   if (status !== "authenticated") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#050505]">
+      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
         <div className="flex flex-col items-center gap-4">
           <Logo />
-          <div className="h-1 w-24 overflow-hidden rounded-full bg-white/[0.06]">
-            <div className="h-full w-1/2 animate-pulse rounded-full bg-white/20" />
+          <div className="h-1 w-24 overflow-hidden rounded-full bg-muted dark:bg-white/[0.06]">
+            <div className="h-full w-1/2 animate-pulse rounded-full bg-foreground/20 dark:bg-white/20" />
           </div>
         </div>
       </div>

@@ -40,11 +40,11 @@ export function getStatusConfig(status?: string | null): StatusConfig {
       return {
         tone: "success",
         label: "Succeeded",
-        dotClass: "bg-emerald-400",
+        dotClass: "bg-emerald-500 dark:bg-emerald-400",
         badgeClass:
-          "border-emerald-500/20 bg-emerald-500/[0.08] text-emerald-300",
-        textClass: "text-emerald-400",
-        bgClass: "bg-emerald-500/[0.08]",
+          "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/[0.08] dark:text-emerald-300",
+        textClass: "text-emerald-600 dark:text-emerald-400",
+        bgClass: "bg-emerald-500/10 dark:bg-emerald-500/[0.08]",
         borderClass: "border-emerald-500/20",
       };
 
@@ -56,11 +56,11 @@ export function getStatusConfig(status?: string | null): StatusConfig {
       return {
         tone: "active",
         label: "Running",
-        dotClass: "bg-emerald-400 animate-pulse",
+        dotClass: "bg-emerald-500 dark:bg-emerald-400 animate-pulse",
         badgeClass:
-          "border-emerald-500/25 bg-emerald-500/[0.10] text-emerald-300",
-        textClass: "text-emerald-300",
-        bgClass: "bg-emerald-500/[0.10]",
+          "border-emerald-500/25 bg-emerald-500/15 text-emerald-800 dark:bg-emerald-500/[0.10] dark:text-emerald-300",
+        textClass: "text-emerald-700 dark:text-emerald-300",
+        bgClass: "bg-emerald-500/15 dark:bg-emerald-500/[0.10]",
         borderClass: "border-emerald-500/25",
       };
 
@@ -74,11 +74,11 @@ export function getStatusConfig(status?: string | null): StatusConfig {
       return {
         tone: "warning",
         label: "Waiting",
-        dotClass: "bg-amber-400",
+        dotClass: "bg-amber-500 dark:bg-amber-400",
         badgeClass:
-          "border-amber-500/20 bg-amber-500/[0.08] text-amber-300",
-        textClass: "text-amber-400",
-        bgClass: "bg-amber-500/[0.08]",
+          "border-amber-500/20 bg-amber-500/10 text-amber-800 dark:bg-amber-500/[0.08] dark:text-amber-300",
+        textClass: "text-amber-700 dark:text-amber-400",
+        bgClass: "bg-amber-500/10 dark:bg-amber-500/[0.08]",
         borderClass: "border-amber-500/20",
       };
 
@@ -92,11 +92,11 @@ export function getStatusConfig(status?: string | null): StatusConfig {
       return {
         tone: "danger",
         label: "Failed",
-        dotClass: "bg-red-400",
+        dotClass: "bg-red-500 dark:bg-red-400",
         badgeClass:
-          "border-red-500/20 bg-red-500/[0.08] text-red-300",
-        textClass: "text-red-400",
-        bgClass: "bg-red-500/[0.08]",
+          "border-red-500/20 bg-red-500/10 text-red-700 dark:bg-red-500/[0.08] dark:text-red-300",
+        textClass: "text-red-600 dark:text-red-400",
+        bgClass: "bg-red-500/10 dark:bg-red-500/[0.08]",
         borderClass: "border-red-500/20",
       };
 
@@ -107,11 +107,11 @@ export function getStatusConfig(status?: string | null): StatusConfig {
       return {
         tone: "info",
         label: "Queued",
-        dotClass: "bg-blue-400",
+        dotClass: "bg-blue-500 dark:bg-blue-400",
         badgeClass:
-          "border-blue-500/20 bg-blue-500/[0.08] text-blue-300",
-        textClass: "text-blue-400",
-        bgClass: "bg-blue-500/[0.08]",
+          "border-blue-500/20 bg-blue-500/10 text-blue-700 dark:bg-blue-500/[0.08] dark:text-blue-300",
+        textClass: "text-blue-600 dark:text-blue-400",
+        bgClass: "bg-blue-500/10 dark:bg-blue-500/[0.08]",
         borderClass: "border-blue-500/20",
       };
 
@@ -129,12 +129,12 @@ export function getStatusConfig(status?: string | null): StatusConfig {
             ? status.charAt(0).toUpperCase() +
               status.slice(1).toLowerCase().replace(/_/g, " ")
             : "—",
-        dotClass: "bg-white/35",
+        dotClass: "bg-muted-foreground/50 dark:bg-white/35",
         badgeClass:
-          "border-white/[0.08] bg-white/[0.03] text-white/60",
-        textClass: "text-white/60",
-        bgClass: "bg-white/[0.03]",
-        borderClass: "border-white/[0.08]",
+          "border-border bg-muted/60 text-muted-foreground dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white/60",
+        textClass: "text-muted-foreground dark:text-white/60",
+        bgClass: "bg-muted/60 dark:bg-white/[0.03]",
+        borderClass: "border-border dark:border-white/[0.08]",
       };
   }
 }

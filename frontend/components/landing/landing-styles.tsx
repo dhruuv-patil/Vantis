@@ -6,21 +6,6 @@ export function LandingStyles() {
       <style jsx global>
         {`
         :root {
-  --flowops-black: #050505;
-  ...
-}
-
-html {
-  scroll-behavior: smooth;
-  background: var(--flowops-black);
-}
-
-body {
-  margin: 0;
-  background: #050505 !important;
-  color: var(--flowops-text);
-}
-        :root {
           --flowops-black: #050505;
           --flowops-surface: #0a0a0a;
           --flowops-border: rgba(255, 255, 255, 0.075);
@@ -29,22 +14,52 @@ body {
           --flowops-muted: #8d8d8d;
         }
 
+        html.light,
+        html:not(.dark) {
+          --flowops-black: #f8fafc;
+          --flowops-surface: #ffffff;
+          --flowops-border: rgba(0, 0, 0, 0.08);
+          --flowops-border-strong: rgba(0, 0, 0, 0.16);
+          --flowops-text: #0f172a;
+          --flowops-muted: #64748b;
+        }
+
         html {
           scroll-behavior: smooth;
-          background: var(--flowops-black);
         }
 
         body {
+          margin: 0;
+          color: var(--flowops-text);
+        }
+
+        .dark body {
           background: var(--flowops-black) !important;
         }
 
-        main {
+        html.light body,
+        html:not(.dark) body {
+          background: #f8fafc !important;
+          color: #0f172a !important;
+        }
+
+        .dark main {
           min-height: 100vh;
           overflow-x: clip;
           background:
             radial-gradient(circle at 50% -10%, rgba(255,255,255,0.035), transparent 34%),
             #050505 !important;
           color: var(--flowops-text);
+        }
+
+        html.light main,
+        html:not(.dark) main {
+          min-height: 100vh;
+          overflow-x: clip;
+          background:
+            radial-gradient(circle at 50% -10%, rgba(0,0,0,0.02), transparent 34%),
+            #f8fafc !important;
+          color: #0f172a !important;
         }
 
         /* ---- Premium glass announcement bar ---- */

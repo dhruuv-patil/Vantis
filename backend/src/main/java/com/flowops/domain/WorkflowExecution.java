@@ -74,6 +74,18 @@ public class WorkflowExecution {
     @Column(name = "queue_wait_ms")
     private Long queueWaitMs;
 
+    @Column(name = "rejection_reason", length = 64)
+    private String rejectionReason;
+
+    @Column(name = "rejection_count", nullable = false)
+    private int rejectionCount = 1;
+
+    @Column(name = "is_locked", nullable = false)
+    private boolean isLocked = false;
+
+    @Column(name = "locked_at")
+    private Instant lockedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -104,6 +116,35 @@ public class WorkflowExecution {
         execution.createdBy = createdBy;
         Instant now = now();
         execution.createdAt = now;
+        execution.updatedAt = now;
+        return execution;
+    }
+
+    public static WorkflowExecution createRejected(
+            UUID organizationId,
+            UUID workflowId,
+            UUID workflowVersionId,
+            int versionNumber,
+            TriggerType triggerType,
+            JsonNode triggerPayload,
+            UUID createdBy,
+            String rejectionReason,
+            String errorMessage) {
+        WorkflowExecution execution = new WorkflowExecution();
+        execution.id = UUID.randomUUID();
+        execution.organizationId = organizationId;
+        execution.workflowId = workflowId;
+        execution.workflowVersionId = workflowVersionId;
+        execution.versionNumber = versionNumber;
+        execution.status = ExecutionStatus.FAILED;
+        execution.rejectionReason = rejectionReason;
+        execution.error = errorMessage;
+        execution.triggerType = triggerType;
+        execution.triggerPayload = triggerPayload;
+        execution.createdBy = createdBy;
+        Instant now = now();
+        execution.createdAt = now;
+        execution.finishedAt = now;
         execution.updatedAt = now;
         return execution;
     }
@@ -233,6 +274,33 @@ public class WorkflowExecution {
 
     public Long getQueueWaitMs() {
         return queueWaitMs;
+    }
+
+    public String getRejectionReason() {
+        return rejectionReason;
+    }
+
+    public int getRejectionCount() {
+        return rejectionCount;
+    }
+
+    public void setRejectionCount(int rejectionCount) {
+        this.rejectionCount = rejectionCount;
+        this.updatedAt = now();
+    }
+
+    public boolean isLocked() {
+        return isLocked;
+    }
+
+    public Instant getLockedAt() {
+        return lockedAt;
+    }
+
+    public void lock() {
+        this.isLocked = true;
+        this.lockedAt = now();
+        touch();
     }
 
     public Instant getCreatedAt() {

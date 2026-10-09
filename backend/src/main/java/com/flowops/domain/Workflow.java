@@ -107,6 +107,15 @@ public class Workflow {
         touch();
     }
 
+    /**
+     * Deactivates a published workflow due to plan downgrade or limit enforcement.
+     * Preserves version history, definitions, and draft graph.
+     */
+    public void deactivate() {
+        this.status = WorkflowStatus.DRAFT;
+        touch();
+    }
+
     public UUID getId() {
         return id;
     }

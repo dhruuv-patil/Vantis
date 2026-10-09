@@ -91,9 +91,9 @@ export default function MockPreviewPage() {
         description="Verify edge cases, loading skeletons, error states, long text truncation, and 50+ item pagination across all ObLayer list routes without backend data."
       />
 
-      <div className="mb-6 space-y-4 rounded-xl border border-white/[0.08] bg-[#0c0c0e] p-4">
+      <div className="mb-6 space-y-4 rounded-xl border border-border bg-card p-4 dark:border-white/[0.08] dark:bg-[#0c0c0e]">
         <div>
-          <span className="text-xs font-medium text-white/50">Select Surface</span>
+          <span className="text-xs font-medium text-muted-foreground dark:text-white/50">Select Surface</span>
           <div className="mt-2">
             <CategoryPillsRow
               categories={ROUTES}
@@ -104,8 +104,8 @@ export default function MockPreviewPage() {
           </div>
         </div>
 
-        <div className="border-t border-white/[0.06] pt-3">
-          <span className="text-xs font-medium text-white/50">Select State</span>
+        <div className="border-t border-border pt-3 dark:border-white/[0.06]">
+          <span className="text-xs font-medium text-muted-foreground dark:text-white/50">Select State</span>
           <div className="mt-2">
             <CategoryPillsRow
               categories={STATES}
@@ -117,13 +117,13 @@ export default function MockPreviewPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-white/[0.08] bg-black/40 p-6">
-        <div className="mb-4 flex items-center justify-between border-b border-white/[0.06] pb-3">
-          <span className="font-mono text-xs text-white/40">
-            Previewing: <strong className="text-white/80">{activeRoute}</strong> · State:{" "}
-            <strong className="text-white/80">{activeState}</strong>
+      <div className="rounded-xl border border-border bg-card/60 p-6 dark:border-white/[0.08] dark:bg-black/40">
+        <div className="mb-4 flex items-center justify-between border-b border-border pb-3 dark:border-white/[0.06]">
+          <span className="font-mono text-xs text-muted-foreground dark:text-white/40">
+            Previewing: <strong className="text-foreground dark:text-white/80">{activeRoute}</strong> · State:{" "}
+            <strong className="text-foreground dark:text-white/80">{activeState}</strong>
           </span>
-          <span className="rounded bg-white/[0.05] px-2 py-0.5 font-mono text-[10px] text-white/50">
+          <span className="rounded bg-muted/40 px-2 py-0.5 font-mono text-[10px] text-muted-foreground dark:bg-white/[0.05] dark:text-white/50">
             Dev Mock Harness
           </span>
         </div>
@@ -235,25 +235,25 @@ function WorkflowsMockPreview({ state }: { state: StateKey }) {
         {items.slice(0, pageSize).map((wf) => (
           <article
             key={wf.id}
-            className="flex min-h-[176px] flex-col overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c] p-5"
+            className="flex min-h-[176px] flex-col overflow-hidden rounded-xl border border-border bg-card p-5 dark:border-white/[0.065] dark:bg-[#0a0a0c]"
           >
             <div className="flex h-7 items-center justify-between">
               <StatusBadge status={wf.status} />
-              <span className="font-mono text-[10px] text-white/35">{wf.id}</span>
+              <span className="font-mono text-[10px] text-muted-foreground dark:text-white/35">{wf.id}</span>
             </div>
             <h3
               title={wf.name}
-              className="mt-3 truncate text-base font-medium tracking-tight text-white/90"
+              className="mt-3 truncate text-base font-medium tracking-tight text-foreground/90 dark:text-white/90"
             >
               {wf.name}
             </h3>
             <p
               title={wf.description}
-              className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-white/60"
+              className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground dark:text-white/60"
             >
               {wf.description}
             </p>
-            <div className="mt-auto pt-4 text-[11px] text-white/40">
+            <div className="mt-auto pt-4 text-[11px] text-muted-foreground dark:text-white/40">
               Updated {new Date(wf.updatedAt).toLocaleTimeString()}
             </div>
           </article>
@@ -346,38 +346,38 @@ function ExecutionsMockPreview({ state }: { state: StateKey }) {
 
   return (
     <div>
-      <div className="overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]">
-        <div className="sticky top-0 z-10 hidden h-10 items-center border-b border-white/[0.05] bg-[#0c0c0e]/95 px-4 font-mono text-[10px] uppercase tracking-[0.12em] text-white/40 backdrop-blur-sm md:flex">
+      <div className="overflow-hidden rounded-xl border border-border bg-card dark:border-white/[0.065] dark:bg-[#0a0a0c]">
+        <div className="sticky top-0 z-10 hidden h-10 items-center border-b border-border bg-muted/40 px-4 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground backdrop-blur-sm dark:border-white/[0.05] dark:bg-[#0c0c0e]/95 dark:text-white/40 md:flex">
           <div className="w-[120px]">Status</div>
           <div className="flex-1">Workflow</div>
           <div className="w-[110px] text-right">Duration</div>
           <div className="w-[105px] text-right">Started</div>
         </div>
 
-        <ul className="divide-y divide-white/[0.05]">
+        <ul className="divide-y divide-border dark:divide-white/[0.05]">
           {items.slice(0, pageSize).map((item) => (
-            <li key={item.id} className="flex items-center gap-3 px-4 py-3.5 hover:bg-white/[0.025]">
+            <li key={item.id} className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/40 dark:hover:bg-white/[0.025]">
               <div className="w-[110px] shrink-0">
                 <StatusBadge status={item.status} />
               </div>
               <div className="min-w-0 flex-1">
                 <span
                   title={item.workflowName}
-                  className="block truncate text-sm font-medium text-white/85"
+                  className="block truncate text-sm font-medium text-foreground/85 dark:text-white/85"
                 >
                   {item.workflowName}
                 </span>
                 <span
                   title={item.error ?? undefined}
-                  className="block truncate text-xs text-white/50"
+                  className="block truncate text-xs text-muted-foreground dark:text-white/50"
                 >
                   id: {item.id} {item.error ? `· ${item.error}` : ""}
                 </span>
               </div>
-              <span className="w-[110px] shrink-0 text-right font-mono text-xs text-white/45">
+              <span className="w-[110px] shrink-0 text-right font-mono text-xs text-muted-foreground dark:text-white/45">
                 {item.duration}
               </span>
-              <span className="w-[105px] shrink-0 text-right font-mono text-xs text-white/40">
+              <span className="w-[105px] shrink-0 text-right font-mono text-xs text-muted-foreground dark:text-white/40">
                 {item.started}
               </span>
             </li>
@@ -476,9 +476,9 @@ function AnomaliesMockPreview({ state }: { state: StateKey }) {
 
   return (
     <div>
-      <div className="overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]">
+      <div className="overflow-hidden rounded-xl border border-border bg-card dark:border-white/[0.065] dark:bg-[#0a0a0c]">
         <Table>
-          <TableHeader className="sticky top-0 z-10 bg-[#0c0c0e]/95 backdrop-blur-sm">
+          <TableHeader className="sticky top-0 z-10 bg-muted/40 backdrop-blur-sm dark:bg-[#0c0c0e]/95">
             <TableRow>
               <TableHead>Workflow</TableHead>
               <TableHead>Type</TableHead>
@@ -493,22 +493,22 @@ function AnomaliesMockPreview({ state }: { state: StateKey }) {
                 <TableCell>
                   <span
                     title={item.workflowName}
-                    className="block max-w-[200px] truncate font-medium text-white/90 sm:max-w-xs"
+                    className="block max-w-[200px] truncate font-medium text-foreground/90 dark:text-white/90 sm:max-w-xs"
                   >
                     {item.workflowName}
                   </span>
                   <span
                     title={item.nodeId}
-                    className="mt-0.5 block truncate font-mono text-xs text-white/44"
+                    className="mt-0.5 block truncate font-mono text-xs text-muted-foreground dark:text-white/44"
                   >
                     {item.nodeId}
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm text-white/70">{item.type}</span>
+                  <span className="text-sm text-foreground/70 dark:text-white/70">{item.type}</span>
                   <span
                     title={item.metric}
-                    className="mt-0.5 block max-w-[180px] truncate text-xs text-white/44"
+                    className="mt-0.5 block max-w-[180px] truncate text-xs text-muted-foreground dark:text-white/44"
                   >
                     {item.metric}
                   </span>
@@ -521,7 +521,7 @@ function AnomaliesMockPreview({ state }: { state: StateKey }) {
                 <TableCell>
                   <StatusBadge status={item.status} />
                 </TableCell>
-                <TableCell className="font-mono text-xs text-white/44">{item.detected}</TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground dark:text-white/44">{item.detected}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -611,17 +611,17 @@ function LogsMockPreview({ state }: { state: StateKey }) {
 
   return (
     <div>
-      <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]">
+      <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card dark:divide-white/[0.05] dark:border-white/[0.065] dark:bg-[#0a0a0c]">
         {items.slice(0, pageSize).map((log) => (
-          <li key={log.id} className="flex items-start gap-3 px-4 py-3 hover:bg-white/[0.02]">
+          <li key={log.id} className="flex items-start gap-3 px-4 py-3 hover:bg-muted/40 dark:hover:bg-white/[0.02]">
             <span
               className={cn(
                 "w-14 shrink-0 pt-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider",
                 log.level === "ERROR"
-                  ? "text-red-400"
+                  ? "text-red-500 dark:text-red-400"
                   : log.level === "WARN"
-                    ? "text-amber-400"
-                    : "text-white/85",
+                    ? "text-amber-500 dark:text-amber-400"
+                    : "text-foreground/85 dark:text-white/85",
               )}
             >
               {log.level}
@@ -629,15 +629,15 @@ function LogsMockPreview({ state }: { state: StateKey }) {
             <div className="min-w-0 flex-1">
               <span
                 title={log.message}
-                className="block break-words font-mono text-xs leading-relaxed text-white/80"
+                className="block break-words font-mono text-xs leading-relaxed text-foreground/80 dark:text-white/80"
               >
                 {log.message}
               </span>
-              <span title={log.workflow} className="mt-1 block truncate text-xs text-white/40">
+              <span title={log.workflow} className="mt-1 block truncate text-xs text-muted-foreground dark:text-white/40">
                 {log.workflow}
               </span>
             </div>
-            <span className="shrink-0 font-mono text-xs text-white/40">{log.time}</span>
+            <span className="shrink-0 font-mono text-xs text-muted-foreground dark:text-white/40">{log.time}</span>
           </li>
         ))}
       </ul>
@@ -729,27 +729,27 @@ function AgentsMockPreview({ state }: { state: StateKey }) {
 
   return (
     <div>
-      <div className="overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]">
-        <ul className="divide-y divide-white/[0.05]">
+      <div className="overflow-hidden rounded-xl border border-border bg-card dark:border-white/[0.065] dark:bg-[#0a0a0c]">
+        <ul className="divide-y divide-border dark:divide-white/[0.05]">
           {items.slice(0, pageSize).map((a) => (
-            <li key={a.id} className="flex items-center gap-4 px-4 py-3.5 hover:bg-white/[0.04]">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.025] text-white/60">
+            <li key={a.id} className="flex items-center gap-4 px-4 py-3.5 hover:bg-muted/40 dark:hover:bg-white/[0.04]">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/30 text-muted-foreground dark:border-white/[0.08] dark:bg-white/[0.025] dark:text-white/60">
                 <Bot className="size-4" />
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <span title={a.name} className="truncate font-medium text-white/90">
+                  <span title={a.name} className="truncate font-medium text-foreground/90 dark:text-white/90">
                     {a.name}
                   </span>
-                  <Badge variant="outline" className="font-mono text-[10px] text-white/50">
+                  <Badge variant="outline" className="font-mono text-[10px] text-muted-foreground dark:text-white/50">
                     {a.model}
                   </Badge>
                 </div>
-                <span title={a.description} className="block truncate text-xs text-white/45">
+                <span title={a.description} className="block truncate text-xs text-muted-foreground dark:text-white/45">
                   {a.description}
                 </span>
               </div>
-              <span className="shrink-0 text-xs text-white/40">{a.tools} tools</span>
+              <span className="shrink-0 text-xs text-muted-foreground dark:text-white/40">{a.tools} tools</span>
             </li>
           ))}
         </ul>
@@ -831,36 +831,36 @@ function IntegrationsMockPreview({ state }: { state: StateKey }) {
       {items.map((p, idx) => (
         <div
           key={idx}
-          className="flex min-h-[220px] flex-col rounded-xl border border-white/[0.08] bg-[#0a0a0c] p-5"
+          className="flex min-h-[220px] flex-col rounded-xl border border-border bg-card p-5 dark:border-white/[0.08] dark:bg-[#0a0a0c]"
         >
           <div className="flex items-center justify-between">
-            <div className="flex size-10 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.03] text-sm font-bold text-white/80">
+            <div className="flex size-10 items-center justify-center rounded-lg border border-border bg-muted/40 text-sm font-bold text-foreground/80 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white/80">
               {p.name.slice(0, 2).toUpperCase()}
             </div>
             {p.connected ? (
-              <span className="rounded bg-emerald-400/10 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
+              <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-300">
                 Connected
               </span>
             ) : (
-              <span className="rounded bg-white/[0.04] px-2 py-0.5 text-[10px] font-medium text-white/45">
+              <span className="rounded bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground dark:bg-white/[0.04] dark:text-white/45">
                 Available
               </span>
             )}
           </div>
-          <h3 title={p.name} className="mt-4 truncate text-sm font-semibold text-white/90">
+          <h3 title={p.name} className="mt-4 truncate text-sm font-semibold text-foreground/90 dark:text-white/90">
             {p.name}
           </h3>
-          <p title={p.desc} className="mt-1.5 line-clamp-2 text-xs text-white/50">
+          <p title={p.desc} className="mt-1.5 line-clamp-2 text-xs text-muted-foreground dark:text-white/50">
             {p.desc}
           </p>
           <div className="mt-auto pt-4">
             <Button
               variant="outline"
               size="sm"
-              className="h-9 w-full justify-between text-xs text-white/80"
+              className="h-9 w-full justify-between text-xs text-foreground/80 dark:text-white/80"
             >
               <span>{p.connected ? "Manage" : "Connect"}</span>
-              <ArrowUpRight className="size-3.5 text-white/40" />
+              <ArrowUpRight className="size-3.5 text-muted-foreground dark:text-white/40" />
             </Button>
           </div>
         </div>
@@ -936,17 +936,17 @@ function TeamMockPreview({ state }: { state: StateKey }) {
 
   return (
     <div>
-      <ul className="divide-y divide-white/[0.05] overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]">
+      <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card dark:divide-white/[0.05] dark:border-white/[0.065] dark:bg-[#0a0a0c]">
         {items.slice(0, pageSize).map((m, idx) => (
-          <li key={idx} className="flex items-center gap-3 px-4 py-3.5 hover:bg-white/[0.02]">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-xs font-semibold text-white/80">
+          <li key={idx} className="flex items-center gap-3 px-4 py-3.5 hover:bg-muted/40 dark:hover:bg-white/[0.02]">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted/50 text-xs font-semibold text-foreground/80 dark:bg-white/[0.06] dark:text-white/80">
               {m.name.slice(0, 2).toUpperCase()}
             </span>
             <div className="min-w-0 flex-1">
-              <p title={m.name} className="truncate text-sm font-medium text-white/90">
+              <p title={m.name} className="truncate text-sm font-medium text-foreground/90 dark:text-white/90">
                 {m.name}
               </p>
-              <p title={m.email} className="truncate text-xs text-white/40">
+              <p title={m.email} className="truncate text-xs text-muted-foreground dark:text-white/40">
                 {m.email}
               </p>
             </div>
@@ -1037,16 +1037,16 @@ function TemplatesMockPreview({ state }: { state: StateKey }) {
         {items.slice(0, pageSize).map((t, idx) => (
           <article
             key={idx}
-            className="flex min-h-[220px] flex-col rounded-lg border border-white/[0.08] bg-[#0a0a0a] p-4"
+            className="flex min-h-[220px] flex-col rounded-lg border border-border bg-card p-4 dark:border-white/[0.08] dark:bg-[#0a0a0a]"
           >
             <h3
               title={t.name}
-              className="line-clamp-2 text-[15px] font-semibold leading-5 text-white/90"
+              className="line-clamp-2 text-[15px] font-semibold leading-5 text-foreground/90 dark:text-white/90"
             >
               {t.name}
             </h3>
-            <p className="mt-1 text-[11px] uppercase tracking-wider text-white/45">{t.category}</p>
-            <p title={t.desc} className="mt-3 line-clamp-3 text-xs leading-5 text-white/50">
+            <p className="mt-1 text-[11px] uppercase tracking-wider text-muted-foreground dark:text-white/45">{t.category}</p>
+            <p title={t.desc} className="mt-3 line-clamp-3 text-xs leading-5 text-muted-foreground dark:text-white/50">
               {t.desc}
             </p>
             <div className="mt-auto flex items-center justify-between pt-4">
@@ -1054,7 +1054,7 @@ function TemplatesMockPreview({ state }: { state: StateKey }) {
                 {t.tags.slice(0, 2).map((tag) => (
                   <span
                     key={tag}
-                    className="rounded border border-white/[0.08] px-2 py-0.5 text-[10px] text-white/45"
+                    className="rounded border border-border px-2 py-0.5 text-[10px] text-muted-foreground dark:border-white/[0.08] dark:text-white/45"
                   >
                     {tag}
                   </span>

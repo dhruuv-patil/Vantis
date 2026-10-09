@@ -62,6 +62,15 @@ export interface FieldError {
   message: string;
 }
 
+/** Structured machine-readable detail for PLAN_LIMIT_EXCEEDED errors. */
+export interface PlanLimitDetail {
+  limitKey: string;
+  current: number;
+  max: number;
+  planId: string;
+  suggestedPlan: string;
+}
+
 /** The single error envelope returned by every non-2xx response. */
 export interface ApiError {
   error: {
@@ -73,6 +82,8 @@ export interface ApiError {
     requestId: string;
     /** Key is always present; an array only when `code === "VALIDATION_ERROR"`. */
     fieldErrors: FieldError[] | null;
+    /** Present when code === "PLAN_LIMIT_EXCEEDED" */
+    details?: PlanLimitDetail | null;
   };
 }
 
@@ -731,9 +742,11 @@ export type ProviderType =
   | "sendgrid"
   | "resend"
   | "smtp"
+  | "email"
   // Generic / webhooks
   | "webhook"
   | "rest-api"
+  | "rest_api"
   | "custom"
   // Cloud & Storage
   | "aws"
@@ -741,6 +754,7 @@ export type ProviderType =
   // Productivity
   | "notion"
   | "google-sheets"
+  | "google_sheets"
   // Payments
   | "stripe"
   // AI & LLM
@@ -802,6 +816,8 @@ export interface ProviderInfo {
   available: boolean;
   capabilities: ProviderCapabilities;
   credentialFields: CredentialField[];
+  docsUrl?: string;
+  setupGuide?: string;
 }
 
 /** `GET /api/integrations/providers` — catalog of available workflow providers. */
@@ -1272,7 +1288,6 @@ export type SupportedCurrency =
 
 export type SubscriptionStatus =
   | "ACTIVE"
-  | "TRIALING"
   | "PAST_DUE"
   | "CANCELED"
   | "INCOMPLETE";
@@ -1287,6 +1302,10 @@ export interface SubscriptionRecord {
   billingInterval: BillingInterval;
   currentPeriodStart: string;
   currentPeriodEnd: string;
+  provider?: string;
+  cancelAtPeriodEnd?: boolean;
+  foundingOfferEligible?: boolean;
+  foundingOfferApplied?: boolean;
   providerCustomerId?: string | null;
   providerSubscriptionId?: string | null;
   createdAt: string;
@@ -1375,4 +1394,116 @@ export interface BillingCurrencyResponse {
   symbol: string;
   detectionSource: string;
   supportedCurrencies: readonly SupportedCurrency[];
+}
+
+export interface SubscriptionSummaryResponse {
+  organizationId: string;
+  plan: string;
+  billingStatus: string;
+  provider: string;
+  subscriptionStatus: string;
+  currentPeriodStart: string;
+  currentPeriodEnd: string;
+  isPrivateBeta: boolean;
+  betaEndsAt?: string | null;
+  cancelAtPeriodEnd: boolean;
+  renewalActive: boolean;
+  foundingOfferEligible: boolean;
+  foundingOfferApplied: boolean;
+  foundingOfferEligibleUntil?: string | null;
+  usage: {
+    workflows: number;
+    executions: number;
+    aiGenerations: number;
+    aiInvestigationsMonthly: number;
+    aiInvestigationsTrial: number;
+    seats: number;
+    workspaces: number;
+  };
+  planLimits: {
+    activeWorkflows: number;
+    executionsPerMonth: number;
+    aiGenerations: number;
+    aiInvestigationsMonthly: number;
+    aiInvestigationsLifetimeTrial: number;
+    seats: number;
+    workspaces: number;
+    historyRetentionDays: number;
+    workflowVersionsKept: number;
+    allowedNotificationChannels: string[];
+    anomalyDetectionMode: string;
+  };
+  remainingUsage: {
+    workflows: number;
+    executions: number;
+    aiGenerations: number;
+    aiInvestigations: number;
+    seats: number;
+    workspaces: number;
+  };
+  availablePlanTransitions: string[];
+  billingEnabled: boolean;
+}
+
+export interface BillingInvoice {
+  id: string;
+  date?: string | null;
+  amountPaid: number;
+  currency: string;
+  status: string;
+  hostedInvoiceUrl?: string | null;
+  pdfUrl?: string | null;
+}
+
+export interface BillingStatusResponse {
+  subscription: SubscriptionSummaryResponse;
+  entitlements: Record<string, any>;
+  provider: string;
+  isBillingEnabled: boolean;
+  isPrivateBeta: boolean;
+  foundingOfferEligible: boolean;
+  foundingOfferApplied: boolean;
+  dunningActive: boolean;
+  pastDueSince?: string | null;
+}
+
+export interface FoundingOfferResponse {
+  code: string;
+  discountPercentage: number;
+  startsAt: string;
+  endsAt: string;
+  active: boolean;
+  message: string;
+}
+
+export interface CheckoutResponse {
+  sessionId: string;
+  checkoutUrl: string;
+  provider: string;
+  status: string;
+  message?: string;
+}
+
+export interface PortalResponse {
+  portalUrl: string;
+}
+
+export interface ChangePlanResponse {
+  plan: string;
+  status: string;
+  interval: string;
+  success: boolean;
+  message: string;
+}
+
+export interface CancelSubscriptionResponse {
+  status: string;
+  cancelAtPeriodEnd: boolean;
+  message: string;
+}
+
+export interface ResumeSubscriptionResponse {
+  status: string;
+  cancelAtPeriodEnd: boolean;
+  message: string;
 }

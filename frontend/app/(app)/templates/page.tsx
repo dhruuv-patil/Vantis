@@ -259,7 +259,7 @@ export default function TemplatesPage() {
 
       <Toolbar className="mb-4">
         <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-white/40" />
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground dark:text-white/40" />
           <Input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -301,17 +301,17 @@ export default function TemplatesPage() {
               <section className="mb-10">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <h2 className="text-sm font-semibold text-white/80">
+                    <h2 className="text-sm font-semibold text-foreground dark:text-white/80">
                       Recommended
                     </h2>
 
-                    <p className="mt-1 text-xs text-white/50">
+                    <p className="mt-1 text-xs text-muted-foreground dark:text-white/50">
                       Start with a proven workflow
                       pattern.
                     </p>
                   </div>
 
-                  <span className="text-[11px] text-white/45">
+                  <span className="text-[11px] text-muted-foreground dark:text-white/45">
                     {recommended.length} templates
                   </span>
                 </div>
@@ -334,17 +334,17 @@ export default function TemplatesPage() {
               <section>
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <h2 className="text-sm font-semibold text-white/80">
+                    <h2 className="text-sm font-semibold text-foreground dark:text-white/80">
                       All templates
                     </h2>
 
-                    <p className="mt-1 text-xs text-white/50">
+                    <p className="mt-1 text-xs text-muted-foreground dark:text-white/50">
                       Browse the complete Vantis
                       template library.
                     </p>
                   </div>
 
-                  <span className="text-[11px] text-white/45">
+                  <span className="text-[11px] text-muted-foreground dark:text-white/45">
                     {remaining.length} templates
                   </span>
                 </div>
@@ -414,11 +414,11 @@ function TemplateCard({
   return (
     <article
       className={cn(
-        "group overflow-hidden rounded-lg border bg-[#0a0a0a]",
+        "group overflow-hidden rounded-lg border bg-card dark:bg-[#0a0a0a]",
         "transition-colors duration-200",
         featured
-          ? "border-white/[0.14] hover:border-white/[0.22]"
-          : "border-white/[0.075] hover:border-white/[0.15]",
+          ? "border-primary/20 dark:border-white/[0.14] hover:border-primary/40 dark:hover:border-white/[0.22]"
+          : "border-border dark:border-white/[0.075] hover:border-border/80 dark:hover:border-white/[0.15]",
       )}
     >
       <TemplatePreview
@@ -430,19 +430,19 @@ function TemplateCard({
         <div>
           <h3
             title={template.name}
-            className="line-clamp-2 text-[15px] font-semibold leading-5 text-white/90 group-hover:text-white"
+            className="line-clamp-2 text-[15px] font-semibold leading-5 text-foreground group-hover:text-foreground dark:text-white/90 dark:group-hover:text-white"
           >
             {template.name}
           </h3>
 
-          <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.10em] text-white/45">
+          <p className="mt-1 text-[11px] font-medium uppercase tracking-[0.10em] text-muted-foreground dark:text-white/45">
             {template.category}
           </p>
         </div>
 
         <p
           title={template.description}
-          className="mt-3 line-clamp-3 text-xs leading-5 text-white/50"
+          className="mt-3 line-clamp-3 text-xs leading-5 text-muted-foreground dark:text-white/50"
         >
           {template.description}
         </p>
@@ -454,7 +454,7 @@ function TemplateCard({
               .map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-md border border-white/[0.07] px-2 py-1 text-[11px] text-white/45"
+                  className="rounded-md border border-border dark:border-white/[0.07] bg-muted/40 dark:bg-transparent px-2 py-1 text-[11px] text-muted-foreground dark:text-white/45"
                 >
                   {tag}
                 </span>
@@ -467,7 +467,7 @@ function TemplateCard({
               mutation.mutate()
             }
             disabled={mutation.isPending}
-            className="h-8 shrink-0 rounded-md bg-white px-3 text-xs font-medium text-black hover:bg-white/90"
+            className="h-8 shrink-0 rounded-md bg-foreground text-background hover:bg-foreground/90 dark:bg-white dark:text-black dark:hover:bg-white/90 px-3 text-xs font-medium"
           >
             {mutation.isPending ? (
               <Loader2 className="mr-1.5 size-3.5 animate-spin" />
@@ -501,14 +501,14 @@ function TemplatePreview({
   );
 
   return (
-    <div className="relative h-[178px] overflow-hidden border-b border-white/[0.07] bg-[#080808]">
+    <div className="relative h-[178px] overflow-hidden border-b border-border dark:border-white/[0.07] bg-muted/30 dark:bg-[#080808]">
       {/* BACKGROUND */}
 
       <div
-        className="absolute inset-0 opacity-[0.14]"
+        className="absolute inset-0 opacity-[0.25] text-muted-foreground dark:opacity-[0.14] dark:text-white"
         style={{
           backgroundImage:
-            "radial-gradient(circle, rgba(255,255,255,.20) 1px, transparent 1px)",
+            "radial-gradient(circle, currentColor 1px, transparent 1px)",
           backgroundSize: "18px 18px",
         }}
       />
@@ -516,7 +516,7 @@ function TemplatePreview({
       {/* FEATURED BADGE */}
 
       {featured && (
-        <div className="absolute left-3 top-3 z-20 flex items-center gap-1.5 rounded-md border border-white/[0.10] bg-[#0a0a0a]/90 px-2.5 py-1.5 text-[10px] font-medium text-white/70 backdrop-blur">
+        <div className="absolute left-3 top-3 z-20 flex items-center gap-1.5 rounded-md border border-border dark:border-white/[0.10] bg-card/90 dark:bg-[#0a0a0a]/90 px-2.5 py-1.5 text-[10px] font-medium text-foreground dark:text-white/70 backdrop-blur shadow-sm">
           <Sparkles className="size-3" />
           Top recommendation
         </div>
@@ -525,7 +525,7 @@ function TemplatePreview({
       {/* APP TRAY */}
 
       <div className="absolute inset-0 flex items-center justify-center px-5">
-        <div className="flex items-center rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-[0_18px_45px_rgba(0,0,0,0.28)]">
+        <div className="flex items-center rounded-xl border border-border bg-card dark:border-white/[0.12] dark:bg-[#121215] px-3 py-3 shadow-[0_18px_45px_rgba(0,0,0,0.18)] dark:shadow-[0_18px_45px_rgba(0,0,0,0.48)]">
           {visibleApps.length > 0 ? (
             <>
               {visibleApps.map(
@@ -540,7 +540,7 @@ function TemplatePreview({
 
                     {index <
                       visibleApps.length - 1 && (
-                      <ArrowRight className="mx-2 size-4 text-slate-500" />
+                      <ArrowRight className="mx-2 size-4 text-muted-foreground" />
                     )}
                   </div>
                 ),
@@ -548,9 +548,9 @@ function TemplatePreview({
 
               {extraCount > 0 && (
                 <>
-                  <ArrowRight className="mx-2 size-4 text-slate-500" />
+                  <ArrowRight className="mx-2 size-4 text-muted-foreground" />
 
-                  <div className="flex size-10 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm font-semibold text-slate-600">
+                  <div className="flex size-10 items-center justify-center rounded-lg border border-border bg-muted text-sm font-semibold text-muted-foreground">
                     +{extraCount}
                   </div>
                 </>
@@ -574,7 +574,7 @@ function TemplatePreview({
 
       {/* STEP COUNT */}
 
-      <div className="absolute bottom-3 left-3 rounded-md border border-white/[0.09] bg-[#0a0a0a]/90 px-2.5 py-1 text-[10px] text-white/40 backdrop-blur">
+      <div className="absolute bottom-3 left-3 rounded-md border border-border dark:border-white/[0.09] bg-card/90 dark:bg-[#0a0a0a]/90 px-2.5 py-1 text-[10px] text-muted-foreground dark:text-white/40 backdrop-blur shadow-sm">
         {template.nodeCount} steps
       </div>
     </div>
@@ -590,55 +590,21 @@ function LandingIntegrationIcon({
 }: {
   app: TemplateApp;
 }) {
-  /*
-   * Actual third-party integrations:
-   * use BrandIcon with theme="light" because the preview tray is on a white surface.
-   */
-  if (app.kind === "brand" && app.iconSlug) {
-    return (
-      <div
-        className="flex size-10 items-center justify-center rounded-lg border border-slate-200 bg-white"
-        title={app.name}
-      >
-        <BrandIcon
-          slug={app.iconSlug}
-          name={app.name}
-          className="size-[22px]"
-          theme="light"
-          alt={app.name}
-        />
-      </div>
-    );
-  }
-
-  /*
-   * Vantis-native nodes do NOT pretend to be
-   * third-party brands.
-   */
-
   return (
     <div
-      className="flex size-10 items-center justify-center rounded-lg border border-slate-200 bg-slate-50"
-      style={{
-        color: app.color,
-      }}
+      className="flex size-10 items-center justify-center rounded-lg border border-border bg-card dark:border-white/[0.12] dark:bg-white/[0.04] shadow-sm"
       title={app.name}
     >
-      {app.key === "ai" ? (
-        <Bot className="size-5" />
-      ) : app.key === "approval" ? (
-        <UserCheck className="size-5" />
-      ) : app.key === "webhook" ? (
-        <Webhook className="size-5" />
-      ) : app.key === "email" ? (
-        <Mail className="size-5" />
-      ) : app.key === "http" ? (
-        <Globe2 className="size-5" />
-      ) : app.key === "calendar" ? (
-        <CalendarDays className="size-5" />
-      ) : (
-        <Bot className="size-5" />
-      )}
+      <BrandIcon
+        slug={app.iconSlug}
+        type={app.key}
+        label={app.name}
+        name={app.name}
+        className="size-[22px]"
+        theme="auto"
+        alt={app.name}
+        fallbackColor={app.color}
+      />
     </div>
   );
 }
@@ -663,16 +629,16 @@ function EmptyTemplates({
   onClear: () => void;
 }) {
   return (
-    <div className="rounded-lg border border-dashed border-white/[0.08] bg-white/[0.012] px-5 py-16 text-center">
-      <div className="mx-auto flex size-11 items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.025] text-white/40">
+    <div className="rounded-lg border border-dashed border-border dark:border-white/[0.08] bg-muted/20 dark:bg-white/[0.012] px-5 py-16 text-center">
+      <div className="mx-auto flex size-11 items-center justify-center rounded-lg border border-border dark:border-white/[0.07] bg-card dark:bg-white/[0.025] text-muted-foreground dark:text-white/40">
         <PanelsTopLeft className="size-5" />
       </div>
 
-      <h3 className="mt-4 text-sm font-medium text-white/80">
+      <h3 className="mt-4 text-sm font-medium text-foreground dark:text-white/80">
         No templates found
       </h3>
 
-      <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-white/50">
+      <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-muted-foreground dark:text-white/50">
         {search
           ? `Nothing matches "${search}". Try a different search or clear the filters.`
           : "There are no templates available yet."}
@@ -684,7 +650,7 @@ function EmptyTemplates({
           variant="outline"
           size="sm"
           onClick={onClear}
-          className="mt-5 h-8 rounded-md border-white/[0.08] bg-white/[0.025] text-xs text-white/60 hover:bg-white/[0.06] hover:text-white"
+          className="mt-5 h-8 rounded-md text-xs"
         >
           Clear filters
         </Button>
@@ -705,7 +671,7 @@ function TemplateLoading() {
       }).map((_, index) => (
         <Skeleton
           key={index}
-          className="h-[368px] rounded-lg bg-white/[0.035]"
+          className="h-[368px] rounded-lg"
         />
       ))}
     </div>

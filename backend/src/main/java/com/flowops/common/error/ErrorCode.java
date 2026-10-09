@@ -85,9 +85,9 @@ public enum ErrorCode {
 
     /** Returned for a nonexistent integration and for one owned by another org. */
     INTEGRATION_NOT_FOUND(HttpStatus.NOT_FOUND, "Integration not found."),
-    /** The submitted credential (e.g. a Slack incoming-webhook URL) is not valid. */
+    /** The submitted credential or connection configuration is not valid. */
     INTEGRATION_INVALID(HttpStatus.UNPROCESSABLE_ENTITY,
-            "That does not look like a valid Slack incoming-webhook URL."),
+            "The integration credentials or configuration are invalid."),
 
     /** Returned for a nonexistent notification and for one addressed to another user. */
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "Notification not found."),

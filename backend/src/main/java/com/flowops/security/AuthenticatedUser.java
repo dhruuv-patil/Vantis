@@ -50,4 +50,13 @@ public final class AuthenticatedUser {
         }
         return principal;
     }
+
+    /** Enforces platform admin privileges, raising {@code 403 FORBIDDEN_ROLE} otherwise. */
+    public static FlowOpsPrincipal requirePlatformAdmin() {
+        FlowOpsPrincipal principal = require();
+        if (principal.role() != Role.PLATFORM_ADMIN) {
+            throw new ApiException(ErrorCode.FORBIDDEN_ROLE, "Platform admin authorization required.");
+        }
+        return principal;
+    }
 }

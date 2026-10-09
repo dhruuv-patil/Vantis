@@ -179,13 +179,13 @@ function dotColor(status: string) {
     case "SUCCEEDED":
       return "bg-emerald-400/55";
     case "RUNNING":
-      return "bg-white/55";
+      return "bg-blue-500 dark:bg-white/55";
     case "WAITING":
       return "bg-amber-400/60";
     case "QUEUED":
-      return "bg-white/30";
+      return "bg-muted-foreground/50 dark:bg-white/30";
     default:
-      return "bg-white/20";
+      return "bg-muted-foreground/30 dark:bg-white/20";
   }
 }
 
@@ -340,7 +340,7 @@ function ExternalExecutionDetail() {
         eyebrow="Execution Control Plane"
         title={workflowName}
         description={
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/50">
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground dark:text-white/50">
             <StatusBadge status={status} />
             <span>{first.source || "external"}</span>
             <span className="font-mono text-xs">run {executionExternalId}</span>
@@ -350,8 +350,8 @@ function ExternalExecutionDetail() {
             <span>·</span>
             <span>{formatDuration(durationMs)}</span>
             {live && (
-              <span className="inline-flex items-center gap-1 text-emerald-400">
-                <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
+              <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                <span className="size-1.5 animate-pulse rounded-full bg-emerald-500 dark:bg-emerald-400" />
                 Live
               </span>
             )}
@@ -374,7 +374,7 @@ function ExternalExecutionDetail() {
       {/* failure banner */}
 
       {status === "FAILED" && failedStep && (
-        <div className="flex items-start gap-2 rounded-md border border-white/[0.08] bg-white/[0.03] px-4 py-3 text-sm text-destructive">
+        <div className="flex items-start gap-2 rounded-md border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           <AlertTriangle className="mt-0.5 size-4 shrink-0" />
 
           <span className="min-w-0 break-words">
@@ -388,8 +388,8 @@ function ExternalExecutionDetail() {
       {/* retry banner */}
 
       {retryCount > 0 && (
-        <div className="flex items-center gap-3 rounded-md border border-amber-500/20 bg-amber-500/[0.04] px-4 py-2.5 text-sm text-amber-200/80">
-          <Clock3 className="size-4 shrink-0 text-amber-300/70" />
+        <div className="flex items-center gap-3 rounded-md border border-amber-500/20 bg-amber-500/[0.04] px-4 py-2.5 text-sm text-amber-700 dark:text-amber-200/80">
+          <Clock3 className="size-4 shrink-0 text-amber-600 dark:text-amber-300/70" />
           {retryCount} {retryCount === 1 ? "retry was" : "retries were"}{" "}
           recorded during this run.
         </div>
@@ -409,7 +409,7 @@ function ExternalExecutionDetail() {
 
       {/* view tabs */}
 
-      <div className="flex items-center gap-1 border-b border-white/[0.08]">
+      <div className="flex items-center gap-1 border-b border-border dark:border-white/[0.08]">
         {(
           [
             ["graph", "Graph", LayoutGrid],
@@ -423,8 +423,8 @@ function ExternalExecutionDetail() {
             className={cn(
               "-mb-px flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition",
               view === value
-                ? "border-white/60 text-white/90"
-                : "border-transparent text-white/44 hover:text-white/70",
+                ? "border-primary text-foreground dark:border-white/60 dark:text-white/90"
+                : "border-transparent text-muted-foreground hover:text-foreground dark:text-white/44 dark:hover:text-white/70",
             )}
           >
             <Icon className="size-4" />
@@ -462,13 +462,13 @@ function ExternalExecutionDetail() {
             </div>
           )}
 
-          <details className="group rounded-xl border border-white/[0.08] [&_summary::-webkit-details-marker]:hidden">
-            <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-sm">
-              <ChevronDown className="size-4 text-white/44 transition-transform group-open:rotate-180" />
+          <details className="group rounded-xl border border-border dark:border-white/[0.08] [&_summary::-webkit-details-marker]:hidden">
+            <summary className="flex cursor-pointer list-none items-center gap-2 px-4 py-2.5 text-sm text-foreground">
+              <ChevronDown className="size-4 text-muted-foreground dark:text-white/44 transition-transform group-open:rotate-180" />
               <span className="font-medium">Execution details</span>
             </summary>
 
-            <div className="grid border-t border-white/[0.06] sm:grid-cols-2">
+            <div className="grid border-t border-border dark:border-white/[0.06] sm:grid-cols-2">
               <DetailItem label="Execution ID" value={executionExternalId} copyable />
               <DetailItem
                 label="Workflow ID"
@@ -531,8 +531,8 @@ function StepRow({
       type="button"
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-3 rounded-xl border bg-[#0b0b0c] px-4 py-3 text-left transition hover:bg-white/[0.03]",
-        selected ? "border-white/[0.20]" : "border-white/[0.08]",
+        "flex w-full items-center gap-3 rounded-xl border bg-card dark:bg-[#0b0b0c] px-4 py-3 text-left transition hover:bg-muted/40 dark:hover:bg-white/[0.03]",
+        selected ? "border-foreground/30 dark:border-white/[0.20]" : "border-border dark:border-white/[0.08]",
       )}
     >
       <span
@@ -545,12 +545,12 @@ function StepRow({
 
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
-          <span className="truncate text-sm font-medium text-white/80">
+          <span className="truncate text-sm font-medium text-foreground/90 dark:text-white/80">
             {step.name}
           </span>
 
           {step.retryCount > 0 && (
-            <span className="shrink-0 rounded border border-amber-500/20 bg-amber-500/[0.05] px-1.5 py-0.5 font-mono text-[9px] text-amber-300/70">
+            <span className="shrink-0 rounded border border-amber-500/20 bg-amber-500/[0.05] px-1.5 py-0.5 font-mono text-[9px] text-amber-700 dark:text-amber-300/70">
               retry ×{step.retryCount}
             </span>
           )}
@@ -563,11 +563,11 @@ function StepRow({
         )}
       </span>
 
-      <span className="text-xs capitalize text-white/44">
+      <span className="text-xs capitalize text-muted-foreground dark:text-white/44">
         {step.status.toLowerCase()}
       </span>
 
-      <span className="w-16 text-right font-mono text-xs text-white/45">
+      <span className="w-16 text-right font-mono text-xs text-muted-foreground dark:text-white/45">
         {formatDuration(step.durationMs)}
       </span>
     </button>
@@ -586,9 +586,9 @@ function StepInspector({
     .find((e) => e.metadata && Object.keys(e.metadata).length > 0)?.metadata;
 
   return (
-    <Card className="border-white/[0.08] bg-[#0a0a0a]">
+    <Card className="border-border dark:border-white/[0.08] bg-card dark:bg-[#0a0a0a]">
       <CardHeader className="flex flex-row items-start justify-between gap-2 pb-3">
-        <CardTitle className="min-w-0 truncate text-base text-white/90">
+        <CardTitle className="min-w-0 truncate text-base text-foreground dark:text-white/90">
           {step.name}
         </CardTitle>
 
@@ -596,7 +596,7 @@ function StepInspector({
           type="button"
           onClick={onClose}
           aria-label="Close inspector"
-          className="text-white/45 transition hover:text-white/80"
+          className="text-muted-foreground hover:text-foreground dark:text-white/45 dark:hover:text-white/80 transition"
         >
           <X className="size-4" />
         </button>
@@ -604,44 +604,44 @@ function StepInspector({
 
       <CardContent className="space-y-4 text-sm">
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-xs">
-          <dt className="text-white/45">Step ID</dt>
-          <dd className="break-all font-mono text-white/70">{step.id}</dd>
+          <dt className="text-muted-foreground dark:text-white/45">Step ID</dt>
+          <dd className="break-all font-mono text-foreground/80 dark:text-white/70">{step.id}</dd>
 
-          <dt className="text-white/45">Status</dt>
-          <dd className="capitalize text-white/70">
+          <dt className="text-muted-foreground dark:text-white/45">Status</dt>
+          <dd className="capitalize text-foreground/80 dark:text-white/70">
             {step.status.toLowerCase()}
           </dd>
 
-          <dt className="text-white/45">Started</dt>
-          <dd className="text-white/70">
+          <dt className="text-muted-foreground dark:text-white/45">Started</dt>
+          <dd className="text-foreground/80 dark:text-white/70">
             {step.startedAt ? formatDateTime(step.startedAt) : "—"}
           </dd>
 
-          <dt className="text-white/45">Finished</dt>
-          <dd className="text-white/70">
+          <dt className="text-muted-foreground dark:text-white/45">Finished</dt>
+          <dd className="text-foreground/80 dark:text-white/70">
             {step.finishedAt ? formatDateTime(step.finishedAt) : "—"}
           </dd>
 
-          <dt className="text-white/45">Duration</dt>
-          <dd className="text-white/70">{formatDuration(step.durationMs)}</dd>
+          <dt className="text-muted-foreground dark:text-white/45">Duration</dt>
+          <dd className="text-foreground/80 dark:text-white/70">{formatDuration(step.durationMs)}</dd>
 
-          <dt className="text-white/45">Retries</dt>
-          <dd className="text-white/70">{step.retryCount}</dd>
+          <dt className="text-muted-foreground dark:text-white/45">Retries</dt>
+          <dd className="text-foreground/80 dark:text-white/70">{step.retryCount}</dd>
         </dl>
 
         {step.errorMessage && (
-          <div className="rounded-md border border-white/[0.08] bg-white/[0.03] p-3 text-xs">
+          <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3 text-xs">
             <p className="font-medium text-destructive">
               {step.errorType || "Execution error"}
             </p>
-            <p className="mt-1 break-words text-white/60">
+            <p className="mt-1 break-words text-muted-foreground dark:text-white/60">
               {step.errorMessage}
             </p>
           </div>
         )}
 
         <div className="space-y-1.5">
-          <p className="text-xs font-medium text-white/50">Metadata</p>
+          <p className="text-xs font-medium text-muted-foreground dark:text-white/50">Metadata</p>
           <JsonBlock value={metadata} />
         </div>
       </CardContent>
@@ -658,9 +658,9 @@ function ActivityPanel({ events }: { events: ExecutionEvent[] }) {
   }, [events.length]);
 
   return (
-    <Card className="border-white/[0.08] bg-[#0a0a0a] lg:sticky lg:top-6">
+    <Card className="border-border dark:border-white/[0.08] bg-card dark:bg-[#0a0a0a] lg:sticky lg:top-6">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base text-white/90">Activity</CardTitle>
+        <CardTitle className="text-base text-foreground dark:text-white/90">Activity</CardTitle>
       </CardHeader>
 
       <CardContent>
@@ -676,13 +676,13 @@ function ActivityPanel({ events }: { events: ExecutionEvent[] }) {
                 <span
                   className={cn(
                     "w-20 shrink-0 font-medium",
-                    s === "FAILED" ? "text-destructive" : "text-white/44",
+                    s === "FAILED" ? "text-destructive" : "text-muted-foreground dark:text-white/44",
                   )}
                 >
                   {s}
                 </span>
 
-                <span className="min-w-0 flex-1 whitespace-pre-wrap break-words text-white/60">
+                <span className="min-w-0 flex-1 whitespace-pre-wrap break-words text-foreground/80 dark:text-white/60">
                   {event.stepName || event.stepExternalId || "workflow"}
                   {event.errorMessage ? ` — ${event.errorMessage}` : ""}
                 </span>
@@ -715,10 +715,10 @@ function DetailItem({
   }
 
   return (
-    <div className="group flex min-w-0 items-center justify-between gap-4 border-b border-white/[0.06] px-4 py-3">
+    <div className="group flex min-w-0 items-center justify-between gap-4 border-b border-border dark:border-white/[0.06] px-4 py-3">
       <div className="min-w-0">
-        <p className="text-xs text-white/45">{label}</p>
-        <p className="mt-0.5 break-all font-mono text-xs text-white/60">
+        <p className="text-xs text-muted-foreground dark:text-white/45">{label}</p>
+        <p className="mt-0.5 break-all font-mono text-xs text-foreground/80 dark:text-white/60">
           {value}
         </p>
       </div>
@@ -728,7 +728,7 @@ function DetailItem({
           type="button"
           onClick={copyValue}
           aria-label={`Copy ${label}`}
-          className="shrink-0 rounded-md p-1.5 text-white/35 opacity-0 transition hover:bg-white/[0.05] hover:text-white group-hover:opacity-100"
+          className="shrink-0 rounded-md p-1.5 text-muted-foreground/60 opacity-0 transition hover:bg-muted hover:text-foreground dark:text-white/35 dark:hover:bg-white/[0.05] dark:hover:text-white group-hover:opacity-100"
         >
           <Copy className="size-3.5" />
         </button>
@@ -851,7 +851,7 @@ function ExternalGraph({
 
   return (
     <div className="space-y-2">
-      <div className="overflow-auto rounded-xl border border-white/[0.08] bg-[#0b0b0c]">
+      <div className="overflow-auto rounded-xl border border-border dark:border-white/[0.08] bg-card dark:bg-[#0b0b0c]">
         <svg
           width={width}
           height={height}
@@ -863,7 +863,7 @@ function ExternalGraph({
             <path
               key={edge.key}
               d={edge.d}
-              className="fill-none stroke-white/15"
+              className="fill-none stroke-border dark:stroke-white/15"
               strokeWidth={1.5}
             />
           ))}
@@ -897,12 +897,12 @@ function ExternalGraph({
                   height={NODE_H}
                   rx={10}
                   className={cn(
-                    "fill-[#111113] transition-colors",
+                    "fill-muted/60 dark:fill-[#111113] transition-colors",
                     selected
-                      ? "stroke-white/50"
+                      ? "stroke-foreground/40 dark:stroke-white/50"
                       : step.status === "FAILED"
-                        ? "stroke-red-400/30"
-                        : "stroke-white/10",
+                        ? "stroke-red-500/30 dark:stroke-red-400/30"
+                        : "stroke-border dark:stroke-white/10",
                   )}
                   strokeWidth={1.5}
                 />
@@ -920,12 +920,12 @@ function ExternalGraph({
                 <text
                   x={30}
                   y={24}
-                  className="fill-white/80 text-[12px] font-medium"
+                  className="fill-foreground/90 dark:fill-white/80 text-[12px] font-medium"
                 >
                   {clip(step.name, 22)}
                 </text>
 
-                <text x={30} y={42} className="fill-white/35 font-mono text-[10px]">
+                <text x={30} y={42} className="fill-muted-foreground dark:fill-white/35 font-mono text-[10px]">
                   {step.status.toLowerCase()} · {formatDuration(step.durationMs)}
                   {step.retryCount > 0 ? ` · ×${step.retryCount}` : ""}
                 </text>
@@ -935,7 +935,7 @@ function ExternalGraph({
         </svg>
       </div>
 
-      <p className="text-xs text-white/45">
+      <p className="text-xs text-muted-foreground dark:text-white/45">
         Layout is inferred from run order: steps that overlap in time are shown
         in parallel. Connections from the provider aren&apos;t captured.
       </p>
@@ -945,11 +945,11 @@ function ExternalGraph({
 
 function JsonBlock({ value }: { value: unknown }) {
   if (value === null || value === undefined) {
-    return <p className="text-xs text-white/44">None recorded.</p>;
+    return <p className="text-xs text-muted-foreground dark:text-white/44">None recorded.</p>;
   }
 
   return (
-    <pre className="max-h-64 overflow-auto rounded-md border border-white/[0.08] bg-[#0a0a0a] p-3 font-mono text-xs leading-relaxed">
+    <pre className="max-h-64 overflow-auto rounded-md border border-border dark:border-white/[0.08] bg-muted/40 dark:bg-[#0a0a0a] text-foreground/90 dark:text-white/80 p-3 font-mono text-xs leading-relaxed">
       {JSON.stringify(value, null, 2)}
     </pre>
   );

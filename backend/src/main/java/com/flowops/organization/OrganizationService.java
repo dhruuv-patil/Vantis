@@ -55,9 +55,34 @@ public class OrganizationService {
     private final InvitationRepository invitations;
     private final InvitationTokens invitationTokens;
     private final AuditService audit;
+    private final com.flowops.billing.service.EntitlementService entitlementService;
 
     /** A generated invitation is valid for seven days; regenerating resets the clock. */
     private static final Duration INVITE_TTL = Duration.ofDays(7);
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public OrganizationService(
+            OrganizationRepository organizations,
+            OrganizationMemberRepository members,
+            AuthSessionRepository sessions,
+            OrganizationCreator organizationCreator,
+            SessionAssembler sessionAssembler,
+            UserRepository users,
+            InvitationRepository invitations,
+            InvitationTokens invitationTokens,
+            AuditService audit,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.flowops.billing.service.EntitlementService entitlementService) {
+        this.organizations = organizations;
+        this.members = members;
+        this.sessions = sessions;
+        this.organizationCreator = organizationCreator;
+        this.sessionAssembler = sessionAssembler;
+        this.users = users;
+        this.invitations = invitations;
+        this.invitationTokens = invitationTokens;
+        this.audit = audit;
+        this.entitlementService = entitlementService;
+    }
 
     public OrganizationService(
             OrganizationRepository organizations,
@@ -69,15 +94,7 @@ public class OrganizationService {
             InvitationRepository invitations,
             InvitationTokens invitationTokens,
             AuditService audit) {
-        this.organizations = organizations;
-        this.members = members;
-        this.sessions = sessions;
-        this.organizationCreator = organizationCreator;
-        this.sessionAssembler = sessionAssembler;
-        this.users = users;
-        this.invitations = invitations;
-        this.invitationTokens = invitationTokens;
-        this.audit = audit;
+        this(organizations, members, sessions, organizationCreator, sessionAssembler, users, invitations, invitationTokens, audit, null);
     }
 
     /** Every org the caller belongs to — the switcher payload (contract §5.6). */
@@ -294,6 +311,10 @@ public class OrganizationService {
                 .ifPresent(existing -> {
                     throw new ApiException(ErrorCode.INVITATION_INVALID);
                 });
+
+        if (entitlementService != null) {
+            entitlementService.assertCanAddMember(orgId);
+        }
 
         InvitationTokens.Generated minted = invitationTokens.generate();
         Instant expiresAt = Instant.now().plus(INVITE_TTL);

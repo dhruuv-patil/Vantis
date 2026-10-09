@@ -92,14 +92,14 @@ export function NodePalette({
 
   if (collapsed) {
     return (
-      <div className="flex h-full w-12 shrink-0 flex-col items-center border-r border-white/[0.075] bg-[#090909] py-3">
+      <div className="flex h-full w-12 shrink-0 flex-col items-center border-r border-border bg-card py-3 dark:border-white/[0.075] dark:bg-[#090909]">
         <Button
           variant="ghost"
           size="icon"
           onClick={onToggle}
           aria-label="Expand node palette"
           title="Expand node palette"
-          className="size-8 text-white/45 hover:bg-white/[0.06] hover:text-white"
+          className="size-8 text-muted-foreground hover:bg-muted hover:text-foreground dark:text-white/45 dark:hover:bg-white/[0.06] dark:hover:text-white"
         >
           <PanelLeftOpen className="size-4" />
         </Button>
@@ -108,22 +108,22 @@ export function NodePalette({
   }
 
   return (
-    <aside className="flex h-full w-[280px] shrink-0 flex-col border-r border-white/[0.075] bg-[#090909]">
+    <aside className="flex h-full w-[280px] shrink-0 flex-col border-r border-border bg-card dark:border-white/[0.075] dark:bg-[#090909]">
       {/* ================================================================
           HEADER
           ================================================================ */}
 
-      <div className="flex h-12 shrink-0 items-center justify-between border-b border-white/[0.075] px-3.5">
+      <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3.5 dark:border-white/[0.075]">
         <div className="flex min-w-0 items-center gap-2">
           {/* <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-white/[0.06]">
             <span className="size-1.5 rounded-full bg-brand-400 shadow-[0_0_8px_rgba(99,102,241,0.75)]" />
           </div> */}
 
-          <span className="text-[13px] font-semibold tracking-tight text-white/90">
+          <span className="text-[13px] font-semibold tracking-tight text-foreground dark:text-white/90">
             NODES
           </span>
 
-          <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[9px] font-medium tabular-nums text-white/35">
+          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-medium tabular-nums text-muted-foreground dark:bg-white/[0.06] dark:text-white/35">
             {searching ? visibleCount : defs.length}
           </span>
         </div>
@@ -134,7 +134,7 @@ export function NodePalette({
           onClick={onToggle}
           aria-label="Collapse node palette"
           title="Collapse node palette"
-          className="size-8 text-white/35 hover:bg-white/[0.06] hover:text-white"
+          className="size-8 text-muted-foreground hover:bg-muted hover:text-foreground dark:text-white/35 dark:hover:bg-white/[0.06] dark:hover:text-white"
         >
           <PanelLeftClose className="size-4" />
         </Button>
@@ -144,9 +144,9 @@ export function NodePalette({
           SEARCH (always visible)
           ================================================================ */}
 
-      <div className="shrink-0 border-b border-white/[0.075] px-3 py-2.5">
+      <div className="shrink-0 border-b border-border px-3 py-2.5 dark:border-white/[0.075]">
         <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-white/40" />
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground dark:text-white/40" />
 
           <input
             ref={searchInputRef}
@@ -163,11 +163,12 @@ export function NodePalette({
             aria-label="Search nodes"
             className={cn(
               "h-9 w-full rounded-lg",
-              "border border-white/[0.08] bg-white/[0.025]",
-              "pl-8 pr-8 text-xs text-white/85 outline-none",
-              "placeholder:text-white/45",
+              "border border-border bg-background",
+              "pl-8 pr-8 text-xs text-foreground outline-none",
+              "placeholder:text-muted-foreground",
               "transition-colors",
-              "focus:border-brand-400/30 focus:bg-white/[0.04]",
+              "focus:border-primary/40 focus:bg-background",
+              "dark:border-white/[0.08] dark:bg-white/[0.025] dark:text-white/85 dark:placeholder:text-white/45 dark:focus:border-brand-400/30 dark:focus:bg-white/[0.04]",
             )}
           />
 
@@ -179,12 +180,12 @@ export function NodePalette({
                 searchInputRef.current?.focus();
               }}
               aria-label="Clear search"
-              className="absolute right-2 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded text-white/40 transition-colors hover:bg-white/[0.06] hover:text-white"
+              className="absolute right-2 top-1/2 flex size-5 -translate-y-1/2 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground dark:text-white/40 dark:hover:bg-white/[0.06] dark:hover:text-white"
             >
               <X className="size-3" />
             </button>
           ) : (
-            <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-white/[0.08] px-1.5 py-px font-mono text-[10px] text-white/45">
+            <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-border bg-muted/60 px-1.5 py-px font-mono text-[10px] text-muted-foreground dark:border-white/[0.08] dark:bg-transparent dark:text-white/45">
               /
             </kbd>
           )}
@@ -199,7 +200,7 @@ export function NodePalette({
         {isLoading ? (
           <LoadingState />
         ) : isError ? (
-          <p className="px-2 py-4 text-xs text-red-300/80">
+          <p className="px-2 py-4 text-xs text-red-600 dark:text-red-300/80">
             Could not load node types.
           </p>
         ) : groups.length === 0 ? (
@@ -223,10 +224,10 @@ export function NodePalette({
           FOOTER
           ================================================================ */}
 
-      <div className="shrink-0 border-t border-white/[0.075] px-3 py-2.5">
-        <p className="text-[11px] leading-4 text-white/45">
+      <div className="shrink-0 border-t border-border px-3 py-2.5 dark:border-white/[0.075]">
+        <p className="text-[11px] leading-4 text-muted-foreground dark:text-white/45">
           Drag a node onto the canvas
-          <span className="mx-1 text-white/20">·</span>
+          <span className="mx-1 text-border dark:text-white/20">·</span>
           Click to add
         </p>
       </div>
@@ -257,9 +258,9 @@ function PaletteGroup({
         aria-expanded={isOpen}
         className={cn(
           "sticky top-0 z-10 -mx-2.5 mb-1 flex w-[calc(100%+20px)] items-center gap-1.5 px-3.5 py-2",
-          "bg-[#090909]/95 backdrop-blur",
+          "bg-card/95 backdrop-blur dark:bg-[#090909]/95",
           "text-left text-[10px] font-semibold uppercase tracking-[0.16em]",
-          "text-white/45 transition-colors hover:text-white/75",
+          "text-muted-foreground transition-colors hover:text-foreground dark:text-white/45 dark:hover:text-white/75",
         )}
       >
         <ChevronDown
@@ -276,7 +277,7 @@ function PaletteGroup({
 
         <span>{formatCategory(label)}</span>
 
-        <span className="ml-auto text-[10px] font-normal tabular-nums text-white/45">
+        <span className="ml-auto text-[10px] font-normal tabular-nums text-muted-foreground dark:text-white/45">
           {defs.length}
         </span>
       </button>
@@ -316,7 +317,7 @@ function PaletteItem({
         "rounded-lg border border-transparent px-2 py-2",
         "cursor-grab text-left",
         "transition-all duration-150",
-        "hover:border-zinc-200 hover:bg-zinc-100 dark:hover:border-white/[0.08] dark:hover:bg-white/[0.035]",
+        "hover:border-border hover:bg-muted/60 dark:hover:border-white/[0.08] dark:hover:bg-white/[0.035]",
         "active:cursor-grabbing",
       )}
     >
@@ -331,7 +332,7 @@ function PaletteItem({
 
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5">
-          <span className="truncate text-[12px] font-medium text-zinc-800 transition-colors group-hover:text-black dark:text-white/80 dark:group-hover:text-white">
+          <span className="truncate text-[12px] font-medium text-foreground transition-colors dark:text-white/80 dark:group-hover:text-white">
             {def.label}
           </span>
 
@@ -344,13 +345,13 @@ function PaletteItem({
         </span>
 
         {def.description && (
-          <span className="mt-0.5 block truncate text-[11px] leading-4 text-zinc-500 dark:text-white/45">
+          <span className="mt-0.5 block truncate text-[11px] leading-4 text-muted-foreground dark:text-white/45">
             {def.description}
           </span>
         )}
       </span>
 
-      <Plus className="size-3.5 shrink-0 text-transparent transition-colors group-hover:text-zinc-400 dark:group-hover:text-white/40" />
+      <Plus className="size-3.5 shrink-0 text-transparent transition-colors group-hover:text-muted-foreground dark:group-hover:text-white/40" />
     </button>
   );
 }
@@ -360,12 +361,12 @@ function LoadingState() {
     <div className="space-y-4 px-1 pt-3">
       {[1, 2, 3].map((group) => (
         <div key={group} className="space-y-2">
-          <div className="h-2.5 w-20 animate-pulse rounded bg-white/[0.05]" />
+          <div className="h-2.5 w-20 animate-pulse rounded bg-muted dark:bg-white/[0.05]" />
 
           {[1, 2, 3].map((item) => (
             <div
               key={item}
-              className="h-[52px] animate-pulse rounded-lg bg-white/[0.025]"
+              className="h-[52px] animate-pulse rounded-lg bg-muted/60 dark:bg-white/[0.025]"
             />
           ))}
         </div>
@@ -377,16 +378,16 @@ function LoadingState() {
 function EmptyState({ search }: { search: string }) {
   return (
     <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
-      <div className="mb-3 flex size-9 items-center justify-center rounded-lg border border-white/[0.07] bg-white/[0.025]">
-        <Search className="size-4 text-white/40" />
+      <div className="mb-3 flex size-9 items-center justify-center rounded-lg border border-border bg-muted/40 text-muted-foreground dark:border-white/[0.07] dark:bg-white/[0.025] dark:text-white/40">
+        <Search className="size-4" />
       </div>
 
-      <p className="text-xs font-medium text-white/70">
+      <p className="text-xs font-medium text-foreground dark:text-white/70">
         {search ? "No nodes found" : "No nodes available"}
       </p>
 
       {search && (
-        <p className="mt-1 text-[11px] text-white/45">
+        <p className="mt-1 text-[11px] text-muted-foreground dark:text-white/45">
           Try a different search.
         </p>
       )}

@@ -74,10 +74,15 @@ public enum IntegrationType {
         if (wire == null) {
             return null;
         }
+        String trimmed = wire.trim();
+        String normalized = trimmed.replace('-', '_');
         for (IntegrationType type : values()) {
-            if (type.wire.equalsIgnoreCase(wire)) {
+            if (type.wire.equalsIgnoreCase(trimmed) || type.wire.equalsIgnoreCase(normalized)) {
                 return type;
             }
+        }
+        if ("smtp".equalsIgnoreCase(trimmed)) {
+            return EMAIL;
         }
         return null;
     }

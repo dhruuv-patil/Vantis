@@ -1,8 +1,8 @@
 "use client";
 
 import { integrationCards } from "../data";
-import { SlackLogo, TeamsLogo } from "../logos";
 import { Reveal } from "../primitives";
+import { BrandIcon } from "@/components/brand/brand-icon";
 
 export function IntegrationsSection() {
   return (
@@ -36,30 +36,13 @@ export function IntegrationsSection() {
                       { "--integration-color": color } as React.CSSProperties
                     }
                   >
-                    {name === "Slack" ? (
-                      <SlackLogo />
-                    ) : name === "Microsoft Teams" ? (
-                      <TeamsLogo />
-                    ) : slug ? (
-                      <img
-                        className="integration-logo integration-logo-color"
-                        src={`https://thesvg.org/icons/${slug}/default.svg`}
-                        alt=""
-                        aria-hidden="true"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <span
-                        className="integration-generic-icon"
-                        aria-hidden="true"
-                      >
-                        {name === "HTTP APIs"
-                          ? "↗"
-                          : name === "Webhooks"
-                            ? "⌁"
-                            : "✉"}
-                      </span>
-                    )}
+                    <BrandIcon
+                      slug={slug}
+                      name={name}
+                      label={name}
+                      className="integration-logo integration-logo-color size-4 object-contain"
+                      theme="auto"
+                    />
                   </span>
                   <b>{name}</b>
                 </span>

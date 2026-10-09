@@ -5,8 +5,9 @@ import { useMutation } from "@tanstack/react-query";
 import { Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
-import { generateWorkflow, getErrorCode, getErrorMessage } from "@/lib/api";
-import type { GenerateWorkflowResult } from "@/types";
+import { generateWorkflow, getErrorCode, getErrorMessage, getPlanLimitDetail } from "@/lib/api";
+import type { GenerateWorkflowResult, PlanLimitDetail } from "@/types";
+import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +40,7 @@ export function GenerateWorkflowDialog({
     null,
   );
   const [notConfigured, setNotConfigured] = React.useState(false);
+  const [limitDetail, setLimitDetail] = React.useState<PlanLimitDetail | null>(null);
 
   // Reset on each open so a previous run's result never leaks into a new one.
   React.useEffect(() => {
@@ -46,6 +48,7 @@ export function GenerateWorkflowDialog({
       setPrompt("");
       setResult(null);
       setNotConfigured(false);
+      setLimitDetail(null);
     }
   }, [open]);
 
@@ -54,6 +57,7 @@ export function GenerateWorkflowDialog({
     onSuccess: (res) => {
       setNotConfigured(false);
       setResult(res);
+      setLimitDetail(null);
     },
     onError: (err) => {
       const code = getErrorCode(err);
@@ -61,9 +65,16 @@ export function GenerateWorkflowDialog({
         setNotConfigured(true);
         setResult(null);
       } else {
+        // Failure alert is never suppressed
         toast.error(
           getErrorMessage(err, "Could not generate a workflow. Try rewording."),
         );
+      }
+
+      // Structured plan limit details
+      const limit = getPlanLimitDetail(err);
+      if (limit) {
+        setLimitDetail(limit);
       }
     },
   });
@@ -90,6 +101,15 @@ export function GenerateWorkflowDialog({
             for you to review and edit — it is never run automatically.
           </DialogDescription>
         </DialogHeader>
+
+        {limitDetail && (
+          <UpgradePrompt
+            trigger="ai"
+            structuredError={limitDetail}
+            variant="inline"
+            onDismiss={() => setLimitDetail(null)}
+          />
+        )}
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">

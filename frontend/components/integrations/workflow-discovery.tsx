@@ -113,15 +113,15 @@ export function WorkflowDiscovery({
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="border-white/[0.08] !bg-[#0a0a0a] max-w-4xl max-h-[80vh]">
+      <DialogContent className="border-border dark:border-white/[0.08] bg-card dark:bg-[#0a0a0a] max-w-4xl max-h-[80vh]">
         <DialogHeader className="space-y-3">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04]">
-              <ProviderIcon name={integrationName} className="size-5" theme="dark" fallbackInitials />
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border dark:border-white/[0.08] bg-muted dark:bg-white/[0.04]">
+              <ProviderIcon name={integrationName} className="size-5" theme="auto" fallbackInitials />
             </div>
             <div className="space-y-0.5">
-              <DialogTitle className="text-white/90">Workflows for {integrationName}</DialogTitle>
-              <DialogDescription className="text-white/44">
+              <DialogTitle className="text-foreground dark:text-white/90">Workflows for {integrationName}</DialogTitle>
+              <DialogDescription className="text-muted-foreground dark:text-white/44">
                 Discovered workflows from your {integrationName} instance. Enable monitoring
                 to sync execution telemetry and run anomaly detection.
               </DialogDescription>
@@ -132,7 +132,7 @@ export function WorkflowDiscovery({
         <div className="space-y-4 py-4">
           {/* Test connection bar */}
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={handleTestConnection} disabled={isTesting} className="bg-[#0a0a0a] border-white/[0.08]">
+            <Button variant="outline" onClick={handleTestConnection} disabled={isTesting}>
               {isTesting && <Loader2 className="size-4 animate-spin mr-2" />}
               Test Connection
             </Button>
@@ -141,7 +141,7 @@ export function WorkflowDiscovery({
                 {testResult.success ? "Connected" : "Failed"}
               </Badge>
             )}
-            <Button variant="ghost" size="icon" onClick={loadWorkflows} className="text-white/60 hover:text-white">
+            <Button variant="ghost" size="icon" onClick={loadWorkflows} className="text-muted-foreground hover:text-foreground dark:text-white/60 dark:hover:text-white">
               <RefreshCw className="size-4" />
             </Button>
           </div>
@@ -152,9 +152,9 @@ export function WorkflowDiscovery({
               placeholder="Search workflows…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-[#0a0a0a] border-white/[0.08]"
+              className="pl-9"
             />
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/44" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground dark:text-white/44" />
           </div>
 
           {isLoading ? (
@@ -162,31 +162,31 @@ export function WorkflowDiscovery({
               <Loader2 className="size-6 animate-spin text-primary" />
             </div>
           ) : filteredWorkflows.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-white/44">
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground dark:text-white/44">
               <p>No workflows found.</p>
               <p className="text-sm">Click &quot;Test Connection&quot; then refresh to discover workflows.</p>
             </div>
           ) : (
-            <Card className="border-white/[0.08] !bg-[#0a0a0a]">
+            <Card className="border-border dark:border-white/[0.08] bg-card dark:bg-[#0a0a0a]">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-white/[0.08] hover:bg-transparent">
-                    <TableHead className="text-white/60">Workflow</TableHead>
-                    <TableHead className="text-white/60">Status</TableHead>
-                    <TableHead className="text-right text-white/60">Monitoring</TableHead>
+                  <TableRow className="border-border dark:border-white/[0.08] hover:bg-transparent">
+                    <TableHead className="text-muted-foreground dark:text-white/60">Workflow</TableHead>
+                    <TableHead className="text-muted-foreground dark:text-white/60">Status</TableHead>
+                    <TableHead className="text-right text-muted-foreground dark:text-white/60">Monitoring</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredWorkflows.map((wf) => (
-                    <TableRow key={wf.id} className="border-white/[0.08] hover:bg-white/[0.02]">
+                    <TableRow key={wf.id} className="border-border dark:border-white/[0.08] hover:bg-muted/40 dark:hover:bg-white/[0.02]">
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04]">
-                            <ProviderIcon name={integrationName} className="size-4" theme="dark" fallbackInitials />
+                          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border dark:border-white/[0.08] bg-muted dark:bg-white/[0.04]">
+                            <ProviderIcon name={integrationName} className="size-4" theme="auto" fallbackInitials />
                           </span>
                           <div>
-                            <p className="font-medium text-white/90">{wf.name}</p>
-                            <p className="text-xs text-white/44 font-mono">{wf.id}</p>
+                            <p className="font-medium text-foreground dark:text-white/90">{wf.name}</p>
+                            <p className="text-xs text-muted-foreground dark:text-white/44 font-mono">{wf.id}</p>
                           </div>
                         </div>
                       </TableCell>
@@ -222,7 +222,7 @@ export function WorkflowDiscovery({
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} className="text-white/60 hover:text-white">
+          <Button variant="ghost" onClick={onClose} className="text-muted-foreground hover:text-foreground dark:text-white/60 dark:hover:text-white">
             Done
           </Button>
         </DialogFooter>

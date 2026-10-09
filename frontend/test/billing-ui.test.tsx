@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import BillingPage from "../app/(app)/billing/page";
@@ -24,6 +24,7 @@ describe("BillingPage UI Component", () => {
     cleanup();
     vi.restoreAllMocks();
   });
+
   beforeEach(() => {
     window.matchMedia = (query: string) => ({
       matches: false,
@@ -41,8 +42,8 @@ describe("BillingPage UI Component", () => {
       accessToken: "mock-token",
       currentOrganization: {
         id: "org-1",
-        name: "Acme Corp",
-        slug: "acme-corp",
+        name: "Vantis",
+        slug: "vantis",
         createdAt: "2026-01-01T00:00:00Z",
         updatedAt: "2026-01-01T00:00:00Z",
       },
@@ -157,12 +158,12 @@ describe("BillingPage UI Component", () => {
           tagline: "Dedicated infrastructure and bespoke volume.",
           isCustom: true,
           isCurrent: false,
-          features: ["Unlimited workflows & executions"],
+          features: ["Up to 1,000 workflows & 1M executions"],
           limits: {
-            workflows: Infinity,
-            executionsPerMonth: Infinity,
-            aiGenerationsPerMonth: Infinity,
-            teamMembers: Infinity,
+            workflows: 1000,
+            executionsPerMonth: 1000000,
+            aiGenerationsPerMonth: 10000,
+            teamMembers: 100,
             featureFlags: {},
           },
         },
@@ -186,16 +187,132 @@ describe("BillingPage UI Component", () => {
       aiGenerations: { used: 28, limit: 100, percentage: 28 },
       teamMembers: { used: 2, limit: 5, percentage: 40 },
     });
-  });
 
+    vi.spyOn(apiModule, "fetchBillingSubscription").mockResolvedValue({
+      organizationId: "org-1",
+      plan: "PRIVATE_BETA",
+      billingStatus: "ACTIVE",
+      provider: "noop",
+      subscriptionStatus: "ACTIVE",
+      currentPeriodStart: "2026-01-01T00:00:00Z",
+      currentPeriodEnd: "2026-02-01T00:00:00Z",
+      isPrivateBeta: true,
+      betaEndsAt: null,
+      cancelAtPeriodEnd: false,
+      renewalActive: true,
+      foundingOfferEligible: true,
+      foundingOfferApplied: false,
+      foundingOfferEligibleUntil: null,
+      usage: {
+        workflows: 7,
+        executions: 1420,
+        aiGenerations: 28,
+        aiInvestigationsMonthly: 0,
+        aiInvestigationsTrial: 2,
+        seats: 2,
+        workspaces: 1,
+      },
+      planLimits: {
+        activeWorkflows: 10,
+        executionsPerMonth: 50000,
+        aiGenerations: 500,
+        aiInvestigationsMonthly: 50,
+        aiInvestigationsLifetimeTrial: 0,
+        seats: 10,
+        workspaces: 5,
+        historyRetentionDays: 30,
+        workflowVersionsKept: 30,
+        allowedNotificationChannels: ["EMAIL", "IN_APP", "WEBHOOK"],
+        anomalyDetectionMode: "full",
+      },
+      remainingUsage: {
+        workflows: 3,
+        executions: 48580,
+        aiGenerations: 472,
+        aiInvestigations: 50,
+        seats: 8,
+        workspaces: 4,
+      },
+      availablePlanTransitions: ["PRO", "BUSINESS"],
+      billingEnabled: false,
+    });
+
+    vi.spyOn(apiModule, "fetchBillingInvoices").mockResolvedValue([
+      {
+        id: "inv_123",
+        date: "2026-01-15T00:00:00Z",
+        amountPaid: 2500,
+        currency: "USD",
+        status: "PAID",
+        hostedInvoiceUrl: "https://billing.example.com/inv_123",
+        pdfUrl: null,
+      },
+    ]);
+
+    vi.spyOn(apiModule, "fetchBillingStatus").mockResolvedValue({
+      subscription: {
+        organizationId: "org-1",
+        plan: "PRIVATE_BETA",
+        billingStatus: "ACTIVE",
+        provider: "noop",
+        subscriptionStatus: "ACTIVE",
+        currentPeriodStart: "2026-01-01T00:00:00Z",
+        currentPeriodEnd: "2026-02-01T00:00:00Z",
+        isPrivateBeta: true,
+        cancelAtPeriodEnd: false,
+        renewalActive: true,
+        foundingOfferEligible: true,
+        foundingOfferApplied: false,
+        usage: {
+          workflows: 7,
+          executions: 1420,
+          aiGenerations: 28,
+          aiInvestigationsMonthly: 0,
+          aiInvestigationsTrial: 2,
+          seats: 2,
+          workspaces: 1,
+        },
+        planLimits: {
+          activeWorkflows: 10,
+          executionsPerMonth: 50000,
+          aiGenerations: 500,
+          aiInvestigationsMonthly: 50,
+          aiInvestigationsLifetimeTrial: 0,
+          seats: 10,
+          workspaces: 5,
+          historyRetentionDays: 30,
+          workflowVersionsKept: 30,
+          allowedNotificationChannels: ["EMAIL"],
+          anomalyDetectionMode: "full",
+        },
+        remainingUsage: {
+          workflows: 3,
+          executions: 48580,
+          aiGenerations: 472,
+          aiInvestigations: 50,
+          seats: 8,
+          workspaces: 4,
+        },
+        availablePlanTransitions: ["PRO"],
+        billingEnabled: false,
+      },
+      entitlements: {},
+      provider: "noop",
+      isBillingEnabled: false,
+      isPrivateBeta: true,
+      foundingOfferEligible: true,
+      foundingOfferApplied: false,
+      dunningActive: false,
+    });
+  });
 
   it("renders page header and Private Beta notice", async () => {
     useAuthStore.setState({
       status: "authenticated",
       currentOrganization: {
         id: "org-1",
-        name: "Acme Corp",
-        slug: "acme-corp",
+        name: "Vantis",
+        slug: "vantis",
         createdAt: "2026-01-01T00:00:00Z",
         updatedAt: "2026-01-01T00:00:00Z",
       },
@@ -231,6 +348,25 @@ describe("BillingPage UI Component", () => {
     });
   });
 
+  it("renders Founding Member offer card when eligible", async () => {
+    renderWithClient(<BillingPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Founding Member Offer Available")).toBeInTheDocument();
+      expect(screen.getByText("Claim Founding Offer")).toBeInTheDocument();
+    });
+  });
+
+  it("renders invoices section with invoice records", async () => {
+    renderWithClient(<BillingPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Invoices & Billing History")).toBeInTheDocument();
+      expect(screen.getByText("inv_123")).toBeInTheDocument();
+      expect(screen.getByText("PAID")).toBeInTheDocument();
+    });
+  });
+
   it("renders properly for anonymous logged-out visitor", async () => {
     useAuthStore.setState({
       status: "unauthenticated",
@@ -244,14 +380,12 @@ describe("BillingPage UI Component", () => {
   });
 
   it("supports mobile and desktop layouts gracefully", async () => {
-    // Mobile simulation
     window.innerWidth = 375;
     window.innerHeight = 667;
 
     const { container } = renderWithClient(<BillingPage />);
     expect(container.querySelector(".grid")).toBeInTheDocument();
 
-    // Desktop simulation
     window.innerWidth = 1440;
     window.innerHeight = 900;
     expect(container.querySelector(".lg\\:grid-cols-4, .lg\\:grid-cols-3")).toBeDefined();

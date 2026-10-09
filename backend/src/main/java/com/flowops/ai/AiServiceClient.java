@@ -190,12 +190,16 @@ public class AiServiceClient implements AiCompleter {
             throw new ApiException(ErrorCode.AI_SERVICE_ERROR);
         }
 
+        String reqId = currentRequestId();
         HttpRequest.Builder request = HttpRequest.newBuilder()
                 .uri(URI.create(properties.baseUrl() + path))
                 .timeout(properties.requestTimeout())
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8));
+        if (reqId != null && !reqId.isBlank()) {
+            request.header(com.flowops.common.error.RequestIdFilter.HEADER, reqId);
+        }
         if (!properties.token().isBlank()) {
             request.header("X-Service-Token", properties.token());
         }
@@ -205,22 +209,52 @@ public class AiServiceClient implements AiCompleter {
             response = client.send(request.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            throw new ApiException(ErrorCode.AI_SERVICE_ERROR);
+            throw new ApiException(ErrorCode.AI_SERVICE_ERROR, interrupted);
         } catch (IOException unreachable) {
-            log.warn("AI service call to {} failed: {}", path, unreachable.getClass().getSimpleName());
-            throw new ApiException(ErrorCode.AI_SERVICE_ERROR);
+            log.warn("AI service call to {} failed: {} requestId={}", path, unreachable.getClass().getSimpleName(), reqId);
+            throw new ApiException(ErrorCode.AI_SERVICE_ERROR, unreachable);
+        }
+
+        if (response.statusCode() == 422) {
+            String safeDetail = "validation failure";
+            try {
+                JsonNode errJson = mapper.readTree(response.body());
+                if (errJson.hasNonNull("detail")) {
+                    safeDetail = errJson.get("detail").asText();
+                } else if (errJson.hasNonNull("message")) {
+                    safeDetail = errJson.get("message").asText();
+                }
+            } catch (Exception ignored) {
+            }
+            log.warn("AI service call to {} returned HTTP 422: {} requestId={}", path, safeDetail, reqId);
+            if ("/ai/generate-workflow".equals(path)) {
+                throw new ApiException(ErrorCode.AI_GENERATION_FAILED, new RuntimeException("AI service 422: " + safeDetail));
+            }
+            throw new ApiException(ErrorCode.AI_SERVICE_ERROR, new RuntimeException("AI service 422: " + safeDetail));
         }
 
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            log.warn("AI service call to {} returned HTTP {}.", path, response.statusCode());
+            log.warn("AI service call to {} returned HTTP {}. requestId={}", path, response.statusCode(), reqId);
             throw new ApiException(ErrorCode.AI_SERVICE_ERROR);
         }
         try {
             return mapper.readTree(response.body());
         } catch (Exception unparseable) {
-            log.warn("AI service returned an unparseable body from {}", path);
-            throw new ApiException(ErrorCode.AI_SERVICE_ERROR);
+            log.warn("AI service returned an unparseable body from {} requestId={}", path, reqId);
+            throw new ApiException(ErrorCode.AI_SERVICE_ERROR, unparseable);
         }
+    }
+
+    private String currentRequestId() {
+        try {
+            org.springframework.web.context.request.RequestAttributes attrs =
+                    org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+            if (attrs instanceof org.springframework.web.context.request.ServletRequestAttributes sra) {
+                return com.flowops.common.error.RequestIdFilter.currentRequestId(sra.getRequest());
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     /**

@@ -459,6 +459,8 @@ public class NodeRegistry {
                 "Analyzes failure evidence and returns likely causes with confidence.",
                 NodeCategory.AI, "Spline", false, 1, List.of("out"),
                 List.of(
+                        ConfigField.multiline("instructions", "Instructions", false,
+                                "Analysis instructions or prompt guidance."),
                         ConfigField.multiline("input", "Failure context", false,
                                 "Logs, errors, and context; supports {{variable}} interpolation."))));
 

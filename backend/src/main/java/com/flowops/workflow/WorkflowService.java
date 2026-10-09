@@ -41,7 +41,8 @@ public class WorkflowService {
     private final WorkflowValidator validator;
     private final ObjectMapper objectMapper;
     private final WebhookEventDispatcher webhookEvents;
-    private final com.flowops.billing.BillingService billingService;
+    private final com.flowops.billing.service.EntitlementService entitlementService;
+    private final com.flowops.repository.OrganizationRepository organizationRepository;
 
     @org.springframework.beans.factory.annotation.Autowired
     public WorkflowService(
@@ -50,13 +51,15 @@ public class WorkflowService {
             WorkflowValidator validator,
             ObjectMapper objectMapper,
             WebhookEventDispatcher webhookEvents,
-            com.flowops.billing.BillingService billingService) {
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.flowops.billing.service.EntitlementService entitlementService,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.flowops.repository.OrganizationRepository organizationRepository) {
         this.workflows = workflows;
         this.versions = versions;
         this.validator = validator;
         this.objectMapper = objectMapper;
         this.webhookEvents = webhookEvents;
-        this.billingService = billingService;
+        this.entitlementService = entitlementService;
+        this.organizationRepository = organizationRepository;
     }
 
     public WorkflowService(
@@ -65,7 +68,7 @@ public class WorkflowService {
             WorkflowValidator validator,
             ObjectMapper objectMapper,
             WebhookEventDispatcher webhookEvents) {
-        this(workflows, versions, validator, objectMapper, webhookEvents, null);
+        this(workflows, versions, validator, objectMapper, webhookEvents, null, null);
     }
 
     @Transactional(readOnly = true)
@@ -82,9 +85,7 @@ public class WorkflowService {
 
     @Transactional
     public WorkflowDetailResponse create(FlowOpsPrincipal principal, CreateWorkflowRequest request) {
-        if (billingService != null) {
-            billingService.assertCanCreateWorkflow(principal.organizationId());
-        }
+        // Draft creation is completely ungated
         Workflow workflow = Workflow.create(
                 principal.organizationId(),
                 principal.userId(),
@@ -135,6 +136,21 @@ public class WorkflowService {
         if (!validation.valid()) {
             return WorkflowEnvelopes.PublishResult.rejected(validation);
         }
+
+        // Activation check:
+        // Grandfathering: do not use latestVersion == null as a proxy.
+        // Define "activation" by actual active state transition (inactive to active).
+        // Republishing an already-active workflow is never blocked.
+        // Reactivating an inactive workflow counts as a new activation.
+        // Atomic check: lock the org row so concurrent activations serialize.
+        boolean isActivating = workflow.getStatus() != WorkflowStatus.PUBLISHED;
+        if (isActivating && entitlementService != null) {
+            if (organizationRepository != null) {
+                organizationRepository.findByIdWithLock(principal.organizationId());
+            }
+            entitlementService.assertCanActivateWorkflow(principal.organizationId());
+        }
+
         int nextVersion = workflow.getLatestVersion() == null ? 1 : workflow.getLatestVersion() + 1;
         WorkflowVersion version = WorkflowVersion.create(
                 workflow.getId(),

@@ -50,7 +50,8 @@ public class RateLimiter {
             "forgot-password:",
             "reset-password:",
             "refresh:",
-            "invite-accept:"
+            "invite-accept:",
+            "billing:checkout:"
     );
 
     /**

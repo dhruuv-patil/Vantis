@@ -602,11 +602,17 @@ public class TemplateCatalog {
                         "message", "Post-incident review completed for incident {{trigger.id}}."),
                 6, 1);
 
+        g.node("notify_rejected", "notification", "Notify rejection",
+                Map.of("channel", "slack",
+                        "message", "Post-incident review rejected for incident {{trigger.id}}."),
+                5, 2);
+
         g.edge("trigger", "fetch", null);
         g.edge("fetch", "assess", null);
         g.edge("assess", "generate", null);
         g.edge("generate", "review", null);
         g.edge("review", "store", "approved");
+        g.edge("review", "notify_rejected", "rejected");
         g.edge("store", "notify", null);
 
         return template(

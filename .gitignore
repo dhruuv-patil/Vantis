@@ -1,8 +1,14 @@
 # Environment and secrets
 .env
 .env.*
+backend/.env
+backend/.env.*
+ai-service/.env
+ai-service/.env.*
 !.env.example
 !.env.*.example
+!backend/.env.example
+!ai-service/.env.example
 *.pem
 *.key
 *.p12

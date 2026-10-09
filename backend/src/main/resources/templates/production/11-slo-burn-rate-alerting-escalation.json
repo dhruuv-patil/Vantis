@@ -102,20 +102,6 @@
         }
       },
       {
-        "id": "gate",
-        "type": "condition",
-        "position": {
-          "x": 1480,
-          "y": 220
-        },
-        "data": {
-          "label": "SLO breached?",
-          "config": {
-            "expression": "{{monitor.output.inSla}} == false"
-          }
-        }
-      },
-      {
         "id": "incident",
         "type": "pagerduty_trigger_incident",
         "position": {
@@ -195,22 +181,16 @@
         "sourceHandle": null
       },
       {
-        "id": "e-monitor-gate",
+        "id": "e-monitor-incident-breached",
         "source": "monitor",
-        "target": "gate",
-        "sourceHandle": null
-      },
-      {
-        "id": "e-gate-incident-true",
-        "source": "gate",
         "target": "incident",
-        "sourceHandle": "true"
+        "sourceHandle": "breached"
       },
       {
-        "id": "e-gate-notify-false",
-        "source": "gate",
+        "id": "e-monitor-notify-insla",
+        "source": "monitor",
         "target": "notify",
-        "sourceHandle": "false"
+        "sourceHandle": "inSla"
       },
       {
         "id": "e-incident-escalate",
