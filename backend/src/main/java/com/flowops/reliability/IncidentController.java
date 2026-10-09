@@ -47,13 +47,13 @@ public class IncidentController {
     @Operation(summary = "Acknowledge an incident")
     public IncidentResponse acknowledge(@PathVariable UUID id) {
         FlowOpsPrincipal principal = AuthenticatedUser.requireRole(Role.MEMBER);
-        return incidentService.acknowledge(principal.organizationId(), id);
+        return incidentService.acknowledge(principal, id);
     }
 
     @PostMapping("/{id}/resolve")
     @Operation(summary = "Resolve an incident")
     public IncidentResponse resolve(@PathVariable UUID id) {
         FlowOpsPrincipal principal = AuthenticatedUser.requireRole(Role.MEMBER);
-        return incidentService.resolve(principal.organizationId(), id);
+        return incidentService.resolve(principal, id);
     }
 }

@@ -27,7 +27,10 @@ public enum AuditAction {
     PASSWORD_CHANGED("user"),
     ORGANIZATION_RENAMED("organization"),
     /** A non-terminal execution was re-queued on backend startup. Anonymous: no actor. */
-    EXECUTION_RECOVERED("execution");
+    EXECUTION_RECOVERED("execution"),
+    INTEGRATION_CREDENTIAL_UPDATED("integration"),
+    INCIDENT_ACKNOWLEDGED("incident"),
+    INCIDENT_RESOLVED("incident");
 
     private final String targetType;
 

@@ -9,11 +9,11 @@ import com.flowops.integration.provider.ProviderAuthenticationException;
 import com.flowops.integration.provider.ProviderConfigurationException;
 import com.flowops.integration.provider.ProviderConnectionException;
 import com.flowops.integration.provider.ProviderUnavailableException;
+import com.flowops.common.security.http.HardenedHttpClient;
+import com.flowops.common.security.http.HardenedHttpException;
+import com.flowops.common.security.http.HardenedHttpRequest;
+import com.flowops.common.security.http.HardenedHttpResponse;
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -43,15 +43,12 @@ public class ZapierClient {
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
 
-    private final HttpClient httpClient;
+    private final HardenedHttpClient httpClient;
     private final ObjectMapper mapper;
 
-    public ZapierClient(ObjectMapper mapper) {
+    public ZapierClient(HardenedHttpClient httpClient, ObjectMapper mapper) {
+        this.httpClient = httpClient;
         this.mapper = mapper;
-        this.httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(CONNECT_TIMEOUT)
-                .build();
     }
 
     public JsonNode testWebhook(IntegrationContext context) {
@@ -64,16 +61,18 @@ public class ZapierClient {
             throw new ProviderConfigurationException(
                     IntegrationType.ZAPIER, "Could not serialize test payload");
         }
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(webhookUrl))
-                .timeout(REQUEST_TIMEOUT)
+
+        HardenedHttpRequest request = HardenedHttpRequest.builder()
+                .post(webhookUrl)
                 .header("Accept", "application/json")
                 .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .body(body)
+                .connectTimeout(CONNECT_TIMEOUT)
+                .readTimeout(REQUEST_TIMEOUT)
                 .build();
+
         try {
-            HttpResponse<String> response = httpClient.send(
-                    request, HttpResponse.BodyHandlers.ofString());
+            HardenedHttpResponse response = httpClient.execute(request);
             int status = response.statusCode();
             if (status >= 200 && status < 300) {
                 return mapper.createObjectNode().put("status", "ok");
@@ -88,12 +87,8 @@ public class ZapierClient {
             }
             throw new ProviderUnavailableException(
                     IntegrationType.ZAPIER, "Webhook error (HTTP " + status + ").");
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new ProviderUnavailableException(
-                    IntegrationType.ZAPIER, "Request interrupted", e);
-        } catch (IOException e) {
-            log.warn("Zapier webhook test failed: {}", e.getClass().getSimpleName());
+        } catch (HardenedHttpException e) {
+            log.warn("Zapier webhook test failed: {}", e.getMessage());
             throw new ProviderConnectionException(
                     IntegrationType.ZAPIER, "Connection failed: " + e.getMessage(), e);
         }

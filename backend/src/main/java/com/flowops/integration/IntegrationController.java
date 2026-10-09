@@ -58,6 +58,14 @@ public class IntegrationController {
         return integrationService.connect(AuthenticatedUser.requireRole(Role.ADMIN), request);
     }
 
+    @org.springframework.web.bind.annotation.PutMapping(path = "/{id}/credentials", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Update or rotate credentials for an integration")
+    public IntegrationResponse updateCredentials(
+            @PathVariable UUID id,
+            @RequestBody java.util.Map<String, String> credentials) {
+        return integrationService.updateCredentials(AuthenticatedUser.requireRole(Role.ADMIN), id, credentials);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Disconnect an integration and destroy its stored secret")

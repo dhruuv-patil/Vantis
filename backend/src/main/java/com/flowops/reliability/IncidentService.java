@@ -3,10 +3,13 @@ package com.flowops.reliability;
 import com.flowops.api.IncidentResponse;
 import com.flowops.common.error.ApiException;
 import com.flowops.common.error.ErrorCode;
+import com.flowops.audit.AuditService;
 import com.flowops.domain.AnomalySeverity;
+import com.flowops.domain.AuditAction;
 import com.flowops.domain.Incident;
 import com.flowops.domain.IncidentStatus;
 import com.flowops.repository.IncidentRepository;
+import com.flowops.security.FlowOpsPrincipal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -17,9 +20,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class IncidentService {
 
     private final IncidentRepository incidents;
+    private final AuditService auditService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public IncidentService(IncidentRepository incidents, @org.springframework.beans.factory.annotation.Autowired(required = false) AuditService auditService) {
+        this.incidents = incidents;
+        this.auditService = auditService;
+    }
 
     public IncidentService(IncidentRepository incidents) {
-        this.incidents = incidents;
+        this(incidents, null);
     }
 
     @Transactional(readOnly = true)
@@ -76,7 +86,33 @@ public class IncidentService {
         Incident incident = incidents.findByIdAndOrganizationId(incidentId, organizationId)
                 .orElseThrow(() -> new ApiException(ErrorCode.INCIDENT_NOT_FOUND));
         incident.acknowledge();
-        return IncidentResponse.of(incidents.save(incident));
+        Incident saved = incidents.save(incident);
+        if (auditService != null) {
+            auditService.record(
+                    organizationId,
+                    null,
+                    null,
+                    AuditAction.INCIDENT_ACKNOWLEDGED,
+                    incidentId.toString(),
+                    "Incident acknowledged: " + incident.getTitle());
+        }
+        return IncidentResponse.of(saved);
+    }
+
+    @Transactional
+    public IncidentResponse acknowledge(FlowOpsPrincipal principal, UUID incidentId) {
+        Incident incident = incidents.findByIdAndOrganizationId(incidentId, principal.organizationId())
+                .orElseThrow(() -> new ApiException(ErrorCode.INCIDENT_NOT_FOUND));
+        incident.acknowledge();
+        Incident saved = incidents.save(incident);
+        if (auditService != null) {
+            auditService.record(
+                    principal,
+                    AuditAction.INCIDENT_ACKNOWLEDGED,
+                    incidentId.toString(),
+                    "Incident acknowledged: " + incident.getTitle());
+        }
+        return IncidentResponse.of(saved);
     }
 
     @Transactional
@@ -84,6 +120,32 @@ public class IncidentService {
         Incident incident = incidents.findByIdAndOrganizationId(incidentId, organizationId)
                 .orElseThrow(() -> new ApiException(ErrorCode.INCIDENT_NOT_FOUND));
         incident.resolve();
-        return IncidentResponse.of(incidents.save(incident));
+        Incident saved = incidents.save(incident);
+        if (auditService != null) {
+            auditService.record(
+                    organizationId,
+                    null,
+                    null,
+                    AuditAction.INCIDENT_RESOLVED,
+                    incidentId.toString(),
+                    "Incident resolved: " + incident.getTitle());
+        }
+        return IncidentResponse.of(saved);
+    }
+
+    @Transactional
+    public IncidentResponse resolve(FlowOpsPrincipal principal, UUID incidentId) {
+        Incident incident = incidents.findByIdAndOrganizationId(incidentId, principal.organizationId())
+                .orElseThrow(() -> new ApiException(ErrorCode.INCIDENT_NOT_FOUND));
+        incident.resolve();
+        Incident saved = incidents.save(incident);
+        if (auditService != null) {
+            auditService.record(
+                    principal,
+                    AuditAction.INCIDENT_RESOLVED,
+                    incidentId.toString(),
+                    "Incident resolved: " + incident.getTitle());
+        }
+        return IncidentResponse.of(saved);
     }
 }

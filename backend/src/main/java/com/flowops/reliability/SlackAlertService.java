@@ -10,11 +10,10 @@ import com.flowops.domain.IntegrationCredential;
 import com.flowops.common.crypto.CredentialCipher;
 import com.flowops.config.ReliabilityProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
+import com.flowops.common.security.http.HardenedHttpClient;
+import com.flowops.common.security.http.HardenedHttpRequest;
+import com.flowops.common.security.http.HardenedHttpResponse;
+import java.time.Duration;
 import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -45,20 +44,21 @@ public class SlackAlertService {
     private final CredentialCipher cipher;
     private final ExecutionStore executionStore;
     private final ObjectMapper mapper;
-    private final HttpClient httpClient;
+    private final HardenedHttpClient httpClient;
 
     public SlackAlertService(
             IntegrationRepository integrations,
             IntegrationCredentialRepository credentials,
             CredentialCipher cipher,
             ExecutionStore executionStore,
-            ObjectMapper mapper) {
+            ObjectMapper mapper,
+            HardenedHttpClient httpClient) {
         this.integrations = integrations;
         this.credentials = credentials;
         this.cipher = cipher;
         this.executionStore = executionStore;
         this.mapper = mapper;
-        this.httpClient = HttpClient.newHttpClient();
+        this.httpClient = httpClient;
     }
 
     /**
@@ -176,26 +176,24 @@ public class SlackAlertService {
 
             String body = mapper.writeValueAsString(payload);
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(webhookUrl))
-                    .timeout(java.time.Duration.ofSeconds(10))
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
+            HardenedHttpRequest request = HardenedHttpRequest.builder()
+                    .post(webhookUrl, body, "application/json")
+                    .timeout(Duration.ofSeconds(10))
                     .build();
 
-            httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                    .thenAccept(response -> {
-                        int status = response.statusCode();
-                        if (status >= 200 && status < 300) {
-                            log.debug("Slack anomaly alert delivered successfully");
-                        } else {
-                            log.warn("Slack rejected anomaly alert (HTTP {})", status);
-                        }
-                    })
-                    .exceptionally(ex -> {
-                        log.warn("Failed to send Slack anomaly alert: {}", ex.getMessage());
-                        return null;
-                    });
+            // Run async to preserve fire-and-forget behavior
+            java.util.concurrent.CompletableFuture.runAsync(() -> {
+                try {
+                    HardenedHttpResponse response = httpClient.execute(request);
+                    if (response.isSuccess()) {
+                        log.debug("Slack anomaly alert delivered successfully");
+                    } else {
+                        log.warn("Slack rejected anomaly alert (HTTP {})", response.statusCode());
+                    }
+                } catch (Exception ex) {
+                    log.warn("Failed to send Slack anomaly alert: {}", ex.getMessage());
+                }
+            });
 
         } catch (Exception e) {
             log.warn("Error building/sending Slack anomaly alert: {}", e.getMessage());

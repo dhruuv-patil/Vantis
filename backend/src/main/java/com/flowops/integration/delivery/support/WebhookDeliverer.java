@@ -3,11 +3,12 @@ package com.flowops.integration.delivery.support;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flowops.integration.delivery.DeliveryResult;
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
+import com.flowops.common.security.http.HardenedHttpClient;
+import com.flowops.common.security.http.HardenedHttpException;
+import com.flowops.common.security.http.HardenedHttpRequest;
+import com.flowops.common.security.http.HardenedHttpResponse;
+import com.flowops.common.security.http.SsrfBlockedException;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 import org.springframework.stereotype.Component;
@@ -31,18 +32,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class WebhookDeliverer {
 
-    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(30);
 
-    private final HttpClient client;
+    private final HardenedHttpClient client;
     private final ObjectMapper mapper;
 
-    public WebhookDeliverer(ObjectMapper mapper) {
+    public WebhookDeliverer(HardenedHttpClient client, ObjectMapper mapper) {
+        this.client = client;
         this.mapper = mapper;
-        this.client = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(CONNECT_TIMEOUT)
-                .build();
     }
 
     /**
@@ -80,44 +77,34 @@ public class WebhookDeliverer {
         long start = System.nanoTime();
         Duration timeout = requestTimeout == null ? DEFAULT_REQUEST_TIMEOUT : requestTimeout;
 
-        // Every webhook-style delivery goes through the same destination policy as
-        // workflow HTTP nodes: loopback, private ranges, and metadata endpoints are
-        // refused before a socket is opened. A stored Slack/Teams/Discord webhook URL
-        // is always public (hooks.slack.com et al.), so honest connections are unaffected.
-        java.net.URI uri;
-        try {
-            uri = com.flowops.common.security.SsrfGuard.validate(url);
-        } catch (com.flowops.common.error.ApiException | IllegalArgumentException blocked) {
-            return DeliveryResult.failure(
-                    DeliveryResult.Code.INVALID_CONFIG,
-                    "The webhook target is not allowed.",
-                    false, null, millisSince(start));
-        }
-
-        HttpRequest.Builder request = HttpRequest.newBuilder()
-                .uri(uri)
-                .timeout(timeout)
+        HardenedHttpRequest.Builder requestBuilder = HardenedHttpRequest.builder()
+                .post(url)
+                .readTimeout(timeout)
+                .connectTimeout(timeout)
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json");
+
         if (headers != null) {
-            headers.forEach(request::header);
+            headers.forEach(requestBuilder::header);
         }
-        request.POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8));
+        if (body != null) {
+            requestBuilder.body(body);
+        }
 
         try {
-            HttpResponse<String> response = client.send(
-                    request.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HardenedHttpResponse response = client.execute(requestBuilder.build());
             long durationMs = millisSince(start);
             return classify(response.statusCode(), durationMs);
-        } catch (InterruptedException interrupted) {
-            Thread.currentThread().interrupt();
+        } catch (SsrfBlockedException blocked) {
             return DeliveryResult.failure(
-                    DeliveryResult.Code.NETWORK_ERROR, "Delivery was interrupted.", true, null,
-                    millisSince(start));
-        } catch (IOException | IllegalArgumentException networkFailure) {
+                    DeliveryResult.Code.INVALID_CONFIG,
+                    "The webhook target is not allowed: " + blocked.getMessage(),
+                    false, null, millisSince(start));
+        } catch (HardenedHttpException failure) {
             return DeliveryResult.failure(
                     DeliveryResult.Code.NETWORK_ERROR,
-                    "Could not reach the webhook endpoint.", true, null, millisSince(start));
+                    "Could not reach the webhook endpoint: " + failure.getMessage(),
+                    true, null, millisSince(start));
         }
     }
 

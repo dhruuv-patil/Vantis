@@ -339,4 +339,38 @@ public class IntegrationService {
 
         return new DecryptedCredentials(decrypted);
     }
+
+    @Transactional
+    public IntegrationResponse updateCredentials(
+            FlowOpsPrincipal principal,
+            UUID id,
+            Map<String, String> credentialsMap) {
+
+        Integration integration = require(principal, id);
+        if (credentialsMap == null || credentialsMap.isEmpty()) {
+            throw ApiException.validation("credentials", "Credentials map cannot be empty");
+        }
+
+        String ciphertext = cipher.encryptJson(credentialsMap);
+        IntegrationCredential credential = credentials.findByIntegrationId(integration.getId())
+                .orElse(null);
+
+        if (credential == null) {
+            credentials.save(IntegrationCredential.create(integration.getId(), ciphertext));
+        } else {
+            credential.updateCiphertext(ciphertext);
+        }
+
+        if (!integration.isConnected()) {
+            integration.connect(integration.getName(), integration.getHint());
+        }
+
+        audit.record(
+                principal,
+                AuditAction.INTEGRATION_CREDENTIAL_UPDATED,
+                integration.getId().toString(),
+                "Updated credentials for " + integration.getName() + " integration.");
+
+        return IntegrationResponse.of(integration);
+    }
 }

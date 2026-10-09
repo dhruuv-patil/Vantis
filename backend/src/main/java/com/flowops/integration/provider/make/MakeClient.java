@@ -11,11 +11,11 @@ import com.flowops.integration.provider.ProviderConnectionException;
 import com.flowops.integration.provider.ProviderRateLimitException;
 import com.flowops.integration.provider.ProviderResponseException;
 import com.flowops.integration.provider.ProviderUnavailableException;
+import com.flowops.common.security.http.HardenedHttpClient;
+import com.flowops.common.security.http.HardenedHttpException;
+import com.flowops.common.security.http.HardenedHttpRequest;
+import com.flowops.common.security.http.HardenedHttpResponse;
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,15 +46,12 @@ public class MakeClient {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
     private static final String DEFAULT_BASE_URL = "https://eu1.make.com";
 
-    private final HttpClient httpClient;
+    private final HardenedHttpClient httpClient;
     private final ObjectMapper mapper;
 
-    public MakeClient(ObjectMapper mapper) {
+    public MakeClient(HardenedHttpClient httpClient, ObjectMapper mapper) {
+        this.httpClient = httpClient;
         this.mapper = mapper;
-        this.httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(CONNECT_TIMEOUT)
-                .build();
     }
 
     public JsonNode listScenarios(IntegrationContext context, int limit) {
@@ -68,30 +65,26 @@ public class MakeClient {
     private JsonNode get(IntegrationContext context, String path) {
         String baseUrl = baseUrl(context);
         String token = token(context);
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + path))
-                .timeout(REQUEST_TIMEOUT)
+        HardenedHttpRequest request = HardenedHttpRequest.builder()
+                .get(baseUrl + path)
                 .header("Accept", "application/json")
                 .header("Authorization", "Token " + token)
-                .GET()
+                .connectTimeout(CONNECT_TIMEOUT)
+                .readTimeout(REQUEST_TIMEOUT)
                 .build();
         try {
-            HttpResponse<String> response = httpClient.send(
-                    request, HttpResponse.BodyHandlers.ofString());
+            HardenedHttpResponse response = httpClient.execute(request);
             return handleResponse(response);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new ProviderUnavailableException(IntegrationType.MAKE, "Request interrupted", e);
-        } catch (IOException e) {
-            log.warn("Make HTTP request failed: {}", e.getClass().getSimpleName());
+        } catch (HardenedHttpException e) {
+            log.warn("Make HTTP request failed: {}", e.getMessage());
             throw new ProviderConnectionException(
                     IntegrationType.MAKE, "Connection failed: " + e.getMessage(), e);
         }
     }
 
-    private JsonNode handleResponse(HttpResponse<String> response) {
+    private JsonNode handleResponse(HardenedHttpResponse response) {
         int status = response.statusCode();
-        String body = response.body();
+        String body = response.bodyAsString();
         if (status >= 200 && status < 300) {
             try {
                 if (body == null || body.isBlank()) {
@@ -113,8 +106,12 @@ public class MakeClient {
                     "Not found — check the Make region base URL (HTTP 404).");
         }
         if (status == 429) {
+            long retryAfter = 60;
+            try {
+                retryAfter = Long.parseLong(response.header("Retry-After").orElse("60"));
+            } catch (NumberFormatException ignored) {}
             throw new ProviderRateLimitException(
-                    IntegrationType.MAKE, "Rate limited (HTTP 429).", 60);
+                    IntegrationType.MAKE, "Rate limited (HTTP 429).", retryAfter);
         }
         if (status >= 500) {
             throw new ProviderUnavailableException(
