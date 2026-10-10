@@ -19,6 +19,7 @@ public record AuthProperties(
         @DefaultValue("15m") Duration accessTokenTtl,
         @DefaultValue("7d") Duration refreshTokenTtl,
         @DefaultValue("1h") Duration resetTokenTtl,
+        @DefaultValue("24h") Duration verificationTokenTtl,
         @DefaultValue("12") int bcryptStrength,
         RefreshCookie refreshCookie) {
 

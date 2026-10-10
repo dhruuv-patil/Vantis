@@ -17,6 +17,7 @@ public record UserResponse(
         String email,
         String fullName,
         String avatarUrl,
+        boolean emailVerified,
         Instant createdAt,
         Instant updatedAt) {
 
@@ -26,6 +27,7 @@ public record UserResponse(
                 user.getEmail(),
                 user.getFullName(),
                 user.getAvatarUrl(),
+                user.isEmailVerified(),
                 user.getCreatedAt(),
                 user.getUpdatedAt());
     }

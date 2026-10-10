@@ -59,6 +59,8 @@ public class SecurityConfig {
         // type (CSRF preflight), not a bearer token.
         "/api/auth/forgot-password",
         "/api/auth/reset-password",
+        "/api/auth/verify-email",
+        "/api/auth/resend-verification",
         "/oauth2/**",
         "/login/oauth2/**",
         "/v3/api-docs",

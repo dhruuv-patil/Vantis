@@ -40,6 +40,9 @@ public class UserAccount {
     @Column(name = "avatar_url", length = 512)
     private String avatarUrl;
 
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -63,6 +66,7 @@ public class UserAccount {
         user.passwordHash = passwordHash;
         user.fullName = fullName;
         user.avatarUrl = null;
+        user.emailVerified = false;
         // Millisecond precision keeps the serialized ISO-8601 form stable across a
         // database round trip (Postgres stores microseconds).
         Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
@@ -83,6 +87,7 @@ public class UserAccount {
         user.passwordHash = null;
         user.fullName = fullName != null && !fullName.isBlank() ? fullName : email.split("@")[0];
         user.avatarUrl = avatarUrl;
+        user.emailVerified = true;
         Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         user.createdAt = now;
         user.updatedAt = now;
@@ -123,6 +128,15 @@ public class UserAccount {
             this.avatarUrl = avatarUrl;
             this.updatedAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         }
+    }
+
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public void markEmailVerified() {
+        this.emailVerified = true;
+        this.updatedAt = Instant.now().truncatedTo(ChronoUnit.MILLIS);
     }
 
     public boolean hasPassword() {

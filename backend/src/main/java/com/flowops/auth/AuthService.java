@@ -59,6 +59,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final Duration refreshTokenTtl;
     private final AuditService audit;
+    private final EmailVerificationService emailVerificationService;
 
     /**
      * A throwaway hash compared against when the email is unknown, so a login
@@ -77,7 +78,8 @@ public class AuthService {
             SessionAssembler sessionAssembler,
             PasswordEncoder passwordEncoder,
             AuthProperties properties,
-            AuditService audit) {
+            AuditService audit,
+            EmailVerificationService emailVerificationService) {
         this.users = users;
         this.organizations = organizations;
         this.members = members;
@@ -88,19 +90,16 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenTtl = properties.refreshTokenTtl();
         this.audit = audit;
+        this.emailVerificationService = emailVerificationService;
         this.timingEqualizerHash = passwordEncoder.encode(OpaqueTokens.mint());
     }
 
     /**
      * Creates user + organization + {@code OWNER} membership atomically, then
-     * opens a session (contract §5.1).
-     *
-     * <p>Deliberately not {@code @Transactional}: {@link AccountCreator} owns
-     * its own transaction so that a unique-constraint violation rolls back only
-     * the insert, leaving this method able to query the database to decide which
-     * constraint failed.
+     * generates a verification token and sends a verification email.
+     * No session or tokens are issued until email verification has completed.
      */
-    public AuthResult register(RegisterRequest request, String userAgent, String ip) {
+    public RegisterResponse register(RegisterRequest request, String userAgent, String ip) {
         assertPasswordByteLength(request.password());
 
         /*
@@ -132,12 +131,12 @@ public class AuthService {
                     first);
         }
 
-        return startSession(
-                created.user(),
-                created.organization(),
-                created.membership().getRole(),
-                userAgent,
-                ip);
+        emailVerificationService.createAndSendToken(created.user());
+
+        return new RegisterResponse(
+                created.user().getEmail(),
+                false,
+                "Registration successful. Please check your email to verify your account.");
     }
 
     /**
@@ -210,6 +209,10 @@ public class AuthService {
             }
 
             throw new ApiException(ErrorCode.INVALID_CREDENTIALS);
+        }
+
+        if (!user.isEmailVerified()) {
+            throw new ApiException(ErrorCode.EMAIL_NOT_VERIFIED);
         }
 
         OrganizationMember membership =
@@ -290,6 +293,10 @@ public class AuthService {
                         .orElseThrow(
                                 () -> new ApiException(
                                         ErrorCode.REFRESH_TOKEN_INVALID));
+
+        if (!user.isEmailVerified()) {
+            throw new ApiException(ErrorCode.EMAIL_NOT_VERIFIED);
+        }
 
         Organization organization =
                 requireOrganization(

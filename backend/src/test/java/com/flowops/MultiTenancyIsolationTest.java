@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flowops.domain.Role;
+import com.flowops.repository.UserRepository;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -435,21 +436,35 @@ class MultiTenancyIsolationTest {
     }
 
     private Session register(String email, String orgName) throws Exception {
-        MvcResult result = mvc.perform(post("/api/auth/register")
+        mvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"" + email + "\","
                                 + "\"password\":\"pass-word-1234\","
                                 + "\"fullName\":\"Test User\","
                                 + "\"organizationName\":\"" + orgName + "\"}"))
-                .andExpect(status().isCreated())
+                .andExpect(status().isCreated());
+
+        // Mark verified in-process (bypasses email delivery in tests).
+        users.findByEmailIgnoreCase(email).ifPresent(u -> {
+            u.markEmailVerified();
+            users.save(u);
+        });
+
+        MvcResult loginResult = mvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"" + email + "\",\"password\":\"pass-word-1234\"}"))
+                .andExpect(status().isOk())
                 .andReturn();
 
-        JsonNode body = MAPPER.readTree(result.getResponse().getContentAsString());
+        JsonNode body = MAPPER.readTree(loginResult.getResponse().getContentAsString());
         return new Session(
                 body.get("accessToken").asText(),
                 UUID.fromString(body.get("user").get("id").asText()),
                 UUID.fromString(body.get("currentOrganization").get("id").asText()));
     }
+
+    @Autowired
+    private UserRepository users;
 
     @Autowired
     private com.flowops.repository.OrganizationMemberRepository members;

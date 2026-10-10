@@ -179,22 +179,75 @@ export const resolveBrandSlug = resolveTheSvgSlug;
  */
 export const MONO_DARK_SLUGS = new Set([
   "github",
-  "github-actions",
   "vercel",
   "notion",
   "openai",
   "anthropic",
   "resend",
   "sentry",
-  "pipedrive",
   "temporal",
-  "aws",
-  "linear",
   "cohere",
 ]);
 
 export function isMonoDarkBrand(slug: string): boolean {
   return MONO_DARK_SLUGS.has(slug);
+}
+
+/**
+ * Slugs whose local SVG in /public/integrations/ is curated and contrast-corrected
+ * to prevent 3rd-party CDN quirks (such as white fills in light mode or opaque background masks).
+ */
+export const LOCAL_FIRST_SLUGS = new Set([
+  "notion",
+  "pipedrive",
+  "anthropic",
+  "openai",
+  "vercel",
+  "resend",
+]);
+
+/**
+ * Slugs that are served with white fills on remote CDNs (like theSVG.org default.svg).
+ * When rendered from CDN in light theme, they must be darkened to black to maintain contrast.
+ */
+export const WHITE_CDN_SLUGS = new Set([
+  "anthropic",
+  "openai",
+  "vercel",
+  "resend",
+]);
+
+export function getBrandImageSource(slug: string, sourceIndex: number): string | null {
+  const isLocalFirst = LOCAL_FIRST_SLUGS.has(slug);
+  if (sourceIndex === 0) {
+    return isLocalFirst ? `/integrations/${slug}.svg` : theSvgUrl(slug);
+  }
+  if (sourceIndex === 1) {
+    return isLocalFirst ? theSvgUrl(slug) : `/integrations/${slug}.svg`;
+  }
+  return null;
+}
+
+export function getBrandThemeFilterClass(
+  slug: string | null | undefined,
+  theme: "dark" | "light" | "auto" = "auto",
+  src?: string | null,
+): string {
+  if (!slug) return "";
+
+  const isMono = MONO_DARK_SLUGS.has(slug);
+  if (!isMono) return "";
+
+  const isCdn = Boolean(src && src.startsWith("https://thesvg.org"));
+  if (isCdn && WHITE_CDN_SLUGS.has(slug)) {
+    if (theme === "dark") return "";
+    if (theme === "light") return "brightness-0";
+    return "brightness-0 dark:brightness-100";
+  }
+
+  if (theme === "dark") return "brightness-0 invert";
+  if (theme === "light") return "";
+  return "dark:brightness-0 dark:invert";
 }
 
 export const BRAND_TITLES: Record<string, string> = {
@@ -420,45 +473,22 @@ export function BrandIcon({
     setSourceIndex(0);
   }, [slug]);
 
-  const isMonoDark = slug ? MONO_DARK_SLUGS.has(slug) : false;
+  const src = slug ? getBrandImageSource(slug, sourceIndex) : null;
+  const themeFilterClass = getBrandThemeFilterClass(slug, theme, src);
 
-  const themeFilterClass = isMonoDark
-    ? theme === "dark"
-      ? "brightness-0 invert"
-      : theme === "light"
-      ? ""
-      : "dark:brightness-0 dark:invert"
-    : "";
-
-  // 1. Try remote theSVG CDN
-  if (slug && sourceIndex === 0) {
+  // 1 & 2. Try primary source (local for LOCAL_FIRST_SLUGS, CDN for others) then fallback
+  if (slug && src && (sourceIndex === 0 || sourceIndex === 1)) {
     return (
       <img
-        src={theSvgUrl(slug)}
+        src={src}
         alt={alt}
         aria-hidden={!alt}
         draggable={false}
         loading="lazy"
         decoding="async"
-        referrerPolicy="no-referrer"
+        referrerPolicy={src.startsWith("http") ? "no-referrer" : undefined}
         className={cn("object-contain", className, themeFilterClass)}
-        onError={() => setSourceIndex(1)}
-      />
-    );
-  }
-
-  // 2. Try local public SVG fallback
-  if (slug && sourceIndex === 1) {
-    return (
-      <img
-        src={`/integrations/${slug}.svg`}
-        alt={alt}
-        aria-hidden={!alt}
-        draggable={false}
-        loading="lazy"
-        decoding="async"
-        className={cn("object-contain", className, themeFilterClass)}
-        onError={() => setSourceIndex(2)}
+        onError={() => setSourceIndex((prev) => prev + 1)}
       />
     );
   }
@@ -553,28 +583,21 @@ export function NodeIcon({
   }, [slug]);
 
   const size = SIZES[variant];
-  const isMonoDark = slug ? MONO_DARK_SLUGS.has(slug) : false;
-
-  const themeFilterClass = isMonoDark
-    ? theme === "dark"
-      ? "brightness-0 invert"
-      : theme === "light"
-      ? ""
-      : "dark:brightness-0 dark:invert"
-    : "";
+  const src = slug ? getBrandImageSource(slug, sourceIndex) : null;
+  const themeFilterClass = getBrandThemeFilterClass(slug, theme, src);
 
   let visual: React.ReactNode;
 
-  if (slug && sourceIndex === 0) {
+  if (slug && src && (sourceIndex === 0 || sourceIndex === 1)) {
     visual = (
       <img
-        src={theSvgUrl(slug)}
+        src={src}
         alt=""
         aria-hidden="true"
         draggable={false}
         loading="lazy"
         decoding="async"
-        referrerPolicy="no-referrer"
+        referrerPolicy={src.startsWith("http") ? "no-referrer" : undefined}
         className={cn(
           "object-contain",
           size.logo,
@@ -582,26 +605,7 @@ export function NodeIcon({
             "drop-shadow-[0_1px_2px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)]",
           themeFilterClass,
         )}
-        onError={() => setSourceIndex(1)}
-      />
-    );
-  } else if (slug && sourceIndex === 1) {
-    visual = (
-      <img
-        src={`/integrations/${slug}.svg`}
-        alt=""
-        aria-hidden="true"
-        draggable={false}
-        loading="lazy"
-        decoding="async"
-        className={cn(
-          "object-contain",
-          size.logo,
-          variant === "node" &&
-            "drop-shadow-[0_1px_2px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)]",
-          themeFilterClass,
-        )}
-        onError={() => setSourceIndex(2)}
+        onError={() => setSourceIndex((prev) => prev + 1)}
       />
     );
   } else {

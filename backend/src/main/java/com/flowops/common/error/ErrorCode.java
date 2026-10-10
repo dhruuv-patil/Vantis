@@ -30,6 +30,10 @@ public enum ErrorCode {
             "Your session has expired. Please sign in again."),
     RESET_TOKEN_INVALID(HttpStatus.UNAUTHORIZED,
             "The reset link is invalid or has expired. Please request a new one."),
+    VERIFICATION_TOKEN_INVALID(HttpStatus.BAD_REQUEST,
+            "The verification link is invalid or has expired. Please request a new one."),
+    EMAIL_NOT_VERIFIED(HttpStatus.FORBIDDEN,
+            "Please verify your email address to continue."),
 
     FORBIDDEN_ROLE(HttpStatus.FORBIDDEN, "You do not have permission to do that."),
     NO_ORGANIZATION_CONTEXT(HttpStatus.FORBIDDEN, "You do not belong to any organization."),

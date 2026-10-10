@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export function LandingHeader() {
   const [mobile, setMobile] = useState(false);
@@ -33,7 +32,6 @@ export function LandingHeader() {
           <a href="#faq">FAQs</a>
         </nav>
         <div className="header-actions">
-          <ThemeToggle />
           <Link href="/login">Log in</Link>
           <Link href="/register" className="white-button">
             Sign up
@@ -50,9 +48,6 @@ export function LandingHeader() {
           <a href="#integrations">Integrations</a>
           <a href="#security">Security</a>
           <a href="#faq">FAQs</a>
-          <div className="pt-2 flex justify-center">
-            <ThemeToggle />
-          </div>
         </div>
       )}
     </>

@@ -67,12 +67,16 @@ function RegisterPageContent() {
     setSubmitting(true);
 
     try {
-      await register({
+      const result = await register({
         fullName: parsed.data.fullName,
         email: parsed.data.email,
         password: parsed.data.password,
       });
-      router.replace(next);
+      // Registration no longer issues a session — redirect to the
+      // "check your inbox" page, passing the email so it can be displayed.
+      router.replace(
+        `/check-email?email=${encodeURIComponent(result.email)}`,
+      );
     } catch (err) {
       const fieldErrors = getFieldErrors(err);
 

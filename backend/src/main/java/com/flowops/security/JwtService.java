@@ -66,6 +66,7 @@ public class JwtService {
                 .claim("orgId", organizationId.toString())
                 .claim("role", role.name())
                 .claim("email", email)
+                .claim("emailVerified", true)
                 .signWith(signingKey, Jwts.SIG.HS256)
                 .compact();
     }

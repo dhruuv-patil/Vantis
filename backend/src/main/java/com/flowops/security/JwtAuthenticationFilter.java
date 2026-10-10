@@ -40,10 +40,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final ApiErrorWriter errorWriter;
+    private final com.flowops.repository.UserRepository users;
 
-    public JwtAuthenticationFilter(JwtService jwtService, ApiErrorWriter errorWriter) {
+    public JwtAuthenticationFilter(
+            JwtService jwtService,
+            ApiErrorWriter errorWriter,
+            com.flowops.repository.UserRepository users) {
         this.jwtService = jwtService;
         this.errorWriter = errorWriter;
+        this.users = users;
     }
 
     @Override
@@ -72,6 +77,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             principal = jwtService.verifyAccessToken(token);
         } catch (JwtValidationException ex) {
             reject(request, response, ex.isExpired() ? ErrorCode.TOKEN_EXPIRED : ErrorCode.TOKEN_INVALID);
+            return;
+        }
+
+        Boolean verified = users.findEmailVerifiedById(principal.userId()).orElse(false);
+        if (!Boolean.TRUE.equals(verified)) {
+            reject(request, response, ErrorCode.EMAIL_NOT_VERIFIED);
             return;
         }
 

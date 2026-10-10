@@ -56,32 +56,44 @@ public class AuthController {
     private static final int REFRESH_LIMIT = 60;
 
     private final AuthService authService;
+    private final EmailVerificationService emailVerificationService;
     private final PasswordResetService passwordResetService;
     private final RefreshCookies refreshCookies;
     private final RateLimiter rateLimiter;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public AuthController(
+            AuthService authService,
+            EmailVerificationService emailVerificationService,
+            PasswordResetService passwordResetService,
+            RefreshCookies refreshCookies,
+            RateLimiter rateLimiter) {
+        this.authService = authService;
+        this.emailVerificationService = emailVerificationService;
+        this.passwordResetService = passwordResetService;
+        this.refreshCookies = refreshCookies;
+        this.rateLimiter = rateLimiter;
+    }
 
     public AuthController(
             AuthService authService,
             PasswordResetService passwordResetService,
             RefreshCookies refreshCookies,
             RateLimiter rateLimiter) {
-        this.authService = authService;
-        this.passwordResetService = passwordResetService;
-        this.refreshCookies = refreshCookies;
-        this.rateLimiter = rateLimiter;
+        this(authService, null, passwordResetService, refreshCookies, rateLimiter);
     }
 
-    /** {@code 201} with the session and a fresh refresh cookie (contract §5.1). */
+    /** {@code 201} with user info and verification notice; no sessions or cookies issued. */
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, path = "/register")
-    @Operation(summary = "Create a user, an organization and an OWNER membership, then sign in")
-    public ResponseEntity<?> register(
+    @Operation(summary = "Create an unverified user account and organization, and send verification email")
+    public ResponseEntity<RegisterResponse> register(
             @Valid @RequestBody RegisterRequest request, HttpServletRequest http) {
 
         rateLimiter.check(
                 "register:ip:" + RateLimiter.clientIp(http), REGISTER_LIMIT, REGISTER_WINDOW);
 
-        AuthResult result = authService.register(request, userAgent(http), RateLimiter.clientIp(http));
-        return respond(HttpStatus.CREATED, result);
+        RegisterResponse result = authService.register(request, userAgent(http), RateLimiter.clientIp(http));
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 
     /**
@@ -220,6 +232,39 @@ public class AuthController {
     public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         passwordResetService.resetPassword(request);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Verifies user email with a single-use token from the email link.
+     */
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, path = "/verify-email")
+    @Operation(summary = "Verify user email with a token from the email link")
+    public ResponseEntity<VerifyEmailResponse> verifyEmail(
+            @Valid @RequestBody VerifyEmailRequest request, HttpServletRequest http) {
+
+        rateLimiter.check(
+                "verify-email:ip:" + RateLimiter.clientIp(http), 10, Duration.ofMinutes(15));
+
+        String email = emailVerificationService.verifyEmail(request.token());
+        return ResponseEntity.ok(new VerifyEmailResponse("Email verified successfully.", email));
+    }
+
+    /**
+     * Resends an email verification link. Always returns 200 with generic message (anti-enumeration).
+     */
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, path = "/resend-verification")
+    @Operation(summary = "Resend email verification link (always returns generic 200)")
+    public ResponseEntity<ResendVerificationResponse> resendVerification(
+            @Valid @RequestBody ResendVerificationRequest request, HttpServletRequest http) {
+
+        rateLimiter.check(
+                "resend-verification:ip:" + RateLimiter.clientIp(http), 5, Duration.ofMinutes(60));
+        rateLimiter.check(
+                "resend-verification:email:" + request.email().toLowerCase(java.util.Locale.ROOT).trim(), 3, Duration.ofMinutes(60));
+
+        emailVerificationService.resendVerification(request.email());
+        return ResponseEntity.ok(new ResendVerificationResponse(
+                "If an account exists for that email and is not yet verified, a verification link has been sent."));
     }
 
     /* ------------------------------------------------------------------ util */

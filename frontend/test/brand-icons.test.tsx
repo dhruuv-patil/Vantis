@@ -104,5 +104,28 @@ describe("Brand Icon Resolution and Themes", () => {
       expect(img).not.toBeNull();
       expect(img?.className).not.toContain("invert");
     });
+
+    it("treats Pipedrive as a colored brand with no dark invert", () => {
+      expect(isMonoDarkBrand("pipedrive")).toBe(false);
+      const { container } = render(
+        <BrandIcon slug="pipedrive" theme="dark" alt="Pipedrive" />
+      );
+      const img = container.querySelector("img");
+      expect(img).not.toBeNull();
+      expect(img?.className).not.toContain("invert");
+      expect(img?.getAttribute("src")).toBe("/integrations/pipedrive.svg");
+    });
+
+    it("loads local contrast-corrected SVGs first for curated brands", () => {
+      for (const slug of ["notion", "anthropic", "openai", "vercel", "resend"]) {
+        const { container } = render(
+          <BrandIcon slug={slug} theme="auto" alt={slug} />
+        );
+        const img = container.querySelector("img");
+        expect(img).not.toBeNull();
+        expect(img?.getAttribute("src")).toBe(`/integrations/${slug}.svg`);
+        expect(img?.className).toContain("dark:brightness-0 dark:invert");
+      }
+    });
   });
 });

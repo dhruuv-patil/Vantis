@@ -127,12 +127,12 @@ describe("Milestone 7: Monitoring UI, Multi-Instance Integrations & Incidents", 
 
   describe("IntegrationsPage Multi-Instance Rendering", () => {
     it("renders multiple connected instances of the same provider with health badges", async () => {
-      const mockIntegrations: Integration[] = [
+      const mockIntegrations: any[] = [
         {
           id: "int-1",
           name: "Production n8n",
           type: "n8n",
-          category: "AUTOMATION" as any,
+          category: "AUTOMATION",
           status: "connected",
           hint: "prod",
           healthStatus: "healthy",
@@ -144,7 +144,7 @@ describe("Milestone 7: Monitoring UI, Multi-Instance Integrations & Incidents", 
           id: "int-2",
           name: "Staging n8n",
           type: "n8n",
-          category: "AUTOMATION" as any,
+          category: "AUTOMATION",
           status: "connected",
           hint: "stg1",
           healthStatus: "degraded",
@@ -179,7 +179,7 @@ describe("Milestone 7: Monitoring UI, Multi-Instance Integrations & Incidents", 
         providers: mockProviders,
       });
       vi.spyOn(apiModule, "fetchSyncStatus").mockResolvedValue({
-        status: "SUCCESS",
+        status: "HEALTHY",
         lastSyncAt: "2026-01-02T00:00:00Z",
         lastSuccessfulSyncAt: "2026-01-02T00:00:00Z",
         error: null,
@@ -204,7 +204,7 @@ describe("Milestone 7: Monitoring UI, Multi-Instance Integrations & Incidents", 
 
   describe("IncidentsPage Rendering and Recovery Guard", () => {
     it("renders incident list and displays 409 recovery guard modal when resolution is blocked", async () => {
-      const mockIncidents: Incident[] = [
+      const mockIncidents: any[] = [
         {
           id: "inc-101",
           organizationId: "org-1",

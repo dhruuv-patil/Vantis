@@ -88,6 +88,9 @@ public class OAuthAccountService {
             UserAccount user = users.findById(link.getUserId())
                     .orElseThrow(() -> new ApiException(ErrorCode.AUTHENTICATION_REQUIRED, "User not found"));
 
+            if (!user.isEmailVerified()) {
+                user.markEmailVerified();
+            }
             if (avatarUrl != null && user.getAvatarUrl() == null) {
                 user.setAvatarUrl(avatarUrl);
             }
@@ -113,6 +116,10 @@ public class OAuthAccountService {
             OAuthAccount newLink = OAuthAccount.create(
                     user.getId(), normalizedProvider, normalizedProviderUserId, normalizedEmail);
             oauthAccounts.save(newLink);
+
+            if (!user.isEmailVerified()) {
+                user.markEmailVerified();
+            }
 
             if (avatarUrl != null && user.getAvatarUrl() == null) {
                 user.setAvatarUrl(avatarUrl);

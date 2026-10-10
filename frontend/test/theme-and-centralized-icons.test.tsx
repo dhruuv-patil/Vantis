@@ -141,6 +141,28 @@ describe("Centralized Icon System (Templates, Integrations, Flow-Nodes)", () => 
       );
       expect(container.textContent).toContain("AS");
     });
+
+    it("renders Pipedrive as brand green without dark invert", () => {
+      const { container } = render(
+        <ProviderIcon provider="pipedrive" name="Pipedrive" className="size-6" theme="dark" />
+      );
+      const img = container.querySelector("img");
+      expect(img).not.toBeNull();
+      expect(img?.className).not.toContain("invert");
+      expect(img?.getAttribute("src")).toBe("/integrations/pipedrive.svg");
+    });
+
+    it("renders high-contrast local icons for Notion, Anthropic, and OpenAI", () => {
+      for (const provider of ["notion", "anthropic", "openai"]) {
+        const { container } = render(
+          <ProviderIcon provider={provider} className="size-6" theme="auto" />
+        );
+        const img = container.querySelector("img");
+        expect(img).not.toBeNull();
+        expect(img?.getAttribute("src")).toBe(`/integrations/${provider}.svg`);
+        expect(img?.className).toContain("dark:brightness-0 dark:invert");
+      }
+    });
   });
 
   describe("NodeIcon (used in Flow-Node canvas & NodePalette)", () => {

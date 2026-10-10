@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 
-import { getErrorMessage, getFieldErrors, login } from "@/lib/api";
+import { getErrorCode, getErrorMessage, getFieldErrors, login } from "@/lib/api";
 import { useAuthStore } from "@/lib/auth-store";
 import { loginSchema, toFieldErrors } from "@/lib/validations";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,8 @@ function LoginPageContent() {
     return null;
   });
   const [submitting, setSubmitting] = useState(false);
+  /** Set to the submitted email when the backend returns EMAIL_NOT_VERIFIED. */
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -49,6 +51,7 @@ function LoginPageContent() {
     // Guard against duplicate submissions while a request is in flight.
     if (submitting) return;
     setFormError(null);
+    setUnverifiedEmail(null);
 
     const parsed = loginSchema.safeParse({ email, password });
 
@@ -64,13 +67,21 @@ function LoginPageContent() {
       await login(parsed.data);
       router.replace(next);
     } catch (err) {
-      const fieldErrors = getFieldErrors(err);
+      const code = getErrorCode(err);
 
-      if (Object.keys(fieldErrors).length > 0) {
-        setErrors(fieldErrors);
+      if (code === "EMAIL_NOT_VERIFIED") {
+        // Don't show a generic error — show the dedicated banner with a
+        // resend link so the user has a clear path forward.
+        setUnverifiedEmail(parsed.data.email);
+      } else {
+        const fieldErrors = getFieldErrors(err);
+
+        if (Object.keys(fieldErrors).length > 0) {
+          setErrors(fieldErrors);
+        }
+
+        setFormError(getErrorMessage(err, "Invalid email or password."));
       }
-
-      setFormError(getErrorMessage(err, "Invalid email or password."));
     } finally {
       setSubmitting(false);
     }
@@ -107,6 +118,30 @@ function LoginPageContent() {
             className="mb-5 rounded-md border border-red-500/20 bg-red-500/[0.06] px-3.5 py-3 text-sm text-destructive"
           >
             {formError}
+          </div>
+        )}
+
+        {unverifiedEmail && (
+          <div
+            role="alert"
+            className="mb-5 rounded-md border border-amber-500/20 bg-amber-500/[0.06] px-3.5 py-3 text-sm"
+          >
+            <p className="font-medium text-amber-700 dark:text-amber-400">
+              Email not verified
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              Please check your inbox for{" "}
+              <span className="font-medium text-foreground">
+                {unverifiedEmail}
+              </span>{" "}
+              and click the verification link.
+            </p>
+            <Link
+              href={`/check-email?email=${encodeURIComponent(unverifiedEmail)}`}
+              className="mt-2 inline-block text-xs font-medium text-amber-700 dark:text-amber-400 hover:underline"
+            >
+              Resend verification email →
+            </Link>
           </div>
         )}
 

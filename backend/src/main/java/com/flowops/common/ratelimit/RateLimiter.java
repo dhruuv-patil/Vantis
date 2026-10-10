@@ -49,6 +49,8 @@ public class RateLimiter {
             "register:",
             "forgot-password:",
             "reset-password:",
+            "verify-email:",
+            "resend-verification:",
             "refresh:",
             "invite-accept:",
             "billing:checkout:"

@@ -8,6 +8,8 @@ import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * Audit and idempotency log for incoming provider billing events (webhooks).
@@ -38,7 +40,8 @@ public class BillingEvent {
     @Column(name = "event_timestamp")
     private Instant eventTimestamp;
 
-    @Column(name = "payload", nullable = false, columnDefinition = "TEXT")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "payload", nullable = false)
     private String payload;
 
     @Column(name = "status", nullable = false, length = 32)

@@ -38,6 +38,9 @@ class PlanLimitExceededResponseMockMvcTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private com.flowops.repository.UserRepository users;
+
     @MockBean
     private EntitlementService entitlementService;
 
@@ -54,10 +57,18 @@ class PlanLimitExceededResponseMockMvcTest {
     @DisplayName("PLAN_LIMIT_EXCEEDED error returns structured machine-readable payload in HTTP JSON body")
     void planLimitExceededReturnsStructuredJsonPayload() throws Exception {
         UUID orgId = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
         UUID workflowId = UUID.randomUUID();
 
-        String token = jwtService.issueAccessToken(userId, UUID.randomUUID(), orgId, Role.ADMIN, "test@example.com");
+        // Prepare a verified, authenticated user so authentication succeeds before entitlement check
+        com.flowops.domain.UserAccount verifiedUser = com.flowops.domain.UserAccount.create(
+                "verified+" + UUID.randomUUID() + "@example.com",
+                "hashedPassword",
+                "Verified User");
+        verifiedUser.markEmailVerified();
+        verifiedUser = users.save(verifiedUser);
+        UUID userId = verifiedUser.getId();
+
+        String token = jwtService.issueAccessToken(userId, UUID.randomUUID(), orgId, Role.ADMIN, verifiedUser.getEmail());
 
         var graph = objectMapper.createObjectNode();
         var nodes = graph.putArray("nodes");
@@ -98,5 +109,28 @@ class PlanLimitExceededResponseMockMvcTest {
                 .andExpect(jsonPath("$.error.details.max").value(1000))
                 .andExpect(jsonPath("$.error.details.planId").value("FREE"))
                 .andExpect(jsonPath("$.error.details.suggestedPlan").value("PRO"));
+    }
+
+    @Test
+    @DisplayName("Unverified user executing workflow run is rejected with 403 EMAIL_NOT_VERIFIED before entitlement check")
+    void unverifiedUserExecutingWorkflowReturnsEmailNotVerified() throws Exception {
+        UUID orgId = UUID.randomUUID();
+        UUID workflowId = UUID.randomUUID();
+
+        com.flowops.domain.UserAccount unverifiedUser = com.flowops.domain.UserAccount.create(
+                "unverified+" + UUID.randomUUID() + "@example.com",
+                "hashedPassword",
+                "Unverified User");
+        unverifiedUser = users.save(unverifiedUser);
+
+        String token = jwtService.issueAccessToken(
+                unverifiedUser.getId(), UUID.randomUUID(), orgId, Role.ADMIN, unverifiedUser.getEmail());
+
+        mvc.perform(post("/api/workflows/" + workflowId + "/run")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"input\":{}}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("EMAIL_NOT_VERIFIED"));
     }
 }
