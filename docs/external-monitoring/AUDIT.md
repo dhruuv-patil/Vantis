@@ -67,3 +67,21 @@
 - **AI Service**: 136 tests passed in 2.24s. 0 failures.
 - **Frontend**: 99 tests passed across 11 files in 4.36s. 0 failures.
 - **Docker Compose**: All images build cleanly and containers start in healthy state.
+
+---
+
+## 4. Remediation Status by Finding
+
+| # | Hypothesis / Finding | Initial Audit Status | Current Remediation Status |
+|---|----------------------|----------------------|----------------------------|
+| 1 | n8n connection and workflow discovery work | **CONFIRMED** | **VERIFIED WORKING** (Preserved in Milestone 1–8) |
+| 2 | Sequential per-execution polling & rate limit risk | **CONFIRMED** | **FIXED** (Milestone 2: Bounded pagination, capped parallelism, circuit breaker) |
+| 3 | n8n item counts & schema signatures not extracted | **CONFIRMED** | **FIXED** (Milestone 3: `N8nPayloadExtractor`, depth-capped schema fingerprinter) |
+| 4 | One integration per provider DB constraint | **CONFIRMED** | **FIXED** (Milestone 2: Flyway `V26__multi_instance_integrations.sql`, billing limits) |
+| 5 | n8n/Make outbound SSRF vulnerability | **CONFIRMED** | **FIXED** (Milestone 1: `HardenedHttpClient`, IP validator, DNS rebinding protection) |
+| 6 | Make node-execution ingestion returns empty list | **CONFIRMED** | **FIXED** (Milestone 8: Scenario-level execution event, `NODE_DATA_UNAVAILABLE` tag, error extraction) |
+| 7 | Zapier has no functional run history monitoring | **CONFIRMED** | **FIXED** (Milestone 8: Inbound webhook instrumentation with HMAC-SHA256, replay window, `CAPABILITY_MATRIX.md`) |
+| 8 | External execution detail query-filtering limit bug | **CONFIRMED** | **FIXED** (Milestone 1 & 7: Scoped retrieval by execution ID directly) |
+| 9 | Incident management disconnected from external flow | **CONFIRMED** | **FIXED** (Milestone 5: Fingerprinted deduplication, recovery guard; Milestone 7: Incident UI) |
+| 10 | AI investigation grounding & maturity gaps | **CONFIRMED** | **FIXED** (Milestone 6: Strict grounded facts schema, citation validation, sensitive redactor) |
+
