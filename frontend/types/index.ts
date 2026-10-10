@@ -48,6 +48,8 @@ export type ErrorCode =
   | "NOT_FOUND"
   | "METHOD_NOT_ALLOWED"
   | "EMAIL_ALREADY_REGISTERED"
+  | "EMAIL_NOT_VERIFIED"
+  | "VERIFICATION_TOKEN_INVALID"
   | "RATE_LIMITED"
   | "CONCURRENCY_LIMIT_EXCEEDED"
   | "CIRCUIT_BREAKER_OPEN"
@@ -101,6 +103,28 @@ export interface User {
   avatarUrl: string | null;
   createdAt: string;
   updatedAt: string;
+  /** True once the user has clicked the verification link in their inbox. */
+  emailVerified: boolean;
+}
+
+/**
+ * Returned by `POST /api/auth/register` (201). No session is issued until the
+ * user verifies their email address.
+ */
+export interface RegisterResponse {
+  email: string;
+  emailVerified: false;
+  message: string;
+}
+
+/** Returned by `POST /api/auth/verify-email` (200). */
+export interface VerifyEmailResponse {
+  message: string;
+}
+
+/** Returned by `POST /api/auth/resend-verification` (200). */
+export interface ResendVerificationResponse {
+  message: string;
 }
 
 export interface Organization {
@@ -687,6 +711,14 @@ export interface Integration {
   name: string;
   status: IntegrationStatus;
   hint: string | null;
+  disabledAt?: string | null;
+  disabled?: boolean;
+  baseUrl?: string | null;
+  healthStatus?: "healthy" | "degraded" | "rate_limited" | "auth_failed" | "unreachable" | "sync_stalled" | "backfilling";
+  lastSuccessfulSyncAt?: string | null;
+  lastErrorCategory?: string | null;
+  backfillStatus?: string | null;
+  backfillProgress?: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -1236,6 +1268,7 @@ export interface LikelyCause {
   category: string;
   confidence: number;
   uncertainty: string;
+  citations?: string[];
 }
 
 export interface EvidenceItem {
@@ -1262,6 +1295,10 @@ export interface AIInvestigationResult {
   configured: boolean;
   model: string | null;
   generatedAt: string;
+  evidenceCitations?: string[];
+  suggestedFix?: string | null;
+  verificationChecklist?: string[];
+  fallback?: boolean;
 }
 
 export interface InvestigateRequest {
@@ -1270,6 +1307,32 @@ export interface InvestigateRequest {
 
 export interface InvestigateResponse {
   result: AIInvestigationResult;
+}
+
+/* ------------------------------------------------------------ incidents */
+
+export type IncidentStatus = "OPEN" | "ACKNOWLEDGED" | "RESOLVED";
+
+export interface Incident {
+  id: string;
+  organizationId: string;
+  workflowId: string | null;
+  executionId: string | null;
+  anomalyId: string | null;
+  fingerprint: string | null;
+  title: string;
+  description: string | null;
+  severity: AnomalySeverity;
+  status: IncidentStatus;
+  metadata: Record<string, unknown> | null;
+  acknowledgedAt: string | null;
+  resolvedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface IncidentsResponse {
+  incidents: Incident[];
 }
 
 /* ------------------------------------------------------------------ billing */

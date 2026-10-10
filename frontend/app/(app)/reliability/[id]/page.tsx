@@ -1444,25 +1444,55 @@ export default function AnomalyDetailPage({
                       />
                     </>
                   ) : (
-                    "No AI provider is configured. Add a provider key to enable investigations."
+                    "Deterministic Rule-based Diagnostic Fallback"
                   )
                 }
                 action={
-                  <span className="whitespace-nowrap text-xs text-muted-foreground dark:text-white/44">
-                    {formatPercent(
-                      investigation.confidence
-                    )}{" "}
-                    confidence
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {investigation.fallback && (
+                      <span className="rounded px-2 py-0.5 text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                        Rule-based Fallback
+                      </span>
+                    )}
+                    <span className="whitespace-nowrap text-xs text-muted-foreground dark:text-white/44">
+                      {formatPercent(
+                        investigation.confidence
+                      )}{" "}
+                      confidence
+                    </span>
+                  </div>
                 }
               >
                 <div className="space-y-7">
+                  {/* Fallback Banner */}
+                  {investigation.fallback && (
+                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3.5 text-xs leading-relaxed text-amber-800 dark:text-amber-300">
+                      <strong>Deterministic Fallback:</strong> This diagnostic analysis was produced from deterministic telemetry evidence rules because the external AI service is offline or unconfigured.
+                    </div>
+                  )}
+
                   {/* Summary */}
                   {investigation.summary && (
                     <InvestigationSection title="Summary">
                       <p className="text-sm leading-relaxed text-foreground/80 dark:text-white/70">
                         {investigation.summary}
                       </p>
+                    </InvestigationSection>
+                  )}
+
+                  {/* Measured Facts & Citations */}
+                  {investigation.evidenceCitations && investigation.evidenceCitations.length > 0 && (
+                    <InvestigationSection title="Measured Facts & Cited Fields">
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {investigation.evidenceCitations.map((citation, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center rounded-md border border-primary/20 bg-primary/[0.04] px-2 py-0.5 font-mono text-xs text-primary"
+                          >
+                            {citation}
+                          </span>
+                        ))}
+                      </div>
                     </InvestigationSection>
                   )}
 
@@ -1478,29 +1508,64 @@ export default function AnomalyDetailPage({
                               key={i}
                               className="py-3 first:pt-0 last:pb-0"
                             >
-                              <p className="text-sm text-foreground dark:text-white/90">
-                                {cause.cause}
-                              </p>
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="text-sm font-medium text-foreground dark:text-white/90">
+                                  {cause.cause}
+                                </p>
+                                <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">
+                                  {formatPercent(cause.confidence)}
+                                </span>
+                              </div>
 
                               <p className="mt-1 text-xs text-muted-foreground dark:text-white/44">
-                                {cause.category} ·{" "}
-                                {formatPercent(
-                                  cause.confidence
-                                )}{" "}
-                                confidence
+                                Category: {cause.category}
                               </p>
 
                               {cause.uncertainty && (
                                 <p className="mt-1 text-xs text-amber-500 dark:text-amber-400">
                                   Uncertainty:{" "}
-                                  {
-                                    cause.uncertainty
-                                  }
+                                  {cause.uncertainty}
                                 </p>
+                              )}
+
+                              {cause.citations && cause.citations.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                  {cause.citations.map((c, ci) => (
+                                    <span
+                                      key={ci}
+                                      className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground border border-border"
+                                    >
+                                      {c}
+                                    </span>
+                                  ))}
+                                </div>
                               )}
                             </li>
                           )
                         )}
+                      </ul>
+                    </InvestigationSection>
+                  )}
+
+                  {/* Suggested Fix */}
+                  {investigation.suggestedFix && (
+                    <InvestigationSection title="Suggested Remediation">
+                      <div className="rounded-lg border border-primary/20 bg-primary/[0.03] p-3 text-xs leading-relaxed text-foreground/90 dark:text-white/80">
+                        {investigation.suggestedFix}
+                      </div>
+                    </InvestigationSection>
+                  )}
+
+                  {/* Verification Checklist */}
+                  {investigation.verificationChecklist && investigation.verificationChecklist.length > 0 && (
+                    <InvestigationSection title="Recovery Verification Checklist">
+                      <ul className="space-y-2 pt-1">
+                        {investigation.verificationChecklist.map((step, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-xs text-foreground/80 dark:text-white/70">
+                            <span className="select-none font-mono text-muted-foreground">[{idx + 1}]</span>
+                            <span>{step}</span>
+                          </li>
+                        ))}
                       </ul>
                     </InvestigationSection>
                   )}

@@ -54,6 +54,7 @@ export function ConnectIntegrationDialog({
 
   const [selectedProvider, setSelectedProvider] =
     useState<ProviderInfo | null>(null);
+  const [instanceName, setInstanceName] = useState("");
   const [providerConfig, setProviderConfig] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
@@ -82,6 +83,7 @@ export function ConnectIntegrationDialog({
   useEffect(() => {
     if (!open || !normalizedType) {
       setSelectedProvider(null);
+      setInstanceName("");
       setProviderConfig({});
       setErrors({});
       setGeneralError(null);
@@ -175,11 +177,13 @@ export function ConnectIntegrationDialog({
         throw new Error("Provider configuration is unavailable.");
       }
 
+      const finalName = instanceName.trim() || selectedProvider.name;
+
       // If Slack and only webhookUrl is provided, try provider connect first
       try {
         return await connectProvider({
           type: selectedProvider.type,
-          name: selectedProvider.name,
+          name: finalName,
           config: providerConfig,
         });
       } catch (err) {
@@ -208,6 +212,7 @@ export function ConnectIntegrationDialog({
 
       setProviderConfig({});
       setSelectedProvider(null);
+      setInstanceName("");
       setErrors({});
       setGeneralError(null);
 
@@ -289,6 +294,7 @@ export function ConnectIntegrationDialog({
     if (!nextOpen) {
       setProviderConfig({});
       setSelectedProvider(null);
+      setInstanceName("");
       setErrors({});
       setGeneralError(null);
       setVisibleSecrets({});
@@ -393,7 +399,33 @@ export function ConnectIntegrationDialog({
                 Loading provider configuration…
               </div>
             ) : selectedProvider ? (
-              selectedProvider.credentialFields.map((field) => {
+              <>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label
+                      htmlFor="provider-instance-name"
+                      className="text-xs font-medium text-foreground dark:text-white/85"
+                    >
+                      Instance / Connection Name
+                    </Label>
+                    <span className="text-[10px] text-muted-foreground dark:text-white/35 font-mono">
+                      Optional
+                    </span>
+                  </div>
+                  <Input
+                    id="provider-instance-name"
+                    type="text"
+                    value={instanceName}
+                    onChange={(e) => setInstanceName(e.target.value)}
+                    placeholder={`e.g. Production ${selectedProvider.name}`}
+                    className="bg-background dark:bg-[#0a0a0c] border-input dark:border-white/[0.08] text-sm h-10"
+                    autoComplete="off"
+                  />
+                  <p className="text-[11px] text-muted-foreground dark:text-white/45">
+                    Assign a distinct name to differentiate multiple environments (e.g. Prod, Staging).
+                  </p>
+                </div>
+                {selectedProvider.credentialFields.map((field) => {
                 const isSecret = field.secret;
                 const isVisible = visibleSecrets[field.key] ?? false;
 
@@ -455,8 +487,9 @@ export function ConnectIntegrationDialog({
                     ) : null}
                   </div>
                 );
-              })
-            ) : null}
+              })}
+            </>
+          ) : null}
           </div>
 
           <DialogFooter className="pt-2 border-t border-border dark:border-white/[0.06] flex items-center justify-end gap-2">

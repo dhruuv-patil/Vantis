@@ -8,16 +8,22 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   ArrowLeft,
+  ArrowRight,
   ChevronDown,
   Clock3,
   Copy,
   LayoutGrid,
   List,
   RefreshCw,
+  ShieldAlert,
   X,
 } from "lucide-react";
 
-import { fetchExecutionEvents, getErrorMessage } from "@/lib/api";
+import {
+  fetchExecutionEvents,
+  fetchIncidents,
+  getErrorMessage,
+} from "@/lib/api";
 
 import type { ExecutionEvent, ExecutionStatus } from "@/types";
 
@@ -236,6 +242,15 @@ function ExternalExecutionDetail() {
         : false,
   });
 
+  const incidentsQuery = useQuery({
+    queryKey: ["incidents", "for-execution", executionExternalId, workflowExternalId],
+    queryFn: () =>
+      fetchIncidents({
+        workflowId: workflowExternalId || undefined,
+      }),
+    enabled: Boolean(executionExternalId),
+  });
+
   const events = React.useMemo(
     () =>
       (eventsQuery.data?.events ?? [])
@@ -305,6 +320,17 @@ function ExternalExecutionDetail() {
   const first = events[0];
   const workflowName = workflowNameOf(first);
 
+  const relatedIncident = React.useMemo(() => {
+    const list = incidentsQuery.data ?? [];
+    return (
+      list.find(
+        (inc) =>
+          inc.executionId === executionExternalId ||
+          (workflowExternalId && inc.workflowId === workflowExternalId),
+      ) ?? null
+    );
+  }, [incidentsQuery.data, executionExternalId, workflowExternalId]);
+
   /* ------------------------------------------------------------ guards */
 
   if (eventsQuery.isPending) {
@@ -370,6 +396,38 @@ function ExternalExecutionDetail() {
           </Button>
         }
       />
+
+      {/* incident banner */}
+      {relatedIncident && (
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">
+          <div className="flex items-center gap-3 min-w-0">
+            <ShieldAlert className="size-5 shrink-0 text-red-400" />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-foreground dark:text-white">
+                  Active Incident: {relatedIncident.title}
+                </span>
+                <span className="rounded bg-red-500/20 px-2 py-0.5 text-[10px] font-medium uppercase text-red-300">
+                  {relatedIncident.severity}
+                </span>
+                <span className="rounded bg-black/30 px-2 py-0.5 text-[10px] font-mono text-white/60">
+                  {relatedIncident.status}
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs text-muted-foreground dark:text-white/60 truncate">
+                Fingerprint: {relatedIncident.fingerprint}
+              </p>
+            </div>
+          </div>
+          <Link
+            href={`/incidents/${relatedIncident.id}`}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-red-400/30 bg-red-400/10 px-3 py-1.5 text-xs font-medium text-red-200 hover:bg-red-400/20 transition-colors"
+          >
+            <span>View Incident</span>
+            <ArrowRight className="size-3.5" />
+          </Link>
+        </div>
+      )}
 
       {/* failure banner */}
 
@@ -484,6 +542,30 @@ function ExternalExecutionDetail() {
               <DetailItem
                 label="Finished"
                 value={finishedAt ? formatDateTime(finishedAt) : "—"}
+              />
+              <DetailItem
+                label="Output Items Count"
+                value={
+                  (first?.metadata as Record<string, unknown> | null | undefined)?.itemsCount != null
+                    ? String((first.metadata as Record<string, unknown>).itemsCount)
+                    : "Unavailable (not reported by provider)"
+                }
+              />
+              <DetailItem
+                label="Payload Signature"
+                value={
+                  (first?.metadata as Record<string, unknown> | null | undefined)?.schemaSignature != null
+                    ? String((first.metadata as Record<string, unknown>).schemaSignature)
+                    : "Unavailable"
+                }
+              />
+              <DetailItem
+                label="Node-Level Telemetry"
+                value={
+                  steps.length > 1 || (steps[0] && steps[0].id !== "workflow")
+                    ? `${steps.length} nodes captured`
+                    : "Unavailable (workflow-level only)"
+                }
               />
             </div>
           </details>
@@ -849,8 +931,15 @@ function ExternalGraph({
     }
   }
 
+  const isWorkflowLevelOnly = steps.length <= 1 && steps[0]?.id === "workflow";
+
   return (
     <div className="space-y-2">
+      {isWorkflowLevelOnly && (
+        <div className="rounded-lg border border-border dark:border-white/[0.08] bg-muted/40 dark:bg-white/[0.02] p-3 text-xs text-muted-foreground dark:text-white/60">
+          <span className="font-semibold text-foreground dark:text-white/80">Workflow-level telemetry only:</span> Node-level step execution decomposition is unavailable for this provider or run.
+        </div>
+      )}
       <div className="overflow-auto rounded-xl border border-border dark:border-white/[0.08] bg-card dark:bg-[#0b0b0c]">
         <svg
           width={width}

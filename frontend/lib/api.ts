@@ -87,11 +87,15 @@ import type {
   WorkflowHealth,
   WorkflowHealthResponse,
   WorkflowMetrics,
-  WorkflowMetricsResponse,
   AIInvestigationResult,
   InvestigateRequest,
   InvestigateResponse,
   SendTestResult,
+
+  // Incidents
+  Incident,
+  IncidentStatus,
+  IncidentsResponse,
 
   // Billing
   BillingCurrencyResponse,
@@ -111,6 +115,9 @@ import type {
   ChangePlanResponse,
   CancelSubscriptionResponse,
   ResumeSubscriptionResponse,
+  RegisterResponse,
+  VerifyEmailResponse,
+  ResendVerificationResponse,
 } from "@/types";
 
 export const API_BASE_URL =
@@ -126,6 +133,8 @@ const NO_REFRESH_PATHS = [
   // stale-token refresh trigger.
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
+  "/api/auth/verify-email",
+  "/api/auth/resend-verification",
 ];
 
 /** 401 codes that are terminal: clear the store and go to /login, never retry. */
@@ -425,17 +434,20 @@ export interface LoginPayload {
   password: string;
 }
 
-/** `POST /api/auth/register` → 201 `AuthResponse` + refresh cookie. */
+/**
+ * `POST /api/auth/register` → 201 `RegisterResponse`.
+ *
+ * Registration no longer issues a session. The user must verify their email
+ * before they can log in. Callers should redirect to `/check-email` on success.
+ */
 export async function register(
   payload: RegisterPayload,
-): Promise<AuthResponse> {
-  const { data } = await api.post<AuthResponse>(
+): Promise<RegisterResponse> {
+  const { data } = await api.post<RegisterResponse>(
     "/api/auth/register",
     payload,
   );
-
-  useAuthStore.getState().setAuth(data);
-
+  // No setAuth — an unverified account must not gain access.
   return data;
 }
 
@@ -475,6 +487,39 @@ export async function forgotPassword(payload: { email: string }): Promise<void> 
 export async function resetPassword(payload: { token: string; newPassword: string }): Promise<void> {
   await api.post("/api/auth/reset-password", payload);
 }
+
+/**
+ * `POST /api/auth/verify-email` → 200 `VerifyEmailResponse`.
+ *
+ * Validates the single-use token from the email link and marks the account as
+ * verified. Safe to call even if the token has already been consumed (returns
+ * a `VERIFICATION_TOKEN_INVALID` error in that case).
+ */
+export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
+  const { data } = await api.post<VerifyEmailResponse>(
+    "/api/auth/verify-email",
+    { token },
+  );
+  return data;
+}
+
+/**
+ * `POST /api/auth/resend-verification` → 200 `ResendVerificationResponse`.
+ *
+ * Requests a fresh verification email for the given address. Always returns a
+ * generic success response regardless of whether the address is registered, to
+ * prevent email enumeration.
+ */
+export async function resendVerification(
+  email: string,
+): Promise<ResendVerificationResponse> {
+  const { data } = await api.post<ResendVerificationResponse>(
+    "/api/auth/resend-verification",
+    { email },
+  );
+  return data;
+}
+
 
 /** `GET /api/organizations` → every org the authenticated user belongs to. */
 export async function fetchOrganizations(): Promise<OrganizationsResponse> {
@@ -1480,6 +1525,53 @@ export async function fetchRecoveryStatus(
     );
 
   return data.snapshot;
+}
+
+/* ------------------------------------------------------------ incidents */
+
+/** `GET /api/incidents`. */
+export async function fetchIncidents(params?: {
+  workflowId?: string;
+  status?: IncidentStatus;
+}): Promise<Incident[]> {
+  const { data } = await api.get<Incident[]>(
+    "/api/incidents",
+    {
+      params: {
+        workflowId: params?.workflowId || undefined,
+        status: params?.status || undefined,
+      },
+    },
+  );
+
+  return data;
+}
+
+/** `GET /api/incidents/{id}`. */
+export async function fetchIncident(id: string): Promise<Incident> {
+  const { data } = await api.get<Incident>(
+    `/api/incidents/${id}`,
+  );
+
+  return data;
+}
+
+/** `POST /api/incidents/{id}/acknowledge`. */
+export async function acknowledgeIncident(id: string): Promise<Incident> {
+  const { data } = await api.post<Incident>(
+    `/api/incidents/${id}/acknowledge`,
+  );
+
+  return data;
+}
+
+/** `POST /api/incidents/{id}/resolve`. */
+export async function resolveIncident(id: string): Promise<Incident> {
+  const { data } = await api.post<Incident>(
+    `/api/incidents/${id}/resolve`,
+  );
+
+  return data;
 }
 
 /* ------------------------------------------------------------------ billing */
