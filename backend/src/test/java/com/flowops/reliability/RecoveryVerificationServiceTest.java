@@ -350,6 +350,8 @@ class RecoveryVerificationServiceTest {
         @Override public Optional<NodeExecutionMetric> findByExecutionIdAndNodeIdAndOrganizationId(UUID executionId, String nodeId, UUID organizationId) { return Optional.empty(); }
         @Override public List<UUID> findDistinctWorkflowIdsSince(Instant after) { return List.of(); }
         @Override public long countDistinctExecutionsSince(UUID workflowId, Instant after) { return 0; }
+        @Override public List<NodeExecutionMetric> findTop30ByWorkflowIdOrderByStartedAtDesc(UUID workflowId) { return List.of(); }
+        @Override public long countByWorkflowIdAndStatusAndStartedAtAfter(UUID workflowId, com.flowops.domain.NodeRunStatus status, Instant after) { return 0; }
         @Override public <S extends NodeExecutionMetric> S save(S entity) { metricsList.add(entity); return entity; }
         @Override public <S extends NodeExecutionMetric> List<S> saveAll(Iterable<S> entities) { return List.of(); }
         @Override public Optional<NodeExecutionMetric> findById(UUID id) { return Optional.empty(); }

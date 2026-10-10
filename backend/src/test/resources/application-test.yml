@@ -45,6 +45,9 @@ spring:
     enabled: false
 
 flowops:
+  billing:
+    enabled: false
+    provider: noop
   cors:
     allowed-origins: http://localhost:3000
   # Integration tests run many register/login/forgot calls against the shared

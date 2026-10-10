@@ -511,7 +511,7 @@ The org identified by the `orgId` claim. Takes no id from the client.
 Renames the current org. Path carries no id; the target is the token's `orgId`.
 
 ```json
-{ "name": "Acme Corporation" }
+{ "name": "Vantis" }
 ```
 
 `slug` is **immutable** — renaming does not regenerate it, so existing links keep working. Sending `slug` → `400 MALFORMED_REQUEST`.

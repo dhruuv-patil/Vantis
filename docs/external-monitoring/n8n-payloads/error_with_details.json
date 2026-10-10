@@ -1,0 +1,54 @@
+{
+  "id": "exec-104",
+  "finished": true,
+  "mode": "webhook",
+  "retryOf": null,
+  "retrySuccessId": null,
+  "status": "error",
+  "startedAt": "2024-03-01T10:45:00.000Z",
+  "stoppedAt": "2024-03-01T10:45:01.200Z",
+  "workflowId": "wf-sync-crm",
+  "data": {
+    "resultData": {
+      "runData": {
+        "Webhook": [
+          {
+            "startTime": 1709289900000,
+            "executionTime": 10,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "userId": "usr_999"
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ],
+        "Call External API": [
+          {
+            "startTime": 1709289900020,
+            "executionTime": 850,
+            "executionStatus": "error",
+            "error": {
+              "name": "NodeApiError",
+              "message": "Resource not found (404)",
+              "stack": "NodeApiError: Resource not found (404)\n    at Object.execute (/usr/local/lib/node_modules/n8n/node_modules/n8n-nodes-base/dist/nodes/HttpRequest/HttpRequest.node.js:1420:23)",
+              "description": "The requested upstream endpoint returned 404 Not Found",
+              "httpCode": "404"
+            }
+          }
+        ]
+      },
+      "lastNodeExecuted": "Call External API",
+      "error": {
+        "message": "Resource not found (404)",
+        "node": "Call External API"
+      }
+    }
+  }
+}

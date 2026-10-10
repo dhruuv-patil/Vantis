@@ -22,13 +22,17 @@ class GeneratedNode(BaseModel):
     id: str
     type: str
     label: str | None = None
+    position: dict[str, Any] | None = None
+    data: dict[str, Any] | None = None
     config: dict[str, Any] = Field(default_factory=dict)
 
 
 class GeneratedEdge(BaseModel):
+    id: str | None = None
     source: str
     target: str
     source_handle: str | None = None
+    sourceHandle: str | None = None
 
 
 class GeneratedGraph(BaseModel):
@@ -121,6 +125,14 @@ class InvestigateAnomalyRequest(BaseModel):
     evidence: dict[str, Any] | None = None
     detectedAt: str | None = None
     execution: dict[str, Any] | None = None
+    workflow: dict[str, Any] | None = None
+    platformType: str | None = None
+    baseline: dict[str, Any] | None = None
+    nodeMetrics: list[dict[str, Any]] | None = None
+    topology: dict[str, Any] | None = None
+    historicalSignatures: list[dict[str, Any]] | None = None
+    recoveryStatus: dict[str, Any] | None = None
+    recentChanges: list[dict[str, Any]] | None = None
 
 
 class LikelyCause(BaseModel):
@@ -128,6 +140,7 @@ class LikelyCause(BaseModel):
     category: str
     confidence: float
     uncertainty: str
+    citations: list[str] = Field(default_factory=list)
 
 
 class EvidenceItem(BaseModel):
@@ -154,3 +167,7 @@ class InvestigateAnomalyResponse(BaseModel):
     confidence: float
     model: str | None = None
     generatedAt: str  # ISO-8601 timestamp from the AI service
+    evidenceCitations: list[str] = Field(default_factory=list)
+    suggestedFix: str | None = None
+    verificationChecklist: list[str] = Field(default_factory=list)
+    fallback: bool = False

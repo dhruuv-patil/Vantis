@@ -3,7 +3,8 @@
 import * as React from "react";
 import { Rocket } from "lucide-react";
 
-import type { ValidationResult } from "@/types";
+import type { PlanLimitDetail, ValidationResult } from "@/types";
+import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +24,8 @@ interface PublishDialogProps {
   pending: boolean;
   /** Set when a publish attempt failed validation — issues to display. */
   blockingValidation: ValidationResult | null;
+  /** Structured plan limit details if publish is quota-blocked. */
+  limitDetail?: PlanLimitDetail | null;
   onPublish: (note: string) => void;
 }
 
@@ -36,6 +39,7 @@ export function PublishDialog({
   onOpenChange,
   pending,
   blockingValidation,
+  limitDetail,
   onPublish,
 }: PublishDialogProps) {
   const [note, setNote] = React.useState("");
@@ -58,6 +62,14 @@ export function PublishDialog({
             Validation runs first — a workflow with errors will not publish.
           </DialogDescription>
         </DialogHeader>
+
+        {limitDetail && (
+          <UpgradePrompt
+            trigger="workflows"
+            structuredError={limitDetail}
+            variant="inline"
+          />
+        )}
 
         {errors.length > 0 && (
           <div className="space-y-2 rounded-md border border-destructive/40 bg-destructive/10 p-3">

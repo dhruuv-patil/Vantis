@@ -27,10 +27,20 @@ public class ReliabilityController {
 
     private final ReliabilityService service;
     private final RateLimiter rateLimiter;
+    private final com.flowops.billing.service.EntitlementService entitlementService;
 
-    public ReliabilityController(ReliabilityService service, RateLimiter rateLimiter) {
+    @org.springframework.beans.factory.annotation.Autowired
+    public ReliabilityController(
+            ReliabilityService service,
+            RateLimiter rateLimiter,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.flowops.billing.service.EntitlementService entitlementService) {
         this.service = service;
         this.rateLimiter = rateLimiter;
+        this.entitlementService = entitlementService;
+    }
+
+    public ReliabilityController(ReliabilityService service, RateLimiter rateLimiter) {
+        this(service, rateLimiter, null);
     }
 
     // =========================================================================
@@ -180,10 +190,33 @@ public class ReliabilityController {
 
         FlowOpsPrincipal principal = AuthenticatedUser.requireRole(Role.MEMBER);
         rateLimiter.check("ai:investigate:" + principal.userId(), 20, Duration.ofMinutes(1));
+        rateLimiter.check("ai:investigate:org:" + principal.organizationId(), 20, Duration.ofHours(1));
 
-        // Investigation is intentionally on-demand and uses the stored anomaly
-        // evidence; the request body is currently optional/future-compatible.
-        return service.investigateAnomaly(user, id);
+        com.flowops.billing.service.EntitlementService.InvestigationReservationTicket ticket =
+                com.flowops.billing.service.EntitlementService.InvestigationReservationTicket.notReserved();
+
+        if (entitlementService != null) {
+            ticket = entitlementService.reserveAiInvestigation(principal.organizationId());
+        }
+
+        ReliabilityEnvelopes.InvestigateResponse response;
+        try {
+            response = service.investigateAnomaly(user, id);
+        } catch (RuntimeException e) {
+            if (entitlementService != null) {
+                entitlementService.refundAiInvestigation(principal.organizationId(), ticket);
+            }
+            throw e;
+        }
+
+        // If the AI provider returned configured=false, refund quota
+        if (response != null && response.result() != null && !response.result().configured()) {
+            if (entitlementService != null) {
+                entitlementService.refundAiInvestigation(principal.organizationId(), ticket);
+            }
+        }
+
+        return response;
     }
 
     private Optional<AnomalyStatus> parseStatus(String status) {

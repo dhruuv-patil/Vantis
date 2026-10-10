@@ -22,15 +22,14 @@ __all__ = [
 
 
 @lru_cache
-@lru_cache
 def get_provider() -> LLMProvider:
     """The active provider, chosen by AI_PROVIDER."""
     name = get_settings().ai_provider.strip().lower()
 
-    if name == "gemini":
-        return GeminiProvider()
-
     if name == "omniroute":
         return OmniRouteProvider()
 
-    raise ProviderError(f"Unknown AI provider: {name!r}")
+    if name == "gemini":
+        return GeminiProvider()
+
+    raise ProviderError(f"Unsupported AI provider: {name!r}. Supported providers are 'omniroute' and 'gemini'.")

@@ -1,0 +1,89 @@
+{
+  "id": "exec-106",
+  "finished": true,
+  "mode": "manual",
+  "retryOf": null,
+  "retrySuccessId": null,
+  "status": "success",
+  "startedAt": "2024-03-01T11:15:00.000Z",
+  "stoppedAt": "2024-03-01T11:15:02.100Z",
+  "workflowId": "wf-looping",
+  "data": {
+    "resultData": {
+      "runData": {
+        "Manual Trigger": [
+          {
+            "startTime": 1709291700000,
+            "executionTime": 5,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "batch": "batch-1"
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ],
+        "Loop Over Items": [
+          {
+            "startTime": 1709291700010,
+            "executionTime": 25,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "iteration": 1,
+                      "item": "A"
+                    }
+                  }
+                ]
+              ]
+            }
+          },
+          {
+            "startTime": 1709291700040,
+            "executionTime": 30,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "iteration": 2,
+                      "item": "B"
+                    }
+                  }
+                ]
+              ]
+            }
+          },
+          {
+            "startTime": 1709291700075,
+            "executionTime": 28,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "iteration": 3,
+                      "item": "C"
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "lastNodeExecuted": "Loop Over Items"
+    }
+  }
+}

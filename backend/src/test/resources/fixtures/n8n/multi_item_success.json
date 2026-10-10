@@ -1,0 +1,89 @@
+{
+  "id": "exec-102",
+  "finished": true,
+  "mode": "trigger",
+  "retryOf": null,
+  "retrySuccessId": null,
+  "status": "success",
+  "startedAt": "2024-03-01T10:15:00.000Z",
+  "stoppedAt": "2024-03-01T10:15:03.200Z",
+  "workflowId": "wf-sync-inventory",
+  "data": {
+    "resultData": {
+      "runData": {
+        "Schedule Trigger": [
+          {
+            "startTime": 1709288100000,
+            "executionTime": 5,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "timestamp": "2024-03-01T10:15:00.000Z"
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ],
+        "Fetch Inventory": [
+          {
+            "startTime": 1709288100010,
+            "executionTime": 450,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "sku": "SKU-001",
+                      "qty": 42,
+                      "warehouse": "US-EAST",
+                      "available": true
+                    }
+                  },
+                  {
+                    "json": {
+                      "sku": "SKU-002",
+                      "qty": 0,
+                      "warehouse": "US-WEST",
+                      "available": false
+                    }
+                  },
+                  {
+                    "json": {
+                      "sku": "SKU-003",
+                      "qty": 115,
+                      "warehouse": "EU-CENTRAL",
+                      "available": true
+                    }
+                  },
+                  {
+                    "json": {
+                      "sku": "SKU-004",
+                      "qty": 12,
+                      "warehouse": "US-EAST",
+                      "available": true
+                    }
+                  },
+                  {
+                    "json": {
+                      "sku": "SKU-005",
+                      "qty": 77,
+                      "warehouse": "APAC",
+                      "available": true
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ]
+      },
+      "lastNodeExecuted": "Fetch Inventory"
+    }
+  }
+}

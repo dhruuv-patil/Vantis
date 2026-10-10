@@ -197,15 +197,15 @@ class ReliabilityHardeningTest {
         List<Finding> findings = detector.detect(baseline, obs);
         assertThat(findings).isNotEmpty();
         Finding finding = findings.get(0);
-        assertThat(finding.metric()).isEqualTo("BUSINESS_OUTCOME");
-        assertThat(finding.actualValue()).contains("zero records returned");
+        assertThat(finding.metric()).isEqualTo("OUTPUT_SIZE");
+        assertThat(finding.actualValue()).contains("produced 0 items");
 
         // Normal output with non-empty payload returns no findings
         NodeExecutionMetric healthyObs = mock(NodeExecutionMetric.class);
         when(healthyObs.getStatus()).thenReturn(NodeRunStatus.SUCCEEDED);
         when(healthyObs.getHttpStatus()).thenReturn(200);
         when(healthyObs.getNodeId()).thenReturn("sync-users");
-        when(healthyObs.getOutputSignature()).thenReturn(Map.of("form", "LIST", "arrayLength", 50));
+        when(healthyObs.getOutputSignature()).thenReturn(Map.of("form", "LIST", "arrayLength", 1150));
         when(healthyObs.getOutputSize()).thenReturn(1150);
 
         List<Finding> healthyFindings = detector.detect(baseline, healthyObs);

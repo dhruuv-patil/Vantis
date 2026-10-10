@@ -3,6 +3,7 @@ package com.flowops.integration.api;
 import com.flowops.common.crypto.CredentialCipher;
 import com.flowops.common.error.ApiException;
 import com.flowops.common.error.ErrorCode;
+import com.flowops.common.ratelimit.RateLimiter;
 import com.flowops.domain.Integration;
 import com.flowops.domain.IntegrationCredential;
 import com.flowops.domain.IntegrationWorkflow;
@@ -22,10 +23,12 @@ import com.flowops.security.FlowOpsPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -47,6 +50,28 @@ public class MonitoredWorkflowController {
     private final IntegrationCredentialRepository credentialsRepo;
     private final CredentialCipher cipher;
     private final WorkflowProviderRegistry providerRegistry;
+    private final RateLimiter rateLimiter;
+
+    @Autowired
+    public MonitoredWorkflowController(
+            IntegrationService integrationService,
+            IntegrationWorkflowService workflowService,
+            IntegrationSyncService syncService,
+            IntegrationSyncStateRepository syncStateRepo,
+            IntegrationCredentialRepository credentialsRepo,
+            CredentialCipher cipher,
+            WorkflowProviderRegistry providerRegistry,
+            @Autowired(required = false) RateLimiter rateLimiter) {
+
+        this.integrationService = integrationService;
+        this.workflowService = workflowService;
+        this.syncService = syncService;
+        this.syncStateRepo = syncStateRepo;
+        this.credentialsRepo = credentialsRepo;
+        this.cipher = cipher;
+        this.providerRegistry = providerRegistry;
+        this.rateLimiter = rateLimiter;
+    }
 
     public MonitoredWorkflowController(
             IntegrationService integrationService,
@@ -56,14 +81,7 @@ public class MonitoredWorkflowController {
             IntegrationCredentialRepository credentialsRepo,
             CredentialCipher cipher,
             WorkflowProviderRegistry providerRegistry) {
-
-        this.integrationService = integrationService;
-        this.workflowService = workflowService;
-        this.syncService = syncService;
-        this.syncStateRepo = syncStateRepo;
-        this.credentialsRepo = credentialsRepo;
-        this.cipher = cipher;
-        this.providerRegistry = providerRegistry;
+        this(integrationService, workflowService, syncService, syncStateRepo, credentialsRepo, cipher, providerRegistry, null);
     }
 
     @GetMapping("/{id}/workflows")
@@ -88,8 +106,12 @@ public class MonitoredWorkflowController {
         DecryptedCredentials credentials =
                 new DecryptedCredentials(decrypted);
 
-        WorkflowProvider provider =
-                providerRegistry.getByWire(integration.getType());
+        WorkflowProvider provider;
+        try {
+            provider = providerRegistry.getByWire(integration.getType());
+        } catch (Exception e) {
+            return new MonitoredWorkflowsResponse(List.of());
+        }
 
         IntegrationContext context =
                 new IntegrationContext(
@@ -238,6 +260,10 @@ public class MonitoredWorkflowController {
 
         FlowOpsPrincipal principal =
                 AuthenticatedUser.requireRole(Role.ADMIN);
+
+        if (rateLimiter != null) {
+            rateLimiter.check("sync:integration:" + id, 10, Duration.ofMinutes(1));
+        }
 
         integrationService.getEntity(principal, id);
 

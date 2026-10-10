@@ -10,17 +10,18 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-white text-black shadow-sm hover:bg-white/90",
+          "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
         contrast:
-          "border border-white/10 bg-white text-black shadow-sm hover:bg-white/90",
+          "border border-border bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
         destructive:
           "border border-red-500/20 bg-red-500/10 text-red-400 shadow-sm hover:bg-red-500/20",
         outline:
-          "border border-white/[0.08] bg-white/[0.025] text-white/80 shadow-sm hover:border-white/[0.14] hover:bg-white/[0.05] hover:text-white",
+          "border border-border bg-background text-foreground shadow-sm hover:border-border-strong hover:bg-muted hover:text-foreground dark:border-white/[0.08] dark:bg-white/[0.025] dark:text-white/80 dark:hover:border-white/[0.14] dark:hover:bg-white/[0.05] dark:hover:text-white",
         secondary:
-          "border border-white/[0.06] bg-white/[0.05] text-white/80 shadow-sm hover:bg-white/[0.08] hover:text-white",
-        ghost: "text-white/60 hover:bg-white/[0.05] hover:text-white",
-        link: "text-white underline-offset-4 hover:underline",
+          "border border-border bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80 dark:border-white/[0.06] dark:bg-white/[0.05] dark:text-white/80 dark:hover:bg-white/[0.08] dark:hover:text-white",
+        ghost:
+          "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-white/60 dark:hover:bg-white/[0.05] dark:hover:text-white",
+        link: "text-primary underline-offset-4 hover:underline dark:text-white",
       },
       size: {
         default: "h-10 px-4 py-2",

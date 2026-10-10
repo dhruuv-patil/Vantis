@@ -20,6 +20,7 @@ import {
   type OnSelectionChangeParams,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { useTheme } from "next-themes";
 import { toast } from "sonner";
 import {
   fetchNodeTypes,
@@ -1026,7 +1027,7 @@ export default function WorkflowDetailPage() {
     workflow.name;
 
   return (
-    <div className="flex h-screen flex-col bg-[#050505]">
+    <div className="flex h-screen flex-col bg-background text-foreground dark:bg-[#050505] dark:text-white">
       <WorkflowHeader
         workflow={workflow}
         version={version}
@@ -1158,7 +1159,7 @@ export default function WorkflowDetailPage() {
         }
       />
 
-      <div className="flex-1 min-h-0 overflow-hidden bg-[#050505]">
+      <div className="flex-1 min-h-0 overflow-hidden bg-background">
         {activeView ===
         "editor" ? (
           <ReactFlowProvider>
@@ -1257,6 +1258,9 @@ const Builder =
         FlowNodeType,
         FlowEdge
       >();
+
+    const { resolvedTheme } = useTheme();
+    const isDark = resolvedTheme !== "light";
 
     const wrapperRef =
       React.useRef<HTMLDivElement>(
@@ -2653,8 +2657,7 @@ const Builder =
                     type: "default",
                     animated: false,
                     style: {
-                      stroke:
-                        "rgba(255,255,255,0.35)",
+                      stroke: isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.30)",
                       strokeWidth: 1.75,
                     },
                   }}
@@ -2672,7 +2675,7 @@ const Builder =
                     hideAttribution:
                       true,
                   }}
-                  className="bg-[#050505]"
+                  className="bg-background dark:bg-[#050505]"
                 >
                   <Background
                     variant={
@@ -2680,7 +2683,7 @@ const Builder =
                     }
                     gap={22}
                     size={1.4}
-                    color="rgba(255,255,255,0.13)"
+                    color={isDark ? "rgba(255,255,255,0.13)" : "rgba(0,0,0,0.15)"}
                   />
 
                   <Controls className="!shadow-md" />
@@ -2706,7 +2709,7 @@ const Builder =
                         nodes.length ===
                         0
                       }
-                      className="h-8 border-white/[0.08] bg-[#0a0a0a]/90 text-xs text-white/70 hover:bg-white/[0.06] hover:text-white"
+                      className="h-8 border-border bg-card/90 text-xs text-foreground/80 hover:bg-muted hover:text-foreground dark:border-white/[0.08] dark:bg-[#0a0a0a]/90 dark:text-white/70 dark:hover:bg-white/[0.06] dark:hover:text-white shadow-sm"
                     >
                       Auto layout
                     </Button>
@@ -2716,7 +2719,7 @@ const Builder =
                 {nodes.length ===
                   0 && (
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <p className="rounded-md border border-dashed border-white/[0.08] bg-[#0a0a0a]/80 px-4 py-3 text-sm text-white/40">
+                    <p className="rounded-md border border-dashed border-border bg-card/80 px-4 py-3 text-sm text-muted-foreground dark:border-white/[0.08] dark:bg-[#0a0a0a]/80 dark:text-white/40">
                       Drag a node from the
                       left, or click one to
                       add it.

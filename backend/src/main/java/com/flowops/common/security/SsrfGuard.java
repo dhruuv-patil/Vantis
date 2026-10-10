@@ -2,6 +2,10 @@ package com.flowops.common.security;
 
 import com.flowops.common.error.ApiException;
 import com.flowops.common.error.ErrorCode;
+import com.flowops.common.security.http.HardenedHttpException;
+import com.flowops.common.security.http.IpAddressValidator;
+import com.flowops.common.security.http.SsrfProperties;
+import com.flowops.common.security.http.UrlValidator;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -31,51 +35,24 @@ import java.util.Locale;
  */
 public final class SsrfGuard {
 
+    private static final SsrfProperties DEFAULT_PROPERTIES = new SsrfProperties();
+    private static final IpAddressValidator IP_VALIDATOR = new IpAddressValidator(DEFAULT_PROPERTIES);
+    private static final UrlValidator URL_VALIDATOR = new UrlValidator(DEFAULT_PROPERTIES, IP_VALIDATOR);
+
     private SsrfGuard() {
     }
 
     /** Parses and validates {@code url}; returns the parsed URI on success. */
     public static URI validate(String url) {
-        if (url == null || url.isBlank()) {
-            throw new ApiException(ErrorCode.INTEGRATION_INVALID, "An HTTP target URL is required.");
-        }
-
-        URI uri;
         try {
-            uri = new URI(url.trim());
-        } catch (Exception malformed) {
+            return URL_VALIDATOR.validate(url);
+        } catch (HardenedHttpException e) {
+            throw new ApiException(ErrorCode.INTEGRATION_INVALID, e.getMessage());
+        } catch (ApiException e) {
+            throw e;
+        } catch (Exception e) {
             throw new ApiException(ErrorCode.INTEGRATION_INVALID, "The HTTP target URL is not a valid URI.");
         }
-
-        String scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
-        if (!scheme.equals("http") && !scheme.equals("https")) {
-            throw new ApiException(ErrorCode.INTEGRATION_INVALID, "Only http and https targets are allowed.");
-        }
-
-        String host = uri.getHost();
-        if (host == null || host.isBlank()) {
-            throw new ApiException(ErrorCode.INTEGRATION_INVALID, "The HTTP target URL has no host.");
-        }
-
-        String lower = host.toLowerCase(Locale.ROOT);
-        if (lower.equals("localhost") || lower.endsWith(".localhost")
-                || lower.endsWith(".local") || lower.endsWith(".internal")) {
-            throw new ApiException(ErrorCode.INTEGRATION_INVALID,
-                    "Internal hostnames are not allowed as HTTP targets.");
-        }
-
-        try {
-            for (InetAddress address : InetAddress.getAllByName(host)) {
-                if (isBlocked(address)) {
-                    throw new ApiException(ErrorCode.INTEGRATION_INVALID,
-                            "The target host resolves to a forbidden (private or local) address.");
-                }
-            }
-        } catch (UnknownHostException unresolvable) {
-            throw new ApiException(ErrorCode.INTEGRATION_INVALID, "The target host could not be resolved.");
-        }
-
-        return uri;
     }
 
     /**

@@ -11,7 +11,8 @@ public enum Role {
     VIEWER(1),
     MEMBER(2),
     ADMIN(3),
-    OWNER(4);
+    OWNER(4),
+    PLATFORM_ADMIN(5);
 
     private final int rank;
 

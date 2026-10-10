@@ -21,7 +21,8 @@ public record ApiErrorResponse(Body error) {
             Instant timestamp,
             String path,
             String requestId,
-            List<FieldErrorDetail> fieldErrors) {
+            List<FieldErrorDetail> fieldErrors,
+            PlanLimitDetail details) {
     }
 
     public static ApiErrorResponse of(
@@ -29,7 +30,8 @@ public record ApiErrorResponse(Body error) {
             String message,
             String path,
             String requestId,
-            List<FieldErrorDetail> fieldErrors) {
+            List<FieldErrorDetail> fieldErrors,
+            PlanLimitDetail details) {
 
         return new ApiErrorResponse(new Body(
                 code.name(),
@@ -40,6 +42,17 @@ public record ApiErrorResponse(Body error) {
                 Instant.now().truncatedTo(ChronoUnit.MILLIS),
                 path,
                 requestId,
-                fieldErrors));
+                fieldErrors,
+                details));
+    }
+
+    public static ApiErrorResponse of(
+            ErrorCode code,
+            String message,
+            String path,
+            String requestId,
+            List<FieldErrorDetail> fieldErrors) {
+
+        return of(code, message, path, requestId, fieldErrors, null);
     }
 }

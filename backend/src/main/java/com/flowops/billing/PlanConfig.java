@@ -1,25 +1,33 @@
 package com.flowops.billing;
 
+import com.flowops.billing.model.PlanCatalog;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
 /**
- * Single backend source of truth for plan limits, pricing, and private beta status.
+ * Backend plan configuration delegating directly to PlanCatalog as single source of truth.
  */
 @Component
 public class PlanConfig {
 
     private final Map<String, PlanLimits> limits;
+    private final Boolean billingEnabledOverride;
+    private final Boolean privateBetaOverride;
 
     public PlanConfig() {
+        this(null, null);
+    }
+
+    public PlanConfig(Boolean billingEnabledOverride, Boolean privateBetaOverride) {
         Map<String, PlanLimits> map = new LinkedHashMap<>();
-        map.put("FREE", new PlanLimits(5, 500, 10, 1));
-        map.put("PRIVATE_BETA", new PlanLimits(50, 10_000, 100, 5));
-        map.put("PRO", new PlanLimits(100, 50_000, 500, 10));
-        map.put("BUSINESS", new PlanLimits(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE));
+        for (var entry : PlanCatalog.getAll().entrySet()) {
+            map.put(entry.getKey(), PlanLimits.from(entry.getValue().limits()));
+        }
         this.limits = Collections.unmodifiableMap(map);
+        this.billingEnabledOverride = billingEnabledOverride;
+        this.privateBetaOverride = privateBetaOverride;
     }
 
     public Map<String, PlanLimits> getAllLimits() {
@@ -34,11 +42,17 @@ public class PlanConfig {
     }
 
     public boolean isPrivateBeta() {
+        if (privateBetaOverride != null) {
+            return privateBetaOverride;
+        }
         String env = System.getenv("PRIVATE_BETA");
         return env == null || env.isBlank() || !"false".equalsIgnoreCase(env);
     }
 
     public boolean isBillingEnabled() {
+        if (billingEnabledOverride != null) {
+            return billingEnabledOverride;
+        }
         String env = System.getenv("BILLING_ENABLED");
         return "true".equalsIgnoreCase(env) || "1".equals(env);
     }

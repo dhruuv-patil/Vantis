@@ -69,20 +69,6 @@
         }
       },
       {
-        "id": "gate",
-        "type": "condition",
-        "position": {
-          "x": 920,
-          "y": 220
-        },
-        "data": {
-          "label": "SLA breach detected?",
-          "config": {
-            "expression": "{{sla.output.breached}} == true"
-          }
-        }
-      },
-      {
         "id": "escalate",
         "type": "escalation",
         "position": {
@@ -163,22 +149,16 @@
         "sourceHandle": null
       },
       {
-        "id": "e-sla-gate",
+        "id": "e-sla-escalate-breached",
         "source": "sla",
-        "target": "gate",
-        "sourceHandle": null
-      },
-      {
-        "id": "e-gate-escalate-true",
-        "source": "gate",
         "target": "escalate",
-        "sourceHandle": "true"
+        "sourceHandle": "breached"
       },
       {
-        "id": "e-gate-notify-false",
-        "source": "gate",
+        "id": "e-sla-notify-insla",
+        "source": "sla",
         "target": "notify",
-        "sourceHandle": "false"
+        "sourceHandle": "inSla"
       },
       {
         "id": "e-escalate-page",

@@ -75,6 +75,11 @@ class OAuthSecurityIntegrationTest {
         String password = "validPassword123";
         register(email, password, "Valid User", "Valid Org");
 
+        // Legitimate user completes email verification before logging in
+        UserAccount user = users.findByEmailIgnoreCase(email).orElseThrow();
+        user.markEmailVerified();
+        users.save(user);
+
         mvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json("email", email, "password", password)))
@@ -84,11 +89,29 @@ class OAuthSecurityIntegrationTest {
     }
 
     @Test
+    @DisplayName("Password authentication: unverified user cannot log in and receives 403 EMAIL_NOT_VERIFIED")
+    void loginWithUnverifiedEmailFails() throws Exception {
+        String email = "unverified+" + UUID.randomUUID() + "@example.com";
+        String password = "validPassword123";
+        register(email, password, "Unverified User", "Org");
+
+        mvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json("email", email, "password", password)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error.code").value("EMAIL_NOT_VERIFIED"));
+    }
+
+    @Test
     @DisplayName("Password authentication: valid email + wrong password fails with 401 INVALID_CREDENTIALS")
     void loginWithWrongPasswordFails() throws Exception {
         String email = "wrongpass+" + UUID.randomUUID() + "@example.com";
         String password = "validPassword123";
         register(email, password, "Wrong Pass User", "Org");
+
+        UserAccount user = users.findByEmailIgnoreCase(email).orElseThrow();
+        user.markEmailVerified();
+        users.save(user);
 
         mvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

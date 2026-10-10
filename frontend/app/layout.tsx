@@ -44,7 +44,6 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      style={{ backgroundColor: "#000000" }}
     >
       <head>
         <link
@@ -55,8 +54,7 @@ export default function RootLayout({
       </head>
 
       <body
-        className="min-h-screen font-sans text-foreground antialiased"
-        style={{ backgroundColor: "#000000" }}
+        className="min-h-screen font-sans bg-background text-foreground antialiased"
       >
         <Providers>{children}</Providers>
       </body>

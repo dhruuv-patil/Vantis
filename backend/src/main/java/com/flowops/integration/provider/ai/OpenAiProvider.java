@@ -19,6 +19,7 @@ import com.flowops.integration.provider.ConnectionTestResult;
 import com.flowops.integration.provider.CredentialField;
 import com.flowops.integration.provider.IntegrationContext;
 import com.flowops.integration.provider.IntegrationType;
+import com.flowops.integration.provider.ProviderCapabilities;
 import org.springframework.stereotype.Component;
 
 /**
@@ -50,6 +51,11 @@ public class OpenAiProvider implements AiProvider {
     @Override
     public String description() {
         return "Connect to OpenAI models.";
+    }
+
+    @Override
+    public ProviderCapabilities capabilities() {
+        return new ProviderCapabilities(false, false, false, false, false, false);
     }
 
     @Override

@@ -1,0 +1,49 @@
+{
+  "id": "exec-103",
+  "finished": true,
+  "mode": "webhook",
+  "retryOf": null,
+  "retrySuccessId": null,
+  "status": "success",
+  "startedAt": "2024-03-01T10:30:00.000Z",
+  "stoppedAt": "2024-03-01T10:30:00.800Z",
+  "workflowId": "wf-filter-leads",
+  "data": {
+    "resultData": {
+      "runData": {
+        "Webhook": [
+          {
+            "startTime": 1709289000000,
+            "executionTime": 8,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "leadEmail": "spam@trashmail.com",
+                      "score": 5
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ],
+        "Filter High Value": [
+          {
+            "startTime": 1709289000015,
+            "executionTime": 12,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                []
+              ]
+            }
+          }
+        ]
+      },
+      "lastNodeExecuted": "Filter High Value"
+    }
+  }
+}

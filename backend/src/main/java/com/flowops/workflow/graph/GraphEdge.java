@@ -1,5 +1,6 @@
 package com.flowops.workflow.graph;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
@@ -8,5 +9,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * a condition); null means the node's single default output.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record GraphEdge(String id, String source, String target, String sourceHandle, String targetHandle) {
+public record GraphEdge(
+        String id,
+        String source,
+        String target,
+        @JsonAlias("source_handle") String sourceHandle,
+        @JsonAlias("target_handle") String targetHandle) {
 }

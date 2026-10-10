@@ -8,7 +8,7 @@ const Skeleton = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("relative overflow-hidden rounded-md bg-white/[0.06]", className)}
+    className={cn("relative overflow-hidden rounded-md bg-muted dark:bg-white/[0.06]", className)}
     {...props}
   >
     <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-background/60 to-transparent" />

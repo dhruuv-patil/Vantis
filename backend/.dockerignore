@@ -1,5 +1,13 @@
-# Git & Tooling
+# Git & Version Control
 .git
+.gitignore
+.github
+
+# IDEs & Editor configs
+.idea
+.vscode
+.claude
+.DS_Store
 
 # Environment files and credentials (CRITICAL: never copy into images)
 .env
@@ -11,8 +19,31 @@
 *.p12
 *.crt
 
-# Build outputs and caches
+# Build outputs, logs, and caches
 target
 *.log
+*.dump
+*.dumpstream
 .mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Test files (tests are executed before image build; excluded from build context)
+test
+tests
 src/test
+
+# Docker and Compose definitions
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Documentation and markdown files
+README*
+*.md
+
+# Local development scratch files
+frontend
+home-page.ts
+home_dir
+home_final
+templates

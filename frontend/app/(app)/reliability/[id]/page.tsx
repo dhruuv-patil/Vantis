@@ -32,6 +32,7 @@ import {
   investigateAnomaly,
   verifyRecovery,
   fetchRecoveryStatus,
+  getPlanLimitDetail,
 } from "@/lib/api";
 
 import type {
@@ -39,9 +40,11 @@ import type {
   AnomalySeverity,
   AnomalyStatus,
   AIInvestigationResult,
+  PlanLimitDetail,
   RecoveryStatus,
 } from "@/types";
 
+import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -95,23 +98,23 @@ const SEVERITY: Record<
 > = {
   LOW: {
     label: "Low",
-    dot: "bg-green-400",
-    text: "text-white/60",
+    dot: "bg-green-500",
+    text: "text-muted-foreground dark:text-white/60",
   },
   MEDIUM: {
     label: "Medium",
-    dot: "bg-yellow-400",
-    text: "text-white/70",
+    dot: "bg-yellow-500",
+    text: "text-foreground/80 dark:text-white/70",
   },
   HIGH: {
     label: "High",
-    dot: "bg-orange-400",
-    text: "text-white/80",
+    dot: "bg-orange-500",
+    text: "text-foreground dark:text-white/80",
   },
   CRITICAL: {
     label: "Critical",
-    dot: "bg-red-400",
-    text: "text-red-300",
+    dot: "bg-red-500",
+    text: "text-red-600 dark:text-red-300",
   },
 };
 
@@ -125,31 +128,31 @@ const STATUS: Record<
   OPEN: {
     label: "Open",
     className:
-      "bg-blue-500/10 text-blue-400 border-blue-500/20",
+      "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
   },
 
   ACKNOWLEDGED: {
     label: "Acknowledged",
     className:
-      "bg-purple-500/10 text-purple-400 border-purple-500/20",
+      "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
   },
 
   VERIFYING_RECOVERY: {
     label: "Verifying recovery",
     className:
-      "bg-amber-500/10 text-amber-400 border-amber-500/20",
+      "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
   },
 
   RESOLVED: {
     label: "Resolved",
     className:
-      "bg-green-500/10 text-green-400 border-green-500/20",
+      "bg-emerald-500/10 text-emerald-600 dark:text-green-400 border-emerald-500/20",
   },
 
   FALSE_POSITIVE: {
     label: "False positive",
     className:
-      "bg-gray-500/10 text-gray-400 border-gray-500/20",
+      "bg-muted text-muted-foreground dark:bg-white/[0.06] dark:text-white/60 border-border dark:border-white/[0.08]",
   },
 };
 
@@ -161,7 +164,7 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 const TAB_TRIGGER =
-  "data-[state=active]:bg-white/[0.08] data-[state=active]:text-white";
+  "data-[state=active]:bg-muted data-[state=active]:text-foreground dark:data-[state=active]:bg-white/[0.08] dark:data-[state=active]:text-white";
 
 /* -------------------------------------------------------------------------- */
 /* Helpers                                                                    */
@@ -231,7 +234,7 @@ function SeverityLabel({
 
   if (!config) {
     return (
-      <span className="text-sm text-white/44">
+      <span className="text-sm text-muted-foreground dark:text-white/44">
         {severity}
       </span>
     );
@@ -262,7 +265,7 @@ function StatusBadge({
     <Badge
       variant="secondary"
       className={
-        config?.className ?? "text-white/60"
+        config?.className ?? "text-muted-foreground dark:text-white/60"
       }
     >
       {config?.label ?? status}
@@ -285,16 +288,16 @@ function Panel({
 }) {
   return (
     <section
-      className={`rounded-xl border border-white/[0.08] bg-[#0a0a0a] ${className}`}
+      className={`rounded-xl border border-border dark:border-white/[0.08] bg-card dark:bg-[#0a0a0a] ${className}`}
     >
       <header className="flex items-start justify-between gap-4 px-5 pt-5">
         <div className="min-w-0">
-          <h2 className="text-sm font-medium text-white/90">
+          <h2 className="text-sm font-medium text-foreground dark:text-white/90">
             {title}
           </h2>
 
           {description && (
-            <p className="mt-1 text-sm text-white/44">
+            <p className="mt-1 text-sm text-muted-foreground dark:text-white/44">
               {description}
             </p>
           )}
@@ -321,12 +324,12 @@ function Field({
 }) {
   return (
     <div className="min-w-0">
-      <dt className="text-xs text-white/44">
+      <dt className="text-xs text-muted-foreground dark:text-white/44">
         {label}
       </dt>
 
       <dd
-        className={`mt-1 break-words text-sm text-white/90 ${
+        className={`mt-1 break-words text-sm text-foreground dark:text-white/90 ${
           mono ? "font-mono tabular-nums" : ""
         }`}
       >
@@ -345,7 +348,7 @@ function InvestigationSection({
 }) {
   return (
     <div className="space-y-3">
-      <h3 className="text-sm font-medium text-white/90">
+      <h3 className="text-sm font-medium text-foreground dark:text-white/90">
         {title}
       </h3>
 
@@ -411,6 +414,9 @@ export default function AnomalyDetailPage({
 
   const [pending, setPending] =
     useState<PendingAction | null>(null);
+
+  const [retentionLimitDetail, setRetentionLimitDetail] =
+    useState<PlanLimitDetail | null>(null);
 
   const [activeTab, setActiveTab] =
     useState("overview");
@@ -625,7 +631,14 @@ export default function AnomalyDetailPage({
     } catch (err) {
       console.error(err);
 
+      // 1. Failure notification is never blocked
       toast.error(failure);
+
+      // 2. Structured limit detail extraction for retention trigger
+      const limit = getPlanLimitDetail(err);
+      if (limit) {
+        setRetentionLimitDetail(limit);
+      }
 
       return false;
     } finally {
@@ -791,7 +804,7 @@ export default function AnomalyDetailPage({
         key: "created",
         label: "Created",
         at: anomaly.createdAt,
-        dot: "bg-white/30",
+        dot: "bg-muted-foreground/40 dark:bg-white/30",
       },
       {
         key: "detected",
@@ -818,7 +831,7 @@ export default function AnomalyDetailPage({
         key: "updated",
         label: "Last updated",
         at: anomaly.updatedAt,
-        dot: "bg-white/30",
+        dot: "bg-muted-foreground/40 dark:bg-white/30",
       });
     }
 
@@ -959,7 +972,7 @@ export default function AnomalyDetailPage({
             {typeLabel} anomaly in{" "}
             <Link
               href={`/workflows/${anomaly.workflowId}`}
-              className="underline decoration-white/20 underline-offset-4 transition-colors hover:decoration-white/60"
+              className="underline decoration-border dark:decoration-white/20 underline-offset-4 transition-colors hover:decoration-muted-foreground dark:hover:decoration-white/60"
             >
               {anomaly.workflowName}
             </Link>
@@ -969,7 +982,7 @@ export default function AnomalyDetailPage({
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-1">
             <StatusBadge status={anomaly.status} />
             <SeverityLabel severity={anomaly.severity} />
-            <span className="text-sm text-white/44">
+            <span className="text-sm text-muted-foreground dark:text-white/44">
               Detected{" "}
               <FormattedDate
                 value={anomaly.detectedAt}
@@ -1082,6 +1095,15 @@ export default function AnomalyDetailPage({
         }
       />
 
+      {retentionLimitDetail && (
+        <UpgradePrompt
+          trigger="retention"
+          structuredError={retentionLimitDetail}
+          variant="banner"
+          onDismiss={() => setRetentionLimitDetail(null)}
+        />
+      )}
+
       {/* Main body */}
       <div className="grid min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
         {/* Main content */}
@@ -1144,7 +1166,7 @@ export default function AnomalyDetailPage({
               >
                 <div className="space-y-5">
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs text-white/70">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground dark:text-white/70">
                       <span>
                         Healthy executions
                       </span>
@@ -1181,14 +1203,14 @@ export default function AnomalyDetailPage({
                               ? "bg-green-500"
                               : recoveryFailing
                               ? "bg-red-500/30"
-                              : "bg-white/10"
+                              : "bg-muted dark:bg-white/10"
                           }`}
                         />
                       ))}
                     </div>
                   </div>
 
-                  <dl className="grid gap-4 border-t border-white/[0.06] pt-4 sm:grid-cols-3">
+                  <dl className="grid gap-4 border-t border-border dark:border-white/[0.06] pt-4 sm:grid-cols-3">
                     <Field
                       label="Current value"
                       mono
@@ -1287,7 +1309,7 @@ export default function AnomalyDetailPage({
                 </Field>
               </dl>
 
-              <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-white/[0.06] pt-5 sm:grid-cols-4">
+              <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-5 border-t border-border dark:border-white/[0.06] pt-5 sm:grid-cols-4">
                 <Field
                   label="Deviation"
                   mono
@@ -1322,22 +1344,22 @@ export default function AnomalyDetailPage({
 
             {/* Timeline */}
             <Panel title="Timeline">
-              <ol className="relative ml-1 space-y-5 border-l border-white/[0.08] pl-5">
+              <ol className="relative ml-1 space-y-5 border-l border-border dark:border-white/[0.08] pl-5">
                 {timeline.map((event) => (
                   <li
                     key={event.key}
                     className="relative"
                   >
                     <span
-                      className={`absolute -left-[25px] top-1.5 size-2 rounded-full ring-4 ring-[#0a0a0a] ${event.dot}`}
+                      className={`absolute -left-[25px] top-1.5 size-2 rounded-full ring-4 ring-card dark:ring-[#0a0a0a] ${event.dot}`}
                       aria-hidden
                     />
 
-                    <p className="text-sm text-white/90">
+                    <p className="text-sm text-foreground dark:text-white/90">
                       {event.label}
                     </p>
 
-                    <p className="mt-0.5 font-mono text-xs tabular-nums text-white/44">
+                    <p className="mt-0.5 font-mono text-xs tabular-nums text-muted-foreground dark:text-white/44">
                       <FormattedDate
                         value={event.at}
                       />
@@ -1381,7 +1403,7 @@ export default function AnomalyDetailPage({
               }
             >
               {detectorEvidence ? (
-                <pre className="max-h-96 min-w-0 max-w-full overflow-auto whitespace-pre-wrap break-words rounded-lg bg-white/[0.03] p-4 font-mono text-xs leading-relaxed text-white/70 [overflow-wrap:anywhere]">
+                <pre className="max-h-96 min-w-0 max-w-full overflow-auto whitespace-pre-wrap break-words rounded-lg border border-border dark:border-transparent bg-muted/40 dark:bg-white/[0.03] p-4 font-mono text-xs leading-relaxed text-foreground/80 dark:text-white/70 [overflow-wrap:anywhere]">
                   {JSON.stringify(
                     detectorEvidence,
                     null,
@@ -1389,7 +1411,7 @@ export default function AnomalyDetailPage({
                   )}
                 </pre>
               ) : (
-                <p className="text-sm text-white/44">
+                <p className="text-sm text-muted-foreground dark:text-white/44">
                   The detector didn&apos;t
                   attach any evidence to this
                   anomaly.
@@ -1422,25 +1444,55 @@ export default function AnomalyDetailPage({
                       />
                     </>
                   ) : (
-                    "No AI provider is configured. Add a provider key to enable investigations."
+                    "Deterministic Rule-based Diagnostic Fallback"
                   )
                 }
                 action={
-                  <span className="whitespace-nowrap text-xs text-white/44">
-                    {formatPercent(
-                      investigation.confidence
-                    )}{" "}
-                    confidence
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {investigation.fallback && (
+                      <span className="rounded px-2 py-0.5 text-xs font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                        Rule-based Fallback
+                      </span>
+                    )}
+                    <span className="whitespace-nowrap text-xs text-muted-foreground dark:text-white/44">
+                      {formatPercent(
+                        investigation.confidence
+                      )}{" "}
+                      confidence
+                    </span>
+                  </div>
                 }
               >
                 <div className="space-y-7">
+                  {/* Fallback Banner */}
+                  {investigation.fallback && (
+                    <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3.5 text-xs leading-relaxed text-amber-800 dark:text-amber-300">
+                      <strong>Deterministic Fallback:</strong> This diagnostic analysis was produced from deterministic telemetry evidence rules because the external AI service is offline or unconfigured.
+                    </div>
+                  )}
+
                   {/* Summary */}
                   {investigation.summary && (
                     <InvestigationSection title="Summary">
-                      <p className="text-sm leading-relaxed text-white/70">
+                      <p className="text-sm leading-relaxed text-foreground/80 dark:text-white/70">
                         {investigation.summary}
                       </p>
+                    </InvestigationSection>
+                  )}
+
+                  {/* Measured Facts & Citations */}
+                  {investigation.evidenceCitations && investigation.evidenceCitations.length > 0 && (
+                    <InvestigationSection title="Measured Facts & Cited Fields">
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {investigation.evidenceCitations.map((citation, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center rounded-md border border-primary/20 bg-primary/[0.04] px-2 py-0.5 font-mono text-xs text-primary"
+                          >
+                            {citation}
+                          </span>
+                        ))}
+                      </div>
                     </InvestigationSection>
                   )}
 
@@ -1449,32 +1501,44 @@ export default function AnomalyDetailPage({
                     .likelyCauses
                     ?.length && (
                     <InvestigationSection title="Likely causes">
-                      <ul className="divide-y divide-white/[0.06]">
+                      <ul className="divide-y divide-border dark:divide-white/[0.06]">
                         {investigation.likelyCauses.map(
                           (cause, i) => (
                             <li
                               key={i}
                               className="py-3 first:pt-0 last:pb-0"
                             >
-                              <p className="text-sm text-white/90">
-                                {cause.cause}
-                              </p>
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="text-sm font-medium text-foreground dark:text-white/90">
+                                  {cause.cause}
+                                </p>
+                                <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">
+                                  {formatPercent(cause.confidence)}
+                                </span>
+                              </div>
 
-                              <p className="mt-1 text-xs text-white/44">
-                                {cause.category} ·{" "}
-                                {formatPercent(
-                                  cause.confidence
-                                )}{" "}
-                                confidence
+                              <p className="mt-1 text-xs text-muted-foreground dark:text-white/44">
+                                Category: {cause.category}
                               </p>
 
                               {cause.uncertainty && (
-                                <p className="mt-1 text-xs text-amber-400">
+                                <p className="mt-1 text-xs text-amber-500 dark:text-amber-400">
                                   Uncertainty:{" "}
-                                  {
-                                    cause.uncertainty
-                                  }
+                                  {cause.uncertainty}
                                 </p>
+                              )}
+
+                              {cause.citations && cause.citations.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-1">
+                                  {cause.citations.map((c, ci) => (
+                                    <span
+                                      key={ci}
+                                      className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground border border-border"
+                                    >
+                                      {c}
+                                    </span>
+                                  ))}
+                                </div>
                               )}
                             </li>
                           )
@@ -1483,29 +1547,52 @@ export default function AnomalyDetailPage({
                     </InvestigationSection>
                   )}
 
+                  {/* Suggested Fix */}
+                  {investigation.suggestedFix && (
+                    <InvestigationSection title="Suggested Remediation">
+                      <div className="rounded-lg border border-primary/20 bg-primary/[0.03] p-3 text-xs leading-relaxed text-foreground/90 dark:text-white/80">
+                        {investigation.suggestedFix}
+                      </div>
+                    </InvestigationSection>
+                  )}
+
+                  {/* Verification Checklist */}
+                  {investigation.verificationChecklist && investigation.verificationChecklist.length > 0 && (
+                    <InvestigationSection title="Recovery Verification Checklist">
+                      <ul className="space-y-2 pt-1">
+                        {investigation.verificationChecklist.map((step, idx) => (
+                          <li key={idx} className="flex items-start gap-2 text-xs text-foreground/80 dark:text-white/70">
+                            <span className="select-none font-mono text-muted-foreground">[{idx + 1}]</span>
+                            <span>{step}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </InvestigationSection>
+                  )}
+
                   {/* Supporting evidence */}
                   {!!investigation.evidence
                     ?.length && (
                     <InvestigationSection title="Supporting evidence">
-                      <ul className="divide-y divide-white/[0.06]">
+                      <ul className="divide-y divide-border dark:divide-white/[0.06]">
                         {investigation.evidence.map(
                           (item, i) => (
                             <li
                               key={i}
                               className="py-3 first:pt-0 last:pb-0"
                             >
-                              <p className="text-sm text-white/90">
+                              <p className="text-sm text-foreground dark:text-white/90">
                                 {item.type}:{" "}
                                 {item.description}
                               </p>
 
-                              <p className="mt-1 text-xs text-white/44">
+                              <p className="mt-1 text-xs text-muted-foreground dark:text-white/44">
                                 Source:{" "}
                                 {item.source}
                               </p>
 
                               {item.inference && (
-                                <p className="mt-1 text-xs text-white/70">
+                                <p className="mt-1 text-xs text-foreground/80 dark:text-white/70">
                                   Inference:{" "}
                                   {
                                     item.inference
@@ -1522,7 +1609,7 @@ export default function AnomalyDetailPage({
                   {/* Impact */}
                   {investigation.impact && (
                     <InvestigationSection title="Impact">
-                      <p className="text-sm leading-relaxed text-white/70">
+                      <p className="text-sm leading-relaxed text-foreground/80 dark:text-white/70">
                         {investigation.impact}
                       </p>
                     </InvestigationSection>
@@ -1533,22 +1620,22 @@ export default function AnomalyDetailPage({
                     .recommendedActions
                     ?.length && (
                     <InvestigationSection title="Recommended actions">
-                      <ul className="divide-y divide-white/[0.06]">
+                      <ul className="divide-y divide-border dark:divide-white/[0.06]">
                         {investigation.recommendedActions.map(
                           (action, i) => (
                             <li
                               key={i}
                               className="py-3 first:pt-0 last:pb-0"
                             >
-                              <p className="text-sm text-white/90">
+                              <p className="text-sm text-foreground dark:text-white/90">
                                 {action.action}
                               </p>
 
-                              <p className="mt-1 text-xs text-white/44">
+                              <p className="mt-1 text-xs text-muted-foreground dark:text-white/44">
                                 {action.rationale}
                               </p>
 
-                              <p className="mt-1 text-xs text-white/44">
+                              <p className="mt-1 text-xs text-muted-foreground dark:text-white/44">
                                 Risk:{" "}
                                 {action.risk}{" "}
                                 · Effort:{" "}
@@ -1584,12 +1671,12 @@ export default function AnomalyDetailPage({
 
               {anomaly.nodeId && (
                 <Field label="Node">
-                  <code className="break-all font-mono text-xs text-white/70">
+                  <code className="break-all font-mono text-xs text-foreground/80 dark:text-white/70">
                     {anomaly.nodeId}
                   </code>
 
                   {anomaly.nodeType && (
-                    <span className="mt-0.5 block text-xs text-white/44">
+                    <span className="mt-0.5 block text-xs text-muted-foreground dark:text-white/44">
                       {anomaly.nodeType}
                     </span>
                   )}
@@ -1614,7 +1701,7 @@ export default function AnomalyDetailPage({
                 label="Anomaly ID"
                 mono
               >
-                <span className="break-all text-xs text-white/70">
+                <span className="break-all text-xs text-foreground/80 dark:text-white/70">
                   {anomaly.id}
                 </span>
               </Field>
@@ -1624,7 +1711,7 @@ export default function AnomalyDetailPage({
                   label="Dedup key"
                   mono
                 >
-                  <span className="break-all text-xs text-white/70">
+                  <span className="break-all text-xs text-foreground/80 dark:text-white/70">
                     {anomaly.dedupKey}
                   </span>
                 </Field>

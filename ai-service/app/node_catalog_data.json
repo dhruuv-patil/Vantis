@@ -1,0 +1,3974 @@
+[
+  {
+    "type": "manual_trigger",
+    "label": "Manual Trigger",
+    "purpose": "Starts the workflow when a user clicks Run.",
+    "category": "TRIGGER",
+    "outputs": [
+      "out"
+    ],
+    "trigger": true,
+    "fields": {}
+  },
+  {
+    "type": "webhook_trigger",
+    "label": "Webhook Trigger",
+    "purpose": "Starts the workflow when an HTTP request hits its webhook URL.",
+    "category": "TRIGGER",
+    "outputs": [
+      "out"
+    ],
+    "trigger": true,
+    "fields": {
+      "method": {
+        "label": "HTTP Method",
+        "type": "select",
+        "required": false,
+        "options": [
+          "POST",
+          "GET",
+          "PUT"
+        ],
+        "desc": "HTTP Method"
+      }
+    }
+  },
+  {
+    "type": "schedule_trigger",
+    "label": "Schedule Trigger",
+    "purpose": "Starts the workflow on a cron schedule (e.g. every weekday 9am).",
+    "category": "TRIGGER",
+    "outputs": [
+      "out"
+    ],
+    "trigger": true,
+    "fields": {
+      "cron": {
+        "label": "Cron expression",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Cron expression [required]"
+      },
+      "timezone": {
+        "label": "Timezone (IANA)",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Timezone (IANA)"
+      }
+    }
+  },
+  {
+    "type": "interval_trigger",
+    "label": "Interval Trigger",
+    "purpose": "Starts the workflow on a fixed time interval.",
+    "category": "TRIGGER",
+    "outputs": [
+      "out"
+    ],
+    "trigger": true,
+    "fields": {
+      "intervalSeconds": {
+        "label": "Interval (seconds)",
+        "type": "number",
+        "required": true,
+        "options": [],
+        "desc": "Interval (seconds) [required]"
+      }
+    }
+  },
+  {
+    "type": "workflow_trigger",
+    "label": "Workflow Trigger",
+    "purpose": "Starts the workflow when another workflow completes.",
+    "category": "TRIGGER",
+    "outputs": [
+      "out"
+    ],
+    "trigger": true,
+    "fields": {
+      "sourceWorkflow": {
+        "label": "Source workflow id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Source workflow id"
+      }
+    }
+  },
+  {
+    "type": "event_trigger",
+    "label": "Event Trigger",
+    "purpose": "Starts the workflow when a matching platform event is published.",
+    "category": "TRIGGER",
+    "outputs": [
+      "out"
+    ],
+    "trigger": true,
+    "fields": {
+      "eventName": {
+        "label": "Event name",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Event name"
+      },
+      "match": {
+        "label": "Match",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Match"
+      }
+    }
+  },
+  {
+    "type": "email_trigger",
+    "label": "Email Trigger",
+    "purpose": "Starts the workflow when an email arrives in a monitored inbox.",
+    "category": "TRIGGER",
+    "outputs": [
+      "out"
+    ],
+    "trigger": true,
+    "fields": {
+      "folder": {
+        "label": "Folder",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Folder"
+      },
+      "pollIntervalSeconds": {
+        "label": "Poll interval (seconds)",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Poll interval (seconds)"
+      }
+    }
+  },
+  {
+    "type": "file_trigger",
+    "label": "File Trigger",
+    "purpose": "Starts the workflow when a file appears or changes in a watched path.",
+    "category": "TRIGGER",
+    "outputs": [
+      "out"
+    ],
+    "trigger": true,
+    "fields": {
+      "path": {
+        "label": "Directory",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Directory"
+      },
+      "pollIntervalSeconds": {
+        "label": "Poll interval (seconds)",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Poll interval (seconds)"
+      }
+    }
+  },
+  {
+    "type": "error_trigger",
+    "label": "Error Trigger",
+    "purpose": "Starts the workflow when an error/event of a given code is raised.",
+    "category": "TRIGGER",
+    "outputs": [
+      "out"
+    ],
+    "trigger": true,
+    "fields": {
+      "errorCode": {
+        "label": "Error code",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Error code"
+      }
+    }
+  },
+  {
+    "type": "http_poll_trigger",
+    "label": "HTTP Poll Trigger",
+    "purpose": "Periodically polls an endpoint and starts the workflow with its response.",
+    "category": "TRIGGER",
+    "outputs": [
+      "out"
+    ],
+    "trigger": true,
+    "fields": {
+      "url": {
+        "label": "URL",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "URL [required]"
+      },
+      "method": {
+        "label": "HTTP Method",
+        "type": "select",
+        "required": false,
+        "options": [
+          "GET",
+          "POST"
+        ],
+        "desc": "HTTP Method"
+      },
+      "headers": {
+        "label": "Headers",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Headers"
+      },
+      "body": {
+        "label": "Body",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Body"
+      },
+      "pollIntervalSeconds": {
+        "label": "Poll interval (seconds)",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Poll interval (seconds)"
+      }
+    }
+  },
+  {
+    "type": "http_request",
+    "label": "HTTP Request",
+    "purpose": "Calls an external HTTP endpoint and captures the response.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "method": {
+        "label": "Method",
+        "type": "select",
+        "required": true,
+        "options": [
+          "GET",
+          "POST",
+          "PUT",
+          "PATCH",
+          "DELETE"
+        ],
+        "desc": "Method [required]"
+      },
+      "url": {
+        "label": "URL",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "URL [required]"
+      },
+      "headers": {
+        "label": "Headers",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Headers"
+      },
+      "body": {
+        "label": "Body",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Body"
+      }
+    }
+  },
+  {
+    "type": "graphql_request",
+    "label": "GraphQL Request",
+    "purpose": "Executes a GraphQL query or mutation against an endpoint.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "url": {
+        "label": "URL",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "URL [required]"
+      },
+      "query": {
+        "label": "Query",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Query [required]"
+      },
+      "variables": {
+        "label": "Variables",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Variables"
+      },
+      "headers": {
+        "label": "Headers",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Headers"
+      }
+    }
+  },
+  {
+    "type": "api_health_check",
+    "label": "API Health Check",
+    "purpose": "Probes an endpoint and reports status, latency, and a healthy flag.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "url": {
+        "label": "URL",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "URL [required]"
+      },
+      "method": {
+        "label": "Method",
+        "type": "select",
+        "required": false,
+        "options": [
+          "GET",
+          "HEAD",
+          "POST"
+        ],
+        "desc": "Method"
+      },
+      "expectedStatus": {
+        "label": "Expected status",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Expected status"
+      },
+      "timeoutSeconds": {
+        "label": "Timeout (seconds)",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Timeout (seconds)"
+      },
+      "headers": {
+        "label": "Headers",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Headers"
+      }
+    }
+  },
+  {
+    "type": "api_poll",
+    "label": "API Poll",
+    "purpose": "Polls an endpoint until a condition is met or a poll budget is exhausted.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "url": {
+        "label": "URL",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "URL [required]"
+      },
+      "method": {
+        "label": "Method",
+        "type": "select",
+        "required": false,
+        "options": [
+          "GET",
+          "POST"
+        ],
+        "desc": "Method"
+      },
+      "body": {
+        "label": "Body",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Body"
+      },
+      "stopWhen": {
+        "label": "Stop when (JSONPath)",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Stop when (JSONPath)"
+      },
+      "maxPolls": {
+        "label": "Max polls",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Max polls"
+      },
+      "pollIntervalSeconds": {
+        "label": "Poll interval (seconds)",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Poll interval (seconds)"
+      }
+    }
+  },
+  {
+    "type": "webhook_response",
+    "label": "Webhook Response",
+    "purpose": "Shapes the response returned to an inbound webhook call.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "status": {
+        "label": "Status",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Status"
+      },
+      "contentType": {
+        "label": "Content-Type",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Content-Type"
+      },
+      "body": {
+        "label": "Body",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Body"
+      },
+      "headers": {
+        "label": "Headers",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Headers"
+      }
+    }
+  },
+  {
+    "type": "download_file",
+    "label": "Download File",
+    "purpose": "Downloads a remote file to a local path (or inline) and reports the result.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "url": {
+        "label": "URL",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "URL [required]"
+      },
+      "headers": {
+        "label": "Headers",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Headers"
+      },
+      "targetPath": {
+        "label": "Save to path",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Save to path"
+      },
+      "maxBytes": {
+        "label": "Max bytes",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Max bytes"
+      }
+    }
+  },
+  {
+    "type": "upload_file",
+    "label": "Upload File",
+    "purpose": "Uploads a local file (or inline content) to an endpoint as multipart form data.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "url": {
+        "label": "URL",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "URL [required]"
+      },
+      "method": {
+        "label": "Method",
+        "type": "select",
+        "required": false,
+        "options": [
+          "POST",
+          "PUT"
+        ],
+        "desc": "Method"
+      },
+      "filePath": {
+        "label": "File path",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "File path"
+      },
+      "inlineContent": {
+        "label": "Inline content",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Inline content"
+      },
+      "fieldName": {
+        "label": "Form field",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Form field"
+      },
+      "fileName": {
+        "label": "File name",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "File name"
+      },
+      "headers": {
+        "label": "Headers",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Headers"
+      }
+    }
+  },
+  {
+    "type": "http_batch",
+    "label": "HTTP Batch",
+    "purpose": "Runs a list of HTTP requests and returns their results in order.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "items": {
+        "label": "Items",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Items [required]"
+      },
+      "method": {
+        "label": "Default method",
+        "type": "select",
+        "required": false,
+        "options": [
+          "GET",
+          "POST",
+          "PUT",
+          "PATCH",
+          "DELETE"
+        ],
+        "desc": "Default method"
+      },
+      "headers": {
+        "label": "Default headers",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Default headers"
+      },
+      "concurrency": {
+        "label": "Concurrency",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Concurrency"
+      }
+    }
+  },
+  {
+    "type": "http_retry",
+    "label": "HTTP Retry",
+    "purpose": "Calls an endpoint with its own retry/backoff loop, returning the final result.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "method": {
+        "label": "Method",
+        "type": "select",
+        "required": false,
+        "options": [
+          "GET",
+          "POST",
+          "PUT",
+          "PATCH",
+          "DELETE"
+        ],
+        "desc": "Method"
+      },
+      "url": {
+        "label": "URL",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "URL [required]"
+      },
+      "headers": {
+        "label": "Headers",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Headers"
+      },
+      "body": {
+        "label": "Body",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Body"
+      },
+      "maxAttempts": {
+        "label": "Max attempts",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Max attempts"
+      },
+      "backoffSeconds": {
+        "label": "Backoff (seconds)",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Backoff (seconds)"
+      }
+    }
+  },
+  {
+    "type": "wait_for_http",
+    "label": "Wait for HTTP",
+    "purpose": "Waits until an endpoint returns a desired status (or the timeout elapses).",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "url": {
+        "label": "URL",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "URL [required]"
+      },
+      "method": {
+        "label": "Method",
+        "type": "select",
+        "required": false,
+        "options": [
+          "GET",
+          "POST"
+        ],
+        "desc": "Method"
+      },
+      "desiredStatus": {
+        "label": "Desired status",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Desired status"
+      },
+      "timeoutSeconds": {
+        "label": "Timeout (seconds)",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Timeout (seconds)"
+      },
+      "pollIntervalSeconds": {
+        "label": "Poll interval (seconds)",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Poll interval (seconds)"
+      }
+    }
+  },
+  {
+    "type": "rate_limited_request",
+    "label": "Rate Limited Request",
+    "purpose": "Makes a single request paced by a configurable requests-per-second budget.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "method": {
+        "label": "Method",
+        "type": "select",
+        "required": true,
+        "options": [
+          "GET",
+          "POST",
+          "PUT",
+          "PATCH",
+          "DELETE"
+        ],
+        "desc": "Method [required]"
+      },
+      "url": {
+        "label": "URL",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "URL [required]"
+      },
+      "headers": {
+        "label": "Headers",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Headers"
+      },
+      "body": {
+        "label": "Body",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Body"
+      },
+      "requestsPerSecond": {
+        "label": "Requests/sec",
+        "type": "number",
+        "required": true,
+        "options": [],
+        "desc": "Requests/sec [required]"
+      }
+    }
+  },
+  {
+    "type": "paginated_api_request",
+    "label": "Paginated API Request",
+    "purpose": "Walks an API's pages and concatenates the collected items.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "url": {
+        "label": "URL",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "URL [required]"
+      },
+      "method": {
+        "label": "Method",
+        "type": "select",
+        "required": false,
+        "options": [
+          "GET",
+          "POST"
+        ],
+        "desc": "Method"
+      },
+      "headers": {
+        "label": "Headers",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Headers"
+      },
+      "itemsJsonPath": {
+        "label": "Items JSON path",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Items JSON path"
+      },
+      "nextCursorPath": {
+        "label": "Next page path",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Next page path"
+      },
+      "cursorParam": {
+        "label": "Cursor parameter",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Cursor parameter"
+      },
+      "maxPages": {
+        "label": "Max pages",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Max pages"
+      }
+    }
+  },
+  {
+    "type": "ai_agent",
+    "label": "AI Agent",
+    "purpose": "Runs an AI agent with instructions and returns its completion.",
+    "category": "AI",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "agentId": {
+        "label": "Saved agent",
+        "type": "agent",
+        "required": false,
+        "options": [],
+        "desc": "Saved agent"
+      },
+      "instructions": {
+        "label": "Instructions",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Instructions"
+      },
+      "input": {
+        "label": "Input",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Input"
+      }
+    }
+  },
+  {
+    "type": "llm_chat",
+    "label": "LLM Chat",
+    "purpose": "A single-turn chat completion with system instructions and user input.",
+    "category": "AI",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "instructions": {
+        "label": "Instructions",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Instructions [required]"
+      },
+      "input": {
+        "label": "Input",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Input"
+      },
+      "model": {
+        "label": "Model",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Model"
+      }
+    }
+  },
+  {
+    "type": "ai_router",
+    "label": "AI Router",
+    "purpose": "Asks the model to decide which of the named routes the input belongs to.",
+    "category": "AI",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "routes": {
+        "label": "Routes",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Routes [required]"
+      },
+      "input": {
+        "label": "Input",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Input"
+      }
+    }
+  },
+  {
+    "type": "ai_decision",
+    "label": "AI Decision",
+    "purpose": "Asks the model for a yes/no decision with a confidence and rationale.",
+    "category": "AI",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "question": {
+        "label": "Question",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Question [required]"
+      },
+      "input": {
+        "label": "Context",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Context"
+      }
+    }
+  },
+  {
+    "type": "text_classifier",
+    "label": "Text Classifier",
+    "purpose": "Classifies input text into one of the configured categories.",
+    "category": "AI",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "categories": {
+        "label": "Categories",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Categories [required]"
+      },
+      "input": {
+        "label": "Text",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Text"
+      }
+    }
+  },
+  {
+    "type": "text_summarizer",
+    "label": "Text Summarizer",
+    "purpose": "Produces a concise summary of the input text.",
+    "category": "AI",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "maxWords": {
+        "label": "Max words",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Max words"
+      },
+      "input": {
+        "label": "Text",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Text"
+      }
+    }
+  },
+  {
+    "type": "sentiment_analyzer",
+    "label": "Sentiment Analyzer",
+    "purpose": "Returns the sentiment of the input text (positive/negative/neutral, score).",
+    "category": "AI",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "input": {
+        "label": "Text",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Text"
+      }
+    }
+  },
+  {
+    "type": "entity_extractor",
+    "label": "Entity Extractor",
+    "purpose": "Extracts named entities (people, orgs, places, dates, \u2026) from text.",
+    "category": "AI",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "entityTypes": {
+        "label": "Entity types",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Entity types"
+      },
+      "input": {
+        "label": "Text",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Text"
+      }
+    }
+  },
+  {
+    "type": "information_extractor",
+    "label": "Information Extractor",
+    "purpose": "Extracts structured fields described by the config from a document.",
+    "category": "AI",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "fields": {
+        "label": "Fields",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Fields [required]"
+      },
+      "input": {
+        "label": "Source text",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Source text"
+      }
+    }
+  },
+  {
+    "type": "json_generator",
+    "label": "JSON Generator",
+    "purpose": "Generates JSON that matches a described shape from the input.",
+    "category": "AI",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "instructions": {
+        "label": "Shape",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Shape [required]"
+      },
+      "input": {
+        "label": "Input",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Input"
+      }
+    }
+  },
+  {
+    "type": "ai_data_validator",
+    "label": "AI Data Validator",
+    "purpose": "Validates data against stated rules and returns pass/fail with findings.",
+    "category": "AI",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "rules": {
+        "label": "Rules",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Rules [required]"
+      },
+      "input": {
+        "label": "Data",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Data [required]"
+      }
+    }
+  },
+  {
+    "type": "ai_content_generator",
+    "label": "AI Content Generator",
+    "purpose": "Generates content (copy, drafts, replies) from a brief and style guidance.",
+    "category": "AI",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "brief": {
+        "label": "Brief",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Brief [required]"
+      },
+      "input": {
+        "label": "Source material",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Source material"
+      }
+    }
+  },
+  {
+    "type": "ai_researcher",
+    "label": "AI Researcher",
+    "purpose": "Answers a question using the supplied context, with a source-grounded answer.",
+    "category": "AI",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "question": {
+        "label": "Question",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Question [required]"
+      },
+      "input": {
+        "label": "Context",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Context"
+      }
+    }
+  },
+  {
+    "type": "ai_root_cause_analyzer",
+    "label": "AI Root Cause Analyzer",
+    "purpose": "Analyzes failure evidence and returns likely causes with confidence.",
+    "category": "AI",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "instructions": {
+        "label": "Instructions",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Analysis instructions or prompt guidance."
+      },
+      "input": {
+        "label": "Failure context",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Failure context"
+      }
+    }
+  },
+  {
+    "type": "ai_anomaly_investigator",
+    "label": "AI Anomaly Investigator",
+    "purpose": "Investigates an anomaly from an evidence package and reports likely causes.",
+    "category": "AI",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "input": {
+        "label": "Evidence",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Evidence"
+      }
+    }
+  },
+  {
+    "type": "if_else",
+    "label": "If/Else",
+    "purpose": "Evaluates one or more expressions and branches to true or false.",
+    "category": "LOGIC",
+    "outputs": [
+      "true",
+      "false"
+    ],
+    "trigger": false,
+    "fields": {
+      "conditions": {
+        "label": "Conditions",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Conditions"
+      },
+      "expression": {
+        "label": "Expression",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Expression"
+      }
+    }
+  },
+  {
+    "type": "condition",
+    "label": "Condition",
+    "purpose": "Evaluates an expression and branches to true or false.",
+    "category": "LOGIC",
+    "outputs": [
+      "true",
+      "false"
+    ],
+    "trigger": false,
+    "fields": {
+      "expression": {
+        "label": "Expression",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Expression [required]"
+      }
+    }
+  },
+  {
+    "type": "switch",
+    "label": "Switch",
+    "purpose": "Routes based on a value against up to four cases, else a default.",
+    "category": "LOGIC",
+    "outputs": [
+      "case1",
+      "case2",
+      "case3",
+      "case4",
+      "default"
+    ],
+    "trigger": false,
+    "fields": {
+      "field": {
+        "label": "Field",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Field [required]"
+      },
+      "cases": {
+        "label": "Cases",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Cases [required]"
+      }
+    }
+  },
+  {
+    "type": "router",
+    "label": "Router",
+    "purpose": "Routes based on regular expressions against up to six routes, else fallback.",
+    "category": "LOGIC",
+    "outputs": [
+      "route1",
+      "route2",
+      "route3",
+      "route4",
+      "route5",
+      "route6",
+      "default"
+    ],
+    "trigger": false,
+    "fields": {
+      "input": {
+        "label": "Input",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Input [required]"
+      },
+      "routes": {
+        "label": "Routes",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Routes [required]"
+      }
+    }
+  },
+  {
+    "type": "filter",
+    "label": "Filter",
+    "purpose": "Keeps or drops items of an array that satisfy a predicate.",
+    "category": "LOGIC",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "array": {
+        "label": "Array",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Array [required]"
+      },
+      "keepWhere": {
+        "label": "Keep where",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Keep where [required]"
+      },
+      "mode": {
+        "label": "Mode",
+        "type": "select",
+        "required": false,
+        "options": [
+          "keep",
+          "drop"
+        ],
+        "desc": "Mode"
+      }
+    }
+  },
+  {
+    "type": "merge",
+    "label": "Merge",
+    "purpose": "Combines objects (shallow) or concatenates arrays from multiple sources.",
+    "category": "LOGIC",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "sources": {
+        "label": "Sources",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Sources [required]"
+      },
+      "mode": {
+        "label": "Mode",
+        "type": "select",
+        "required": false,
+        "options": [
+          "object",
+          "array"
+        ],
+        "desc": "Mode"
+      }
+    }
+  },
+  {
+    "type": "split",
+    "label": "Split",
+    "purpose": "Splits a string by a delimiter, or chunks an array into parts.",
+    "category": "LOGIC",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "input": {
+        "label": "Input",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Input [required]"
+      },
+      "mode": {
+        "label": "Mode",
+        "type": "select",
+        "required": false,
+        "options": [
+          "delimiter",
+          "chunks"
+        ],
+        "desc": "Mode"
+      },
+      "delimiter": {
+        "label": "Delimiter",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Delimiter"
+      },
+      "chunkSize": {
+        "label": "Chunk size",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Chunk size"
+      }
+    }
+  },
+  {
+    "type": "for_each",
+    "label": "For Each",
+    "purpose": "Maps every item of an array through a template into an output array.",
+    "category": "LOGIC",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "array": {
+        "label": "Array",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Array [required]"
+      },
+      "mapping": {
+        "label": "Mapping",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Mapping [required]"
+      },
+      "limit": {
+        "label": "Limit",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Limit"
+      }
+    }
+  },
+  {
+    "type": "loop",
+    "label": "Loop",
+    "purpose": "Builds an array by applying a mapping N times.",
+    "category": "LOGIC",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "count": {
+        "label": "Count",
+        "type": "number",
+        "required": true,
+        "options": [],
+        "desc": "Count [required]"
+      },
+      "mapping": {
+        "label": "Mapping",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Mapping [required]"
+      }
+    }
+  },
+  {
+    "type": "while",
+    "label": "While",
+    "purpose": "Iterates a bounded mapping while a condition holds.",
+    "category": "LOGIC",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "condition": {
+        "label": "Condition",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Condition [required]"
+      },
+      "mapping": {
+        "label": "Mapping",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Mapping [required]"
+      },
+      "maxIterations": {
+        "label": "Max iterations",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Max iterations"
+      }
+    }
+  },
+  {
+    "type": "wait",
+    "label": "Wait",
+    "purpose": "Pauses the workflow for an interpolated duration.",
+    "category": "LOGIC",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "durationSeconds": {
+        "label": "Duration (seconds)",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Duration (seconds) [required]"
+      }
+    }
+  },
+  {
+    "type": "delay",
+    "label": "Delay",
+    "purpose": "Pauses the workflow for a fixed duration.",
+    "category": "LOGIC",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "seconds": {
+        "label": "Delay (seconds)",
+        "type": "number",
+        "required": true,
+        "options": [],
+        "desc": "Delay (seconds) [required]"
+      }
+    }
+  },
+  {
+    "type": "conditional_wait",
+    "label": "Conditional Wait",
+    "purpose": "Pauses until an expression over the variables becomes true.",
+    "category": "LOGIC",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "expression": {
+        "label": "Expression",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Expression [required]"
+      },
+      "pollIntervalSeconds": {
+        "label": "Poll interval (seconds)",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Poll interval (seconds)"
+      },
+      "timeoutSeconds": {
+        "label": "Timeout (seconds)",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Timeout (seconds)"
+      }
+    }
+  },
+  {
+    "type": "human_approval",
+    "label": "Human Approval",
+    "purpose": "Pauses until a human approves or rejects, then branches.",
+    "category": "LOGIC",
+    "outputs": [
+      "approved",
+      "rejected"
+    ],
+    "trigger": false,
+    "fields": {
+      "prompt": {
+        "label": "Approval prompt",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Approval prompt [required]"
+      }
+    }
+  },
+  {
+    "type": "try_catch",
+    "label": "Try/Catch",
+    "purpose": "Passes a payload through; a guard marker for protected sub-graphs.",
+    "category": "LOGIC",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "passThrough": {
+        "label": "Pass-through path",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Pass-through path"
+      },
+      "logErrors": {
+        "label": "Log errors",
+        "type": "bool",
+        "required": false,
+        "options": [],
+        "desc": "Log errors"
+      }
+    }
+  },
+  {
+    "type": "stop_fail",
+    "label": "Stop/Fail",
+    "purpose": "Stops the run \u2014 either failing it or ending it early with a message.",
+    "category": "LOGIC",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "mode": {
+        "label": "Mode",
+        "type": "select",
+        "required": true,
+        "options": [
+          "fail",
+          "stop"
+        ],
+        "desc": "Mode [required]"
+      },
+      "message": {
+        "label": "Message",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Message [required]"
+      }
+    }
+  },
+  {
+    "type": "retry",
+    "label": "Retry",
+    "purpose": "Declares a retry policy for downstream work and records it on each pass.",
+    "category": "LOGIC",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "maxAttempts": {
+        "label": "Max attempts",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Max attempts"
+      },
+      "backoffSeconds": {
+        "label": "Backoff (seconds)",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Backoff (seconds)"
+      }
+    }
+  },
+  {
+    "type": "exponential_backoff",
+    "label": "Exponential Backoff",
+    "purpose": "Waits an exponentially-growing delay, then passes data through.",
+    "category": "LOGIC",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "initialSeconds": {
+        "label": "Initial (seconds)",
+        "type": "number",
+        "required": true,
+        "options": [],
+        "desc": "Initial (seconds) [required]"
+      },
+      "factor": {
+        "label": "Factor",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Factor"
+      },
+      "attempt": {
+        "label": "Attempt",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Attempt"
+      },
+      "sleep": {
+        "label": "Sleep",
+        "type": "bool",
+        "required": false,
+        "options": [],
+        "desc": "Sleep"
+      }
+    }
+  },
+  {
+    "type": "timeout",
+    "label": "Timeout",
+    "purpose": "Fails the run when a measured upstream duration exceeds a budget.",
+    "category": "LOGIC",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "durationPath": {
+        "label": "Duration path",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Duration path [required]"
+      },
+      "timeoutMs": {
+        "label": "Timeout (ms)",
+        "type": "number",
+        "required": true,
+        "options": [],
+        "desc": "Timeout (ms) [required]"
+      }
+    }
+  },
+  {
+    "type": "circuit_breaker",
+    "label": "Circuit Breaker",
+    "purpose": "Opens or closes based on a measured metric against a threshold.",
+    "category": "LOGIC",
+    "outputs": [
+      "open",
+      "closed"
+    ],
+    "trigger": false,
+    "fields": {
+      "metricPath": {
+        "label": "Metric path",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Metric path [required]"
+      },
+      "threshold": {
+        "label": "Threshold",
+        "type": "number",
+        "required": true,
+        "options": [],
+        "desc": "Threshold [required]"
+      }
+    }
+  },
+  {
+    "type": "rate_limiter",
+    "label": "Rate Limiter",
+    "purpose": "Assesses an observed rate against a budget and branches ok/exceeded.",
+    "category": "LOGIC",
+    "outputs": [
+      "ok",
+      "exceeded"
+    ],
+    "trigger": false,
+    "fields": {
+      "ratePath": {
+        "label": "Rate path",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Rate path [required]"
+      },
+      "maxRate": {
+        "label": "Max rate",
+        "type": "number",
+        "required": true,
+        "options": [],
+        "desc": "Max rate [required]"
+      }
+    }
+  },
+  {
+    "type": "deduplicate",
+    "label": "Deduplicate",
+    "purpose": "Skips a duplicate payload by key; the first occurrence passes through.",
+    "category": "LOGIC",
+    "outputs": [
+      "passed",
+      "duplicate"
+    ],
+    "trigger": false,
+    "fields": {
+      "key": {
+        "label": "Key",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Key [required]"
+      }
+    }
+  },
+  {
+    "type": "idempotency_check",
+    "label": "Idempotency Check",
+    "purpose": "Reports whether a key was already processed and passes it either way.",
+    "category": "LOGIC",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "key": {
+        "label": "Key",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Key [required]"
+      }
+    }
+  },
+  {
+    "type": "error_handler",
+    "label": "Error Handler",
+    "purpose": "Sanitizes and annotates an upstream error message, then routes handled/risky.",
+    "category": "LOGIC",
+    "outputs": [
+      "handled",
+      "risky"
+    ],
+    "trigger": false,
+    "fields": {
+      "errorPath": {
+        "label": "Error path",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Error path [required]"
+      },
+      "maxLength": {
+        "label": "Max length",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Max length"
+      }
+    }
+  },
+  {
+    "type": "dead_letter_queue",
+    "label": "Dead Letter Queue",
+    "purpose": "Records a payload as undeliverable and returns the DLQ entry.",
+    "category": "LOGIC",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "payloadPath": {
+        "label": "Payload path",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Payload path"
+      },
+      "reason": {
+        "label": "Reason",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Reason"
+      }
+    }
+  },
+  {
+    "type": "set_fields",
+    "label": "Set Fields",
+    "purpose": "Sets (adds/overrides) fields on the incoming object.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "values": {
+        "label": "Values",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Values [required]"
+      }
+    }
+  },
+  {
+    "type": "map_fields",
+    "label": "Map Fields",
+    "purpose": "Renames and reshapes fields via a key mapping.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "mapping": {
+        "label": "Mapping",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Mapping [required]"
+      },
+      "keepUnmapped": {
+        "label": "Keep unmapped",
+        "type": "bool",
+        "required": false,
+        "options": [],
+        "desc": "Keep unmapped"
+      }
+    }
+  },
+  {
+    "type": "rename_fields",
+    "label": "Rename Fields",
+    "purpose": "Renames selected keys, keeping everything else.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "renames": {
+        "label": "Renames",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Renames [required]"
+      }
+    }
+  },
+  {
+    "type": "remove_fields",
+    "label": "Remove Fields",
+    "purpose": "Removes selected keys from the incoming object.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "fields": {
+        "label": "Fields",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Fields [required]"
+      }
+    }
+  },
+  {
+    "type": "json_parse",
+    "label": "JSON Parse",
+    "purpose": "Parses a JSON string into a value.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "input": {
+        "label": "JSON string",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "JSON string [required]"
+      }
+    }
+  },
+  {
+    "type": "json_stringify",
+    "label": "JSON Stringify",
+    "purpose": "Serializes a value to a JSON string.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "input": {
+        "label": "Value",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Value [required]"
+      },
+      "pretty": {
+        "label": "Pretty print",
+        "type": "bool",
+        "required": false,
+        "options": [],
+        "desc": "Pretty print"
+      }
+    }
+  },
+  {
+    "type": "csv_parse",
+    "label": "CSV Parse",
+    "purpose": "Parses a delimited text table into rows of values.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "input": {
+        "label": "CSV text",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "CSV text [required]"
+      },
+      "hasHeader": {
+        "label": "Has header row",
+        "type": "bool",
+        "required": false,
+        "options": [],
+        "desc": "Has header row"
+      },
+      "delimiter": {
+        "label": "Delimiter",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Delimiter"
+      }
+    }
+  },
+  {
+    "type": "csv_generate",
+    "label": "CSV Generate",
+    "purpose": "Serializes an array of objects into delimited text.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "rows": {
+        "label": "Rows",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Rows [required]"
+      },
+      "columns": {
+        "label": "Columns",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Columns"
+      },
+      "delimiter": {
+        "label": "Delimiter",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Delimiter"
+      }
+    }
+  },
+  {
+    "type": "xml_parse",
+    "label": "XML Parse",
+    "purpose": "Parses an XML document into a JSON tree.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "input": {
+        "label": "XML text",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "XML text [required]"
+      }
+    }
+  },
+  {
+    "type": "regex_extract",
+    "label": "Regex Extract",
+    "purpose": "Extracts a capture group from text by pattern.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "input": {
+        "label": "Text",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Text [required]"
+      },
+      "pattern": {
+        "label": "Pattern",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Pattern [required]"
+      },
+      "flags": {
+        "label": "Flags",
+        "type": "select",
+        "required": false,
+        "options": [
+          "NONE",
+          "CASE_INSENSITIVE",
+          "MULTILINE"
+        ],
+        "desc": "Flags"
+      },
+      "group": {
+        "label": "Capture group",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Capture group"
+      }
+    }
+  },
+  {
+    "type": "text_formatter",
+    "label": "Text Formatter",
+    "purpose": "Applies a text operation: case, trim, replace, truncate, pad.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "input": {
+        "label": "Text",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Text [required]"
+      },
+      "operation": {
+        "label": "Operation",
+        "type": "select",
+        "required": true,
+        "options": [
+          "upper",
+          "lower",
+          "title",
+          "trim",
+          "replace",
+          "truncate",
+          "pad"
+        ],
+        "desc": "Operation [required]"
+      },
+      "find": {
+        "label": "Find",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Find"
+      },
+      "replaceWith": {
+        "label": "Replace with",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Replace with"
+      },
+      "length": {
+        "label": "Length",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Length"
+      },
+      "padChar": {
+        "label": "Pad char",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Pad char"
+      }
+    }
+  },
+  {
+    "type": "date_formatter",
+    "label": "Date Formatter",
+    "purpose": "Formats, adds, or subtracts time from a date.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "input": {
+        "label": "Date",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Date"
+      },
+      "fromFormat": {
+        "label": "Input format",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Input format"
+      },
+      "toFormat": {
+        "label": "Output format",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Output format [required]"
+      },
+      "operation": {
+        "label": "Operation",
+        "type": "select",
+        "required": false,
+        "options": [
+          "format",
+          "addDays",
+          "subtractDays"
+        ],
+        "desc": "Operation"
+      },
+      "days": {
+        "label": "Days",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Days"
+      }
+    }
+  },
+  {
+    "type": "transform",
+    "label": "Transform",
+    "purpose": "Builds an output object from a configurable field mapping.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "mapping": {
+        "label": "Mapping",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Mapping [required]"
+      }
+    }
+  },
+  {
+    "type": "template",
+    "label": "Template",
+    "purpose": "Renders a template with {{variable}} interpolation to text.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "template": {
+        "label": "Template",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Template [required]"
+      },
+      "trimResult": {
+        "label": "Trim result",
+        "type": "bool",
+        "required": false,
+        "options": [],
+        "desc": "Trim result"
+      }
+    }
+  },
+  {
+    "type": "postgresql",
+    "label": "PostgreSQL",
+    "purpose": "Runs SQL against a PostgreSQL database via its JDBC driver.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "host": {
+        "label": "Host",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Host [required]"
+      },
+      "port": {
+        "label": "Port",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Port"
+      },
+      "database": {
+        "label": "Database",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Database [required]"
+      },
+      "username": {
+        "label": "User",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "User [required]"
+      },
+      "password": {
+        "label": "Password",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Password"
+      },
+      "sql": {
+        "label": "SQL",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "SQL [required]"
+      },
+      "limit": {
+        "label": "Max rows",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Max rows"
+      }
+    }
+  },
+  {
+    "type": "mysql",
+    "label": "MySQL",
+    "purpose": "Runs SQL against a MySQL/MariaDB database via its JDBC driver.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "host": {
+        "label": "Host",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Host [required]"
+      },
+      "port": {
+        "label": "Port",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Port"
+      },
+      "database": {
+        "label": "Database",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Database [required]"
+      },
+      "username": {
+        "label": "User",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "User [required]"
+      },
+      "password": {
+        "label": "Password",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Password"
+      },
+      "sql": {
+        "label": "SQL",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "SQL [required]"
+      },
+      "limit": {
+        "label": "Max rows",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Max rows"
+      }
+    }
+  },
+  {
+    "type": "mongodb",
+    "label": "MongoDB",
+    "purpose": "Runs a find/insert operation against a MongoDB database.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "uri": {
+        "label": "Connection URI",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Connection URI [required]"
+      },
+      "database": {
+        "label": "Database",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Database [required]"
+      },
+      "collection": {
+        "label": "Collection",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Collection [required]"
+      },
+      "operation": {
+        "label": "Operation",
+        "type": "select",
+        "required": true,
+        "options": [
+          "find",
+          "insertOne"
+        ],
+        "desc": "Operation [required]"
+      },
+      "filter": {
+        "label": "Filter",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Filter"
+      },
+      "document": {
+        "label": "Document",
+        "type": "json",
+        "required": false,
+        "options": [],
+        "desc": "Document"
+      },
+      "limit": {
+        "label": "Limit",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Limit"
+      }
+    }
+  },
+  {
+    "type": "redis_get",
+    "label": "Redis Get",
+    "purpose": "Reads a value by key from a Redis server.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "host": {
+        "label": "Host",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Host [required]"
+      },
+      "port": {
+        "label": "Port",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Port"
+      },
+      "db": {
+        "label": "DB index",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "DB index"
+      },
+      "password": {
+        "label": "Password",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Password"
+      },
+      "key": {
+        "label": "Key",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Key [required]"
+      }
+    }
+  },
+  {
+    "type": "redis_set",
+    "label": "Redis Set",
+    "purpose": "Writes a value by key to a Redis server.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "host": {
+        "label": "Host",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Host [required]"
+      },
+      "port": {
+        "label": "Port",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Port"
+      },
+      "db": {
+        "label": "DB index",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "DB index"
+      },
+      "password": {
+        "label": "Password",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Password"
+      },
+      "key": {
+        "label": "Key",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Key [required]"
+      },
+      "value": {
+        "label": "Value",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Value [required]"
+      },
+      "ttlSeconds": {
+        "label": "TTL (seconds)",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "TTL (seconds)"
+      },
+      "mode": {
+        "label": "Mode",
+        "type": "select",
+        "required": false,
+        "options": [
+          "SET",
+          "SETEX",
+          "SETNX"
+        ],
+        "desc": "Mode"
+      }
+    }
+  },
+  {
+    "type": "database_query",
+    "label": "Database Query",
+    "purpose": "Runs a read (SELECT) against a JDBC database and returns the rows.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "databaseType": {
+        "label": "Database",
+        "type": "select",
+        "required": true,
+        "options": [
+          "postgresql",
+          "mysql"
+        ],
+        "desc": "Database [required]"
+      },
+      "host": {
+        "label": "Host",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Host [required]"
+      },
+      "port": {
+        "label": "Port",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Port"
+      },
+      "database": {
+        "label": "Database",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Database [required]"
+      },
+      "username": {
+        "label": "User",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "User [required]"
+      },
+      "password": {
+        "label": "Password",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Password"
+      },
+      "sql": {
+        "label": "SQL",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "SQL [required]"
+      },
+      "limit": {
+        "label": "Max rows",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Max rows"
+      }
+    }
+  },
+  {
+    "type": "database_insert",
+    "label": "Database Insert",
+    "purpose": "Runs an INSERT against a JDBC database and returns the affected count.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "databaseType": {
+        "label": "Database",
+        "type": "select",
+        "required": true,
+        "options": [
+          "postgresql",
+          "mysql"
+        ],
+        "desc": "Database [required]"
+      },
+      "host": {
+        "label": "Host",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Host [required]"
+      },
+      "port": {
+        "label": "Port",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Port"
+      },
+      "database": {
+        "label": "Database",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Database [required]"
+      },
+      "username": {
+        "label": "User",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "User [required]"
+      },
+      "password": {
+        "label": "Password",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Password"
+      },
+      "sql": {
+        "label": "SQL",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "SQL [required]"
+      }
+    }
+  },
+  {
+    "type": "database_update",
+    "label": "Database Update",
+    "purpose": "Runs an UPDATE against a JDBC database and returns the affected count.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "databaseType": {
+        "label": "Database",
+        "type": "select",
+        "required": true,
+        "options": [
+          "postgresql",
+          "mysql"
+        ],
+        "desc": "Database [required]"
+      },
+      "host": {
+        "label": "Host",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Host [required]"
+      },
+      "port": {
+        "label": "Port",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Port"
+      },
+      "database": {
+        "label": "Database",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Database [required]"
+      },
+      "username": {
+        "label": "User",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "User [required]"
+      },
+      "password": {
+        "label": "Password",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Password"
+      },
+      "sql": {
+        "label": "SQL",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "SQL [required]"
+      }
+    }
+  },
+  {
+    "type": "database_delete",
+    "label": "Database Delete",
+    "purpose": "Runs a DELETE against a JDBC database and returns the affected count.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "databaseType": {
+        "label": "Database",
+        "type": "select",
+        "required": true,
+        "options": [
+          "postgresql",
+          "mysql"
+        ],
+        "desc": "Database [required]"
+      },
+      "host": {
+        "label": "Host",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Host [required]"
+      },
+      "port": {
+        "label": "Port",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Port"
+      },
+      "database": {
+        "label": "Database",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Database [required]"
+      },
+      "username": {
+        "label": "User",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "User [required]"
+      },
+      "password": {
+        "label": "Password",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Password"
+      },
+      "sql": {
+        "label": "SQL",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "SQL [required]"
+      }
+    }
+  },
+  {
+    "type": "database_transaction",
+    "label": "Database Transaction",
+    "purpose": "Runs a list of statements in one transaction with commit or rollback.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "databaseType": {
+        "label": "Database",
+        "type": "select",
+        "required": true,
+        "options": [
+          "postgresql",
+          "mysql"
+        ],
+        "desc": "Database [required]"
+      },
+      "host": {
+        "label": "Host",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Host [required]"
+      },
+      "port": {
+        "label": "Port",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Port"
+      },
+      "database": {
+        "label": "Database",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Database [required]"
+      },
+      "username": {
+        "label": "User",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "User [required]"
+      },
+      "password": {
+        "label": "Password",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Password"
+      },
+      "statements": {
+        "label": "Statements",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Statements [required]"
+      }
+    }
+  },
+  {
+    "type": "telegram",
+    "label": "Telegram",
+    "purpose": "Sends a message through the connected Telegram BOT integration.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "message": {
+        "label": "Message",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Message [required]"
+      },
+      "chatId": {
+        "label": "Chat ID",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Chat ID"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "twilio",
+    "label": "Twilio",
+    "purpose": "Sends an SMS through the connected Twilio integration.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "to": {
+        "label": "To",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "To [required]"
+      },
+      "message": {
+        "label": "Message",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Message [required]"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "stripe",
+    "label": "Stripe",
+    "purpose": "Retrieves customer or transaction info via connected Stripe integration.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "operation": {
+        "label": "Operation",
+        "type": "select",
+        "required": true,
+        "options": [
+          "retrieveCustomer",
+          "listBalanceTransactions"
+        ],
+        "desc": "Operation [required]"
+      },
+      "customerId": {
+        "label": "Customer ID",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Customer ID"
+      },
+      "limit": {
+        "label": "Limit",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Limit"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "openai",
+    "label": "OpenAI",
+    "purpose": "Runs chat completions via connected OpenAI integration.",
+    "category": "AI",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "prompt": {
+        "label": "Prompt",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Prompt [required]"
+      },
+      "systemPrompt": {
+        "label": "System Instructions",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "System Instructions"
+      },
+      "model": {
+        "label": "Model",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Model"
+      },
+      "maxTokens": {
+        "label": "Max Tokens",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Max Tokens"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "hubspot",
+    "label": "HubSpot",
+    "purpose": "Creates contacts or deals via connected HubSpot integration.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "operation": {
+        "label": "Operation",
+        "type": "select",
+        "required": true,
+        "options": [
+          "createContact",
+          "createDeal"
+        ],
+        "desc": "Operation [required]"
+      },
+      "email": {
+        "label": "Email",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Email"
+      },
+      "firstName": {
+        "label": "First Name",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "First Name"
+      },
+      "lastName": {
+        "label": "Last Name",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Last Name"
+      },
+      "company": {
+        "label": "Company",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Company"
+      },
+      "dealName": {
+        "label": "Deal Name",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Deal Name"
+      },
+      "amount": {
+        "label": "Amount",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Amount"
+      },
+      "stage": {
+        "label": "Stage",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Stage"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "slack",
+    "label": "Slack",
+    "purpose": "Posts a message to Slack through the connected Slack integration.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "message": {
+        "label": "Message",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Message [required]"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "notification",
+    "label": "Notification",
+    "purpose": "Sends a notification through a connected notification provider.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "channel": {
+        "label": "Channel",
+        "type": "select",
+        "required": true,
+        "options": [
+          "slack",
+          "email",
+          "discord",
+          "teams",
+          "webhook"
+        ],
+        "desc": "Channel [required]"
+      },
+      "message": {
+        "label": "Message",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Message [required]"
+      },
+      "subject": {
+        "label": "Subject",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Subject"
+      },
+      "to": {
+        "label": "To",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "To"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "discord",
+    "label": "Discord",
+    "purpose": "Posts a message to Discord through the connected Discord integration.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "message": {
+        "label": "Message",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Message [required]"
+      },
+      "username": {
+        "label": "Username",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Username"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "teams",
+    "label": "Microsoft Teams",
+    "purpose": "Posts a message to a Teams channel through the connected Teams integration.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "message": {
+        "label": "Message",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Message [required]"
+      },
+      "title": {
+        "label": "Title",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Title"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "email",
+    "label": "Email",
+    "purpose": "Sends an email through the connected SMTP integration.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "to": {
+        "label": "To",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "To [required]"
+      },
+      "subject": {
+        "label": "Subject",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Subject [required]"
+      },
+      "body": {
+        "label": "Body",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Body"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "gmail",
+    "label": "Gmail",
+    "purpose": "Sends email through Gmail's SMTP relays via a connected email integration.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "to": {
+        "label": "To",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "To [required]"
+      },
+      "subject": {
+        "label": "Subject",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Subject [required]"
+      },
+      "body": {
+        "label": "Body",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Body"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "google_sheets_append_row",
+    "label": "Google Sheets Append Row",
+    "purpose": "Appends a row to a Google Sheet.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "spreadsheetId": {
+        "label": "Spreadsheet ID",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Spreadsheet ID [required]"
+      },
+      "row": {
+        "label": "Row Data",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Row Data [required]"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "linear_create_issue",
+    "label": "Linear Create Issue",
+    "purpose": "Creates an issue in Linear through the connected integration.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "title": {
+        "label": "Title",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Title [required]"
+      },
+      "teamId": {
+        "label": "Team ID",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Team ID [required]"
+      },
+      "description": {
+        "label": "Description",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Description"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "github_create_issue",
+    "label": "GitHub Create Issue",
+    "purpose": "Creates an issue in GitHub through the connected integration.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "repo": {
+        "label": "Repository",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Repository [required]"
+      },
+      "title": {
+        "label": "Title",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Title [required]"
+      },
+      "body": {
+        "label": "Body",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Body"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "salesforce_create_lead",
+    "label": "Salesforce Create Lead",
+    "purpose": "Creates a lead in Salesforce.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "lastName": {
+        "label": "Last Name",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Last Name [required]"
+      },
+      "company": {
+        "label": "Company",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Company [required]"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "pagerduty_trigger_incident",
+    "label": "PagerDuty Trigger Incident",
+    "purpose": "Triggers an incident in PagerDuty.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "serviceId": {
+        "label": "Service ID",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Service ID [required]"
+      },
+      "title": {
+        "label": "Title",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Title [required]"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "jira",
+    "label": "Jira",
+    "purpose": "Creates a Jira issue via the Jira Cloud REST API.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "siteUrl": {
+        "label": "Site URL",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Site URL [required]"
+      },
+      "project": {
+        "label": "Project key",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Project key [required]"
+      },
+      "issueType": {
+        "label": "Issue type",
+        "type": "select",
+        "required": false,
+        "options": [
+          "Task",
+          "Bug",
+          "Story"
+        ],
+        "desc": "Issue type"
+      },
+      "summary": {
+        "label": "Summary",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Summary [required]"
+      },
+      "description": {
+        "label": "Description",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Description"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "notion_create_page",
+    "label": "Notion Create Page",
+    "purpose": "Creates a page in a Notion database.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "databaseId": {
+        "label": "Database ID",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Database ID [required]"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "s3_upload",
+    "label": "S3 Upload",
+    "purpose": "Uploads content to an AWS S3 bucket.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "bucket": {
+        "label": "Bucket Name",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Bucket Name [required]"
+      },
+      "key": {
+        "label": "Key",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Key [required]"
+      },
+      "content": {
+        "label": "Content",
+        "type": "multiline",
+        "required": true,
+        "options": [],
+        "desc": "Content [required]"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "execution_monitor",
+    "label": "Execution Monitor",
+    "purpose": "Reads an execution status/summary from the variables and reports it.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "statusPath": {
+        "label": "Status path",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Status path"
+      },
+      "durationPath": {
+        "label": "Duration path",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Duration path"
+      }
+    }
+  },
+  {
+    "type": "health_check",
+    "label": "Health Check",
+    "purpose": "Evaluates named checks against values and branches healthy/unhealthy.",
+    "category": "ACTION",
+    "outputs": [
+      "healthy",
+      "unhealthy"
+    ],
+    "trigger": false,
+    "fields": {
+      "checks": {
+        "label": "Checks",
+        "type": "json",
+        "required": true,
+        "options": [],
+        "desc": "Checks [required]"
+      }
+    }
+  },
+  {
+    "type": "sla_monitor",
+    "label": "SLA Monitor",
+    "purpose": "Assesses success rate and latency against an SLA and branches inSla/breached.",
+    "category": "ACTION",
+    "outputs": [
+      "inSla",
+      "breached"
+    ],
+    "trigger": false,
+    "fields": {
+      "successRatePath": {
+        "label": "Success rate path",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Success rate path [required]"
+      },
+      "latencyPath": {
+        "label": "Latency path",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Latency path [required]"
+      },
+      "minSuccessRate": {
+        "label": "Min success rate",
+        "type": "number",
+        "required": true,
+        "options": [],
+        "desc": "Min success rate [required]"
+      },
+      "maxLatencyMs": {
+        "label": "Max latency (ms)",
+        "type": "number",
+        "required": true,
+        "options": [],
+        "desc": "Max latency (ms) [required]"
+      }
+    }
+  },
+  {
+    "type": "anomaly_detector",
+    "label": "Anomaly Detector",
+    "purpose": "Flags outliers in a numeric series using a median-absolute-deviation gate.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "seriesPath": {
+        "label": "Series path",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Series path [required]"
+      },
+      "zThreshold": {
+        "label": "Z threshold",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Z threshold"
+      }
+    }
+  },
+  {
+    "type": "incident_creator",
+    "label": "Incident Creator",
+    "purpose": "Creates an incident record and notifies the configured channel.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "title": {
+        "label": "Title",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Title [required]"
+      },
+      "severity": {
+        "label": "Severity",
+        "type": "select",
+        "required": false,
+        "options": [
+          "LOW",
+          "MEDIUM",
+          "HIGH",
+          "CRITICAL"
+        ],
+        "desc": "Severity"
+      },
+      "body": {
+        "label": "Body",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Body"
+      },
+      "channel": {
+        "label": "Notify channel",
+        "type": "select",
+        "required": false,
+        "options": [
+          "slack",
+          "email",
+          "discord",
+          "teams",
+          "webhook"
+        ],
+        "desc": "Notify channel"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  },
+  {
+    "type": "escalation",
+    "label": "Escalation",
+    "purpose": "Escalates the run to a channel with stepped urgency.",
+    "category": "ACTION",
+    "outputs": [
+      "out"
+    ],
+    "trigger": false,
+    "fields": {
+      "title": {
+        "label": "Title",
+        "type": "text",
+        "required": true,
+        "options": [],
+        "desc": "Title [required]"
+      },
+      "body": {
+        "label": "Body",
+        "type": "multiline",
+        "required": false,
+        "options": [],
+        "desc": "Body"
+      },
+      "level": {
+        "label": "Level",
+        "type": "number",
+        "required": false,
+        "options": [],
+        "desc": "Level"
+      },
+      "channel": {
+        "label": "Channel",
+        "type": "select",
+        "required": false,
+        "options": [
+          "slack",
+          "email",
+          "discord",
+          "teams",
+          "webhook"
+        ],
+        "desc": "Channel"
+      },
+      "integrationId": {
+        "label": "Integration id",
+        "type": "text",
+        "required": false,
+        "options": [],
+        "desc": "Integration id"
+      }
+    }
+  }
+]

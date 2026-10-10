@@ -210,6 +210,8 @@ class DistributedRateLimiterTest {
                 "forgot-password:ip:10.0.0.1",
                 "forgot-password:10.0.0.1:user@example.com",
                 "reset-password:ip:10.0.0.1",
+                "verify-email:ip:10.0.0.1",
+                "resend-verification:ip:10.0.0.1",
                 "refresh:ip:10.0.0.1",
                 "invite-accept:user:user-uuid-456"
         );
@@ -282,6 +284,51 @@ class DistributedRateLimiterTest {
         for (int i = 0; i < 50; i++) {
             disabledLimiter.check("test:key", 1, Duration.ofMinutes(1));
         }
+    }
+
+    @Test
+    @DisplayName("11. Separate client IPs receive isolated rate-limit counters")
+    void separateClientIpsReceiveIsolatedLimits() {
+        int limit = 5;
+        Duration window = Duration.ofMinutes(60);
+
+        // IP 1 uses all 5 allowances
+        for (int i = 0; i < limit; i++) {
+            rateLimiter.check("register:ip:203.0.113.10", limit, window);
+        }
+
+        // IP 1 is rate limited
+        assertThatThrownBy(() -> rateLimiter.check("register:ip:203.0.113.10", limit, window))
+                .isInstanceOf(ApiException.class)
+                .extracting(ex -> ((ApiException) ex).code())
+                .isEqualTo(ErrorCode.RATE_LIMITED);
+
+        // IP 2 is completely unaffected and has its own full quota
+        for (int i = 0; i < limit; i++) {
+            rateLimiter.check("register:ip:203.0.113.20", limit, window);
+        }
+        assertThatThrownBy(() -> rateLimiter.check("register:ip:203.0.113.20", limit, window))
+                .isInstanceOf(ApiException.class);
+    }
+
+    @Test
+    @DisplayName("12. Retry-after duration accurately reflects remaining window time")
+    void retryAfterAccuratelyReflectsRemainingWindow() {
+        int limit = 1;
+        Duration window = Duration.ofMinutes(25);
+
+        rateLimiter.check("action:retry-check", limit, window);
+
+        assertThatThrownBy(() -> rateLimiter.check("action:retry-check", limit, window))
+                .isInstanceOf(ApiException.class)
+                .satisfies(ex -> {
+                    ApiException apiEx = (ApiException) ex;
+                    assertThat(apiEx.code()).isEqualTo(ErrorCode.RATE_LIMITED);
+                    assertThat(apiEx.retryAfterSeconds()).isNotNull();
+                    // Remaining time should be at most 25 minutes (1500 seconds) and positive
+                    assertThat(apiEx.retryAfterSeconds()).isBetween(1L, 1500L);
+                    assertThat(apiEx.getMessage()).contains(String.valueOf(apiEx.retryAfterSeconds()));
+                });
     }
 
     /**

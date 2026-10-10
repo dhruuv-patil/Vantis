@@ -41,7 +41,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleApiException(
             ApiException ex, HttpServletRequest request) {
 
-        return build(ex.code(), ex.getMessage(), ex.fieldErrors(), ex.retryAfterSeconds(), request);
+        String requestId = RequestIdFilter.currentRequestId(request);
+        if (ex.getCause() != null) {
+            log.warn("API exception [{}] path={} requestId={} cause={}",
+                    ex.code(), request.getRequestURI(), requestId, ex.getCause().getMessage());
+        } else {
+            log.debug("API exception [{}] path={} requestId={}",
+                    ex.code(), request.getRequestURI(), requestId);
+        }
+
+        return build(ex.code(), ex.getMessage(), ex.fieldErrors(), ex.retryAfterSeconds(), ex.details(), request);
     }
 
     /** {@code @Valid} failure on a request body. */
@@ -161,10 +170,20 @@ public class GlobalExceptionHandler {
             List<FieldErrorDetail> fieldErrors,
             Long retryAfterSeconds,
             HttpServletRequest request) {
+        return build(code, message, fieldErrors, retryAfterSeconds, null, request);
+    }
+
+    private ResponseEntity<ApiErrorResponse> build(
+            ErrorCode code,
+            String message,
+            List<FieldErrorDetail> fieldErrors,
+            Long retryAfterSeconds,
+            PlanLimitDetail details,
+            HttpServletRequest request) {
 
         String requestId = RequestIdFilter.currentRequestId(request);
         ApiErrorResponse body = ApiErrorResponse.of(
-                code, message, request.getRequestURI(), requestId, fieldErrors);
+                code, message, request.getRequestURI(), requestId, fieldErrors, details);
 
         ResponseEntity.BodyBuilder builder = ResponseEntity.status(code.status())
                 .contentType(MediaType.APPLICATION_JSON)

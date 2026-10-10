@@ -15,8 +15,9 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { runWorkflow, updateWorkflow, getErrorMessage } from "@/lib/api";
-import type { WorkflowDetail, WorkflowStatus } from "@/types";
+import { runWorkflow, updateWorkflow, getErrorMessage, getPlanLimitDetail } from "@/lib/api";
+import type { PlanLimitDetail, WorkflowDetail, WorkflowStatus } from "@/types";
+import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,18 +61,18 @@ const statusConfig: Record<
 > = {
   DRAFT: {
     label: "Draft",
-    dot: "bg-amber-400",
-    className: "border-white/[0.10] bg-white/[0.045] text-white/60",
+    dot: "bg-amber-500 dark:bg-amber-400",
+    className: "border-amber-500/20 bg-amber-500/10 text-amber-800 dark:border-white/[0.10] dark:bg-white/[0.045] dark:text-white/60",
   },
   PUBLISHED: {
     label: "Published",
-    dot: "bg-emerald-400",
-    className: "border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-300",
+    dot: "bg-emerald-500 dark:bg-emerald-400",
+    className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/[0.07] dark:text-emerald-300",
   },
   ARCHIVED: {
     label: "Archived",
-    dot: "bg-white/30",
-    className: "border-white/[0.10] bg-white/[0.035] text-white/45",
+    dot: "bg-muted-foreground/40 dark:bg-white/30",
+    className: "border-border bg-muted/50 text-muted-foreground dark:border-white/[0.10] dark:bg-white/[0.035] dark:text-white/45",
   },
 };
 
@@ -82,7 +83,7 @@ const views = [
 ];
 
 function Divider() {
-  return <div className="mx-1 h-5 w-px shrink-0 bg-white/[0.08]" />;
+  return <div className="mx-1 h-5 w-px shrink-0 bg-border dark:bg-white/[0.08]" />;
 }
 
 export function WorkflowHeader({
@@ -110,6 +111,8 @@ export function WorkflowHeader({
 }: WorkflowHeaderProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const [executionLimitDetail, setExecutionLimitDetail] =
+    React.useState<PlanLimitDetail | null>(null);
 
   const runMutation = useMutation({
     mutationFn: () => runWorkflow(workflow.id),
@@ -117,7 +120,15 @@ export function WorkflowHeader({
       toast.success("Run started.");
       router.push(`/executions/${execution.id}`);
     },
-    onError: (err) => toast.error(getErrorMessage(err)),
+    onError: (err) => {
+      // 1. Failure alert is never suppressed
+      toast.error(getErrorMessage(err));
+      // 2. Structured limit detail consumed for upgrade prompt
+      const limit = getPlanLimitDetail(err);
+      if (limit) {
+        setExecutionLimitDetail(limit);
+      }
+    },
   });
 
   const renameMutation = useMutation({
@@ -149,8 +160,8 @@ export function WorkflowHeader({
       <header
         className={cn(
           "relative z-30 h-[60px] shrink-0",
-          "border-b border-white/[0.07]",
-          "bg-[#090909]/95 backdrop-blur-xl",
+          "border-b border-border dark:border-white/[0.07]",
+          "bg-card/95 backdrop-blur-xl dark:bg-[#090909]/95",
         )}
       >
         <div className="flex h-full w-full items-center gap-4 px-4 lg:px-5">
@@ -174,7 +185,7 @@ export function WorkflowHeader({
               />
               <span>{status.label}</span>
               {workflow.status === "PUBLISHED" && version != null && (
-                <span className="ml-1.5 text-white/35">v{version}</span>
+                <span className="ml-1.5 text-muted-foreground dark:text-white/35">v{version}</span>
               )}
             </div>
 
@@ -209,7 +220,7 @@ export function WorkflowHeader({
                   size="icon"
                   onClick={onGenerate}
                   aria-label="Create with AI"
-                  className="size-8 shrink-0 text-violet-300 hover:bg-violet-400/[0.08] hover:text-violet-200"
+                  className="size-8 shrink-0 text-violet-600 hover:bg-violet-500/10 hover:text-violet-700 dark:text-violet-300 dark:hover:bg-violet-400/[0.08] dark:hover:text-violet-200"
                 >
                   <Sparkles className="size-4" />
                 </Button>
@@ -227,7 +238,7 @@ export function WorkflowHeader({
                     onClick={onWebhook}
                     disabled={!hasWebhookTrigger}
                     aria-label="Manage webhook"
-                    className="size-8 text-white/55 hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
+                    className="size-8 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 dark:text-white/55 dark:hover:bg-white/[0.06] dark:hover:text-white"
                   >
                     <Webhook className="size-4" />
                   </Button>
@@ -251,7 +262,7 @@ export function WorkflowHeader({
                   onClick={onDelete}
                   disabled={deletePending}
                   aria-label="Delete workflow"
-                  className="size-8 shrink-0 text-white/40 hover:bg-red-500/[0.10] hover:text-red-400"
+                  className="size-8 shrink-0 text-muted-foreground hover:bg-red-500/10 hover:text-red-600 dark:text-white/40 dark:hover:bg-red-500/[0.10] dark:hover:text-red-400"
                 >
                   {deletePending ? (
                     <Loader2 className="size-4 animate-spin" />
@@ -273,7 +284,7 @@ export function WorkflowHeader({
                     onClick={onSave}
                     disabled={!dirty || savePending}
                     aria-label="Save"
-                    className="size-8 text-white/60 hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
+                    className="size-8 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 dark:text-white/60 dark:hover:bg-white/[0.06] dark:hover:text-white"
                   >
                     {savePending ? (
                       <Loader2 className="size-4 animate-spin" />
@@ -298,7 +309,7 @@ export function WorkflowHeader({
                     onClick={onValidate}
                     disabled={validatePending}
                     aria-label="Validate workflow"
-                    className="size-8 text-white/60 hover:bg-white/[0.06] hover:text-white disabled:opacity-40"
+                    className="size-8 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 dark:text-white/60 dark:hover:bg-white/[0.06] dark:hover:text-white"
                   >
                     {validatePending ? (
                       <Loader2 className="size-4 animate-spin" />
@@ -321,7 +332,7 @@ export function WorkflowHeader({
                   size="sm"
                   onClick={onPublish}
                   disabled={publishPending}
-                  className="h-8 shrink-0 gap-1.5 border-white/[0.12] bg-transparent px-3 text-white hover:bg-white/[0.08] hover:text-white"
+                  className="h-8 shrink-0 gap-1.5 border-border bg-background px-3 text-foreground hover:bg-muted hover:text-foreground dark:border-white/[0.12] dark:bg-transparent dark:text-white dark:hover:bg-white/[0.08]"
                 >
                   {publishPending ? (
                     <Loader2 className="size-3.5 animate-spin" />
@@ -342,7 +353,7 @@ export function WorkflowHeader({
                     size="sm"
                     onClick={running ? undefined : handleRun}
                     disabled={!canRun || running}
-                    className="h-8 gap-1.5 bg-white px-3.5 text-black hover:bg-white/90 disabled:bg-white/[0.08] disabled:text-white/25"
+                    className="h-8 gap-1.5 bg-primary px-3.5 text-primary-foreground hover:bg-primary/90 disabled:opacity-40 dark:bg-white dark:text-black dark:hover:bg-white/90 dark:disabled:bg-white/[0.08] dark:disabled:text-white/25"
                   >
                     {running ? (
                       <Loader2 className="size-3.5 animate-spin" />
@@ -364,6 +375,19 @@ export function WorkflowHeader({
           </div>
         </div>
       </header>
+
+      {executionLimitDetail && (
+        <UpgradePrompt
+          trigger="executions"
+          structuredError={executionLimitDetail}
+          variant="dialog"
+          open={!!executionLimitDetail}
+          onOpenChange={(open) => {
+            if (!open) setExecutionLimitDetail(null);
+          }}
+          onDismiss={() => setExecutionLimitDetail(null)}
+        />
+      )}
     </TooltipProvider>
   );
 }
@@ -418,9 +442,9 @@ function NameField({
         className={cn(
           "h-9 w-full min-w-0 truncate px-2",
           "border-transparent bg-transparent shadow-none",
-          "text-[13px] font-semibold tracking-[-0.01em] text-white",
-          "hover:border-white/[0.07] hover:bg-white/[0.025]",
-          "focus:border-white/[0.12] focus:bg-white/[0.035]",
+          "text-[13px] font-semibold tracking-[-0.01em] text-foreground dark:text-white",
+          "hover:border-border hover:bg-muted/40 dark:hover:border-white/[0.07] dark:hover:bg-white/[0.025]",
+          "focus:border-primary/30 focus:bg-background dark:focus:border-white/[0.12] dark:focus:bg-white/[0.035]",
           "focus-visible:ring-0 focus-visible:ring-offset-0",
         )}
       />

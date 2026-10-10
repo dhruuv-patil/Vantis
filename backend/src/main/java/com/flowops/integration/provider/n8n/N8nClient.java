@@ -10,12 +10,12 @@ import com.flowops.integration.provider.ProviderConnectionException;
 import com.flowops.integration.provider.ProviderRateLimitException;
 import com.flowops.integration.provider.ProviderResponseException;
 import com.flowops.integration.provider.ProviderUnavailableException;
+import com.flowops.common.security.http.HardenedHttpClient;
+import com.flowops.common.security.http.HardenedHttpException;
+import com.flowops.common.security.http.HardenedHttpRequest;
+import com.flowops.common.security.http.HardenedHttpResponse;
 import java.io.IOException;
-import java.net.URI;
 import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import org.slf4j.Logger;
@@ -42,16 +42,29 @@ public class N8nClient {
     private static final Duration REQUEST_TIMEOUT =
             Duration.ofSeconds(30);
 
-    private final HttpClient httpClient;
+    private final HardenedHttpClient httpClient;
     private final ObjectMapper mapper;
 
-    public N8nClient(ObjectMapper mapper) {
+    @org.springframework.beans.factory.annotation.Autowired
+    public N8nClient(HardenedHttpClient httpClient, ObjectMapper mapper) {
+        this.httpClient = httpClient;
         this.mapper = mapper;
+    }
 
-        this.httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(CONNECT_TIMEOUT)
-                .build();
+    public N8nClient(ObjectMapper mapper) {
+        this(createDefaultClient(mapper), mapper);
+    }
+
+    private static HardenedHttpClient createDefaultClient(ObjectMapper mapper) {
+        com.flowops.common.security.http.SsrfProperties props = new com.flowops.common.security.http.SsrfProperties();
+        props.getAllowlist().setEnabled(true);
+        props.getAllowlist().getAllowedHosts().add("localhost");
+        props.getAllowlist().getAllowedHosts().add("127.0.0.1");
+        props.getAllowlist().getAllowedCidrs().add("127.0.0.0/8");
+        props.getAllowedPorts().clear();
+        com.flowops.common.security.http.IpAddressValidator ipVal = new com.flowops.common.security.http.IpAddressValidator(props);
+        com.flowops.common.security.http.UrlValidator urlVal = new com.flowops.common.security.http.UrlValidator(props, ipVal);
+        return new HardenedHttpClient(props, urlVal, new com.flowops.common.security.http.SystemDnsResolver(), ipVal, mapper);
     }
 
     /**
@@ -153,41 +166,25 @@ public class N8nClient {
     }
 
     /**
-     * Executes an authenticated GET request.
+     * Executes an authenticated GET request using the centralized hardened client.
      */
     private JsonNode get(
             String url,
             String apiKey) {
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .timeout(REQUEST_TIMEOUT)
+        HardenedHttpRequest request = HardenedHttpRequest.builder()
+                .get(url)
                 .header("Accept", "application/json")
                 .header("X-N8N-API-KEY", apiKey)
-                .GET()
+                .readTimeout(REQUEST_TIMEOUT)
+                .connectTimeout(CONNECT_TIMEOUT)
                 .build();
 
         try {
-            HttpResponse<String> response =
-                    httpClient.send(
-                            request,
-                            HttpResponse.BodyHandlers.ofString());
-
+            HardenedHttpResponse response = httpClient.execute(request);
             return handleResponse(response);
-
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-
-            throw new ProviderUnavailableException(
-                    com.flowops.integration.provider.IntegrationType.N8N,
-                    "Request interrupted",
-                    e);
-
-        } catch (IOException e) {
-            log.warn(
-                    "n8n HTTP request failed: {}",
-                    e.getClass().getSimpleName());
-
+        } catch (HardenedHttpException e) {
+            log.warn("n8n HTTP request failed: {}", e.getMessage());
             throw new ProviderConnectionException(
                     com.flowops.integration.provider.IntegrationType.N8N,
                     "Connection failed: " + e.getMessage(),
@@ -203,10 +200,10 @@ public class N8nClient {
      * authentication header and API key are never logged.</p>
      */
     private JsonNode handleResponse(
-            HttpResponse<String> response) {
+            HardenedHttpResponse response) {
 
         int status = response.statusCode();
-        String body = response.body();
+        String body = response.bodyAsString();
 
         if (status >= 200 && status < 300) {
             try {
@@ -248,8 +245,7 @@ public class N8nClient {
 
             try {
                 String retryHeader =
-                        response.headers()
-                                .firstValue("Retry-After")
+                        response.header("Retry-After")
                                 .orElse("60");
 
                 retryAfter = Long.parseLong(retryHeader);

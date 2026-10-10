@@ -30,6 +30,10 @@ public enum ErrorCode {
             "Your session has expired. Please sign in again."),
     RESET_TOKEN_INVALID(HttpStatus.UNAUTHORIZED,
             "The reset link is invalid or has expired. Please request a new one."),
+    VERIFICATION_TOKEN_INVALID(HttpStatus.BAD_REQUEST,
+            "The verification link is invalid or has expired. Please request a new one."),
+    EMAIL_NOT_VERIFIED(HttpStatus.FORBIDDEN,
+            "Please verify your email address to continue."),
 
     FORBIDDEN_ROLE(HttpStatus.FORBIDDEN, "You do not have permission to do that."),
     NO_ORGANIZATION_CONTEXT(HttpStatus.FORBIDDEN, "You do not belong to any organization."),
@@ -85,9 +89,9 @@ public enum ErrorCode {
 
     /** Returned for a nonexistent integration and for one owned by another org. */
     INTEGRATION_NOT_FOUND(HttpStatus.NOT_FOUND, "Integration not found."),
-    /** The submitted credential (e.g. a Slack incoming-webhook URL) is not valid. */
+    /** The submitted credential or connection configuration is not valid. */
     INTEGRATION_INVALID(HttpStatus.UNPROCESSABLE_ENTITY,
-            "That does not look like a valid Slack incoming-webhook URL."),
+            "The integration credentials or configuration are invalid."),
 
     /** Returned for a nonexistent notification and for one addressed to another user. */
     NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "Notification not found."),

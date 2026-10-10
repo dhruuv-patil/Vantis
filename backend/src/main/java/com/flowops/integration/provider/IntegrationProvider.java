@@ -25,6 +25,11 @@ public interface IntegrationProvider {
         return new ProviderCapabilities(false, false, false, false, false, false);
     }
 
+    /** Documentation / API setup URL for the provider. */
+    default String docsUrl() {
+        return null;
+    }
+
     /** Reject undeclared fields before they can be copied into public metadata. */
     default void validateCredentialFields(Map<String, String> config) {
         if (config == null || config.isEmpty()) {

@@ -11,9 +11,12 @@ import com.flowops.integration.delivery.DeliveryContext;
 import com.flowops.integration.delivery.DeliveryResult;
 import com.flowops.integration.delivery.NotificationProvider;
 import com.flowops.integration.delivery.NotificationProviderRegistry;
+import com.flowops.integration.provider.AiProvider;
+import com.flowops.integration.provider.ConnectionTestResult;
 import com.flowops.integration.provider.CredentialField;
 import com.flowops.integration.provider.DecryptedCredentials;
 import com.flowops.integration.provider.IntegrationContext;
+import com.flowops.integration.provider.IntegrationProvider;
 import com.flowops.integration.provider.IntegrationRegistry;
 import com.flowops.integration.provider.IntegrationType;
 import com.flowops.integration.provider.ProviderCapabilities;
@@ -90,13 +93,18 @@ public class ProviderController {
             ProviderCapabilities capabilities = provider instanceof WorkflowProvider workflow
                     ? workflow.capabilities()
                     : new ProviderCapabilities(false, false, false, false, false, false);
+            String docsUrl = provider.docsUrl();
+            if (docsUrl == null || docsUrl.isBlank()) {
+                docsUrl = defaultDocsUrl(provider.type());
+            }
             infos.add(new ProviderInfo(
                     provider.type().wire(),
                     provider.displayName(),
                     provider.description(),
                     true,
                     capabilities,
-                    provider.credentialFields()));
+                    provider.credentialFields(),
+                    docsUrl));
         }
 
         return new ProvidersResponse(infos);
@@ -114,43 +122,46 @@ public class ProviderController {
 
         IntegrationType type = IntegrationType.fromWire(request.type());
         if (type == null) {
-            throw ApiException.validation("type", "Unknown provider type");
+            throw ApiException.validation("type", "Unknown provider type: " + request.type());
         }
 
-        // Slack continues to use its existing Slack-specific integration flow, so a
-        // generic connect is rejected with a pointer (not a fake success).
-        if (type == IntegrationType.SLACK) {
-            throw ApiException.validation(
-                    "type",
-                    "Use the Slack-specific connect endpoint");
-        }
-
-        registry.require(request.type()).validateCredentialFields(request.config());
+        IntegrationProvider genericProvider = registry.require(type.wire());
+        genericProvider.validateCredentialFields(request.config());
         DecryptedCredentials credentials = new DecryptedCredentials(request.config());
 
-        if (notificationProviders.supports(type)) {
-            // Validate before storing: test the connection with the submitted config.
-            NotificationProvider provider = notificationProviders.get(type);
-            var test = provider.testConnection(
-                    new DeliveryContext(null, principal.organizationId(),
-                            copyOf(request.config()), credentials));
-            if (!test.success()) {
-                throw new ApiException(ErrorCode.INTEGRATION_INVALID, test.message());
+        ConnectionTestResult testResult = null;
+        List<CredentialField> credFields = genericProvider.credentialFields();
+
+        try {
+            if (notificationProviders.supports(type)) {
+                // Validate before storing: test the connection with the submitted config.
+                NotificationProvider provider = notificationProviders.get(type);
+                testResult = provider.testConnection(
+                        new DeliveryContext(null, principal.organizationId(),
+                                copyOf(request.config()), credentials));
+            } else if (genericProvider instanceof AiProvider ai) {
+                testResult = ai.testConnection(
+                        new IntegrationContext(null, principal.organizationId(), credentials));
+            } else if (genericProvider instanceof WorkflowProvider workflow) {
+                testResult = workflow.testConnection(
+                        new IntegrationContext(null, principal.organizationId(), credentials));
+            } else {
+                testResult = ConnectionTestResult.success("Connected");
             }
-            return persist(principal, type, request,
-                    secretKeys(provider.credentialFields()));
+        } catch (ApiException ae) {
+            throw ae;
+        } catch (Exception e) {
+            testResult = ConnectionTestResult.failure(
+                    e.getMessage() != null && !e.getMessage().isBlank()
+                            ? e.getMessage()
+                            : "Connection test failed");
         }
 
-        // Otherwise fall through to the workflow provider path.
-        WorkflowProvider provider = workflowProviders.get(type);
-        IntegrationContext context = new IntegrationContext(
-                null, principal.organizationId(), credentials);
-        var testResult = provider.testConnection(context);
-        if (!testResult.success()) {
+        if (testResult != null && !testResult.success()) {
             throw new ApiException(ErrorCode.INTEGRATION_INVALID, testResult.message());
         }
-        return persist(principal, type, request,
-                secretKeys(provider.credentialFields()));
+
+        return persist(principal, type, request, secretKeys(credFields));
     }
 
     @PostMapping("/{id}/test")
@@ -177,10 +188,20 @@ public class ProviderController {
             return new ConnectionTestResponse(result.success(), result.message());
         }
 
-        WorkflowProvider provider = workflowProviders.get(type);
-        var result = provider.testConnection(new IntegrationContext(
-                id, principal.organizationId(), credentials));
-        return new ConnectionTestResponse(result.success(), result.message());
+        IntegrationProvider provider = registry.get(type);
+        if (provider instanceof AiProvider ai) {
+            var result = ai.testConnection(new IntegrationContext(
+                    id, principal.organizationId(), credentials));
+            return new ConnectionTestResponse(result.success(), result.message());
+        }
+
+        if (provider instanceof WorkflowProvider workflow) {
+            var result = workflow.testConnection(new IntegrationContext(
+                    id, principal.organizationId(), credentials));
+            return new ConnectionTestResponse(result.success(), result.message());
+        }
+
+        return new ConnectionTestResponse(true, "Connected");
     }
 
     @PostMapping("/{id}/send-test")
@@ -212,6 +233,44 @@ public class ProviderController {
                 result.httpStatus());
     }
 
+    public static String defaultDocsUrl(IntegrationType type) {
+        if (type == null) return null;
+        return switch (type) {
+            case SLACK -> "https://api.slack.com/messaging/webhooks";
+            case N8N -> "https://docs.n8n.io/api/";
+            case MAKE -> "https://www.make.com/en/help/tools/api";
+            case ZAPIER -> "https://zapier.com/help/create/code-webhooks/trigger-zaps-from-webhooks";
+            case GITHUB -> "https://github.com/settings/tokens";
+            case GITLAB -> "https://gitlab.com/-/user_settings/personal_access_tokens";
+            case DISCORD -> "https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks";
+            case TEAMS -> "https://learn.microsoft.com/en-us/microsoftteams/platform/webhooks-and-connectors/how-to/add-incoming-webhook";
+            case TELEGRAM -> "https://core.telegram.org/bots/tutorial";
+            case TWILIO -> "https://console.twilio.com/";
+            case SENDGRID -> "https://app.sendgrid.com/settings/api_keys";
+            case RESEND -> "https://resend.com/api-keys";
+            case EMAIL -> "https://support.google.com/a/answer/176600";
+            case WEBHOOK -> "https://en.wikipedia.org/wiki/Webhook";
+            case JIRA -> "https://id.atlassian.com/manage-profile/security/api-tokens";
+            case LINEAR -> "https://linear.app/settings/api";
+            case ASANA -> "https://app.asana.com/0/my-apps";
+            case HUBSPOT -> "https://app.hubspot.com/";
+            case SALESFORCE -> "https://help.salesforce.com/s/articleView?id=sf.remoteaccess_oauth_tokens_scopes.htm";
+            case PIPEDRIVE -> "https://app.pipedrive.com/settings/personal-preferences/api";
+            case NOTION -> "https://www.notion.so/my-integrations";
+            case SENTRY -> "https://sentry.io/settings/account/api/auth-tokens/";
+            case PAGERDUTY -> "https://support.pagerduty.com/docs/api-access-keys";
+            case VERCEL -> "https://vercel.com/account/tokens";
+            case STRIPE -> "https://dashboard.stripe.com/apikeys";
+            case OPENAI -> "https://platform.openai.com/api-keys";
+            case ANTHROPIC -> "https://console.anthropic.com/settings/keys";
+            case AWS -> "https://console.aws.amazon.com/iam/";
+            case S3 -> "https://docs.aws.amazon.com/AmazonS3/latest/userguide/";
+            case GOOGLE_SHEETS -> "https://console.cloud.google.com/apis/credentials";
+            case REST_API, CUSTOM -> "https://swagger.io/docs/specification/authentication/";
+            default -> "https://docs.flowforge.ai/integrations";
+        };
+    }
+
     // -------------------------------------------------------------------------
     // DTOs
     // -------------------------------------------------------------------------
@@ -226,7 +285,8 @@ public class ProviderController {
             String description,
             boolean available,
             ProviderCapabilities capabilities,
-            List<CredentialField> credentialFields) {
+            List<CredentialField> credentialFields,
+            String docsUrl) {
     }
 
     public record ConnectProviderRequest(

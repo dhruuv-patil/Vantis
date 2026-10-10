@@ -244,6 +244,12 @@
         "sourceHandle": "open"
       },
       {
+        "id": "e-breaker-store-closed",
+        "source": "breaker",
+        "target": "store",
+        "sourceHandle": "closed"
+      },
+      {
         "id": "e-incident-notify",
         "source": "incident",
         "target": "notify",

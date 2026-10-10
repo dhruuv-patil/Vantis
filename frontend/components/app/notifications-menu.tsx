@@ -74,7 +74,7 @@ export function NotificationsMenu() {
         <Button
           variant="ghost"
           size="icon"
-          className="relative rounded-full text-white/55 hover:bg-white/[0.05] hover:text-white/85"
+          className="relative rounded-full text-muted-foreground hover:bg-muted hover:text-foreground dark:text-white/55 dark:hover:bg-white/[0.05] dark:hover:text-white/85"
           aria-label={
             unread > 0
               ? `Notifications (${unread} unread)`
@@ -86,7 +86,7 @@ export function NotificationsMenu() {
           {unread > 0 && (
             <span
               aria-hidden="true"
-              className="absolute right-0.5 top-0.5 flex min-w-4 items-center justify-center rounded-full border border-[#050505] bg-white px-1 py-0.5 text-[9px] font-semibold leading-none text-black"
+              className="absolute right-0.5 top-0.5 flex min-w-4 items-center justify-center rounded-full border border-background bg-foreground px-1 py-0.5 text-[9px] font-semibold leading-none text-background dark:border-[#050505] dark:bg-white dark:text-black"
             >
               {unread > 9 ? "9+" : unread}
             </span>
@@ -97,24 +97,24 @@ export function NotificationsMenu() {
       <DropdownMenuContent
         align="end"
         sideOffset={8}
-        className="w-[min(92vw,380px)] overflow-hidden rounded-xl border border-white/[0.08] bg-[#0a0a0c]/[0.98] p-0 text-white shadow-2xl shadow-black/40 backdrop-blur-xl"
+        className="w-[min(92vw,380px)] overflow-hidden rounded-xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl backdrop-blur-xl dark:border-white/[0.08] dark:bg-[#0a0a0c]/[0.98] dark:text-white dark:shadow-black/40"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-white/[0.07] px-3.5 py-3">
+        <div className="flex items-center justify-between border-b border-border px-3.5 py-3 dark:border-white/[0.07]">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-white/85">
+              <span className="text-sm font-medium text-foreground dark:text-white/85">
                 Notifications
               </span>
 
               {unread > 0 && (
-                <span className="rounded-full border border-white/[0.07] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-white/50">
+                <span className="rounded-full border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground dark:border-white/[0.07] dark:bg-white/[0.04] dark:text-white/50">
                   {unread} unread
                 </span>
               )}
             </div>
 
-            <p className="mt-0.5 text-[11px] text-white/45">
+            <p className="mt-0.5 text-[11px] text-muted-foreground dark:text-white/45">
               Run failures and workflow actions
             </p>
           </div>
@@ -124,7 +124,7 @@ export function NotificationsMenu() {
               type="button"
               onClick={() => readAll.mutate()}
               disabled={readAll.isPending}
-              className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] text-white/45 transition hover:bg-white/[0.05] hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50 dark:text-white/45 dark:hover:bg-white/[0.05] dark:hover:text-white"
             >
               <CheckCheck className="size-3.5" />
               {readAll.isPending ? "Marking..." : "Mark all read"}
@@ -147,7 +147,7 @@ export function NotificationsMenu() {
         ) : notifications.length === 0 ? (
           <NotificationEmpty />
         ) : (
-          <ul className="max-h-[min(70vh,460px)] divide-y divide-white/[0.055] overflow-y-auto">
+          <ul className="max-h-[min(70vh,460px)] divide-y divide-border/60 overflow-y-auto dark:divide-white/[0.055]">
             {notifications.map((notification) => (
               <NotificationRow
                 key={notification.id}
@@ -164,10 +164,10 @@ export function NotificationsMenu() {
 
         {/* Footer */}
         {notifications.length > 0 && !query.isError && (
-          <div className="border-t border-white/[0.06] px-3.5 py-2.5">
+          <div className="border-t border-border px-3.5 py-2.5 dark:border-white/[0.06]">
             <Link
               href="/notifications"
-              className="flex items-center justify-center rounded-md py-1.5 text-[11px] font-medium text-white/50 transition hover:bg-white/[0.035] hover:text-white"
+              className="flex items-center justify-center rounded-md py-1.5 text-[11px] font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground dark:text-white/50 dark:hover:bg-white/[0.035] dark:hover:text-white"
             >
               Open notification center
             </Link>
@@ -179,9 +179,9 @@ export function NotificationsMenu() {
 }
 
 const LEVEL_DOT: Record<AppNotification["level"], string> = {
-  INFO: "bg-white/25",
-  WARN: "bg-amber-400",
-  ERROR: "bg-red-400",
+  INFO: "bg-muted-foreground/40 dark:bg-white/25",
+  WARN: "bg-amber-500 dark:bg-amber-400",
+  ERROR: "bg-red-500 dark:bg-red-400",
 };
 
 function NotificationRow({
@@ -201,20 +201,20 @@ function NotificationRow({
         className={cn(
           "block truncate text-xs",
           unread
-            ? "font-medium text-white/90"
-            : "font-normal text-white/60",
+            ? "font-medium text-foreground dark:text-white/90"
+            : "font-normal text-muted-foreground dark:text-white/60",
         )}
       >
         {notification.title}
       </span>
 
       {notification.body && (
-        <span className="mt-0.5 block line-clamp-2 text-[11px] leading-4 text-white/50">
+        <span className="mt-0.5 block line-clamp-2 text-[11px] leading-4 text-muted-foreground dark:text-white/50">
           {notification.body}
         </span>
       )}
 
-      <span className="mt-1.5 flex items-center gap-1.5 text-[11px] text-white/45">
+      <span className="mt-1.5 flex items-center gap-1.5 text-[11px] text-muted-foreground dark:text-white/45">
         <span>{formatRelativeTime(notification.createdAt)}</span>
 
         {unread && (
@@ -224,10 +224,10 @@ function NotificationRow({
               className={cn(
                 "uppercase tracking-wider",
                 notification.level === "ERROR"
-                  ? "text-red-300/65"
+                  ? "text-red-600 dark:text-red-300/65"
                   : notification.level === "WARN"
-                    ? "text-amber-200/65"
-                    : "text-white/45",
+                    ? "text-amber-700 dark:text-amber-200/65"
+                    : "text-muted-foreground dark:text-white/45",
               )}
             >
               {notification.level.toLowerCase()}
@@ -243,8 +243,8 @@ function NotificationRow({
       className={cn(
         "group flex items-start gap-3 px-3.5 py-3 transition-colors",
         unread
-          ? "bg-white/[0.015] hover:bg-white/[0.035]"
-          : "hover:bg-white/[0.025]",
+          ? "bg-muted/40 hover:bg-muted/70 dark:bg-white/[0.015] dark:hover:bg-white/[0.035]"
+          : "hover:bg-muted/30 dark:hover:bg-white/[0.025]",
       )}
     >
       <span
@@ -277,7 +277,7 @@ function NotificationRow({
             onRead();
           }}
           disabled={isReading}
-          className="mt-0.5 shrink-0 rounded-md px-1.5 py-1 text-[11px] text-white/45 opacity-0 transition hover:bg-white/[0.05] hover:text-white group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50 sm:opacity-100"
+          className="mt-0.5 shrink-0 rounded-md px-1.5 py-1 text-[11px] text-muted-foreground opacity-0 transition hover:bg-muted hover:text-foreground group-hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-50 sm:opacity-100 dark:text-white/45 dark:hover:bg-white/[0.05] dark:hover:text-white"
         >
           {isReading ? "..." : "Read"}
         </button>
@@ -289,15 +289,15 @@ function NotificationRow({
 function NotificationEmpty() {
   return (
     <div className="flex flex-col items-center justify-center px-5 py-12 text-center">
-      <span className="flex size-9 items-center justify-center rounded-lg bg-white/[0.04] text-white/40">
+      <span className="flex size-9 items-center justify-center rounded-lg bg-muted text-muted-foreground dark:bg-white/[0.04] dark:text-white/40">
         <Bell className="size-4" />
       </span>
 
-      <p className="mt-3 text-xs font-medium text-white/70">
+      <p className="mt-3 text-xs font-medium text-foreground dark:text-white/70">
         You&apos;re all caught up
       </p>
 
-      <p className="mt-1 max-w-[230px] text-[11px] leading-4 text-white/45">
+      <p className="mt-1 max-w-[230px] text-[11px] leading-4 text-muted-foreground dark:text-white/45">
         Failed runs, approvals, and important workflow events will appear here.
       </p>
     </div>
@@ -315,11 +315,11 @@ function NotificationError({
 }) {
   return (
     <div className="px-4 py-8 text-center">
-      <p className="text-xs font-medium text-red-300/80">
+      <p className="text-xs font-medium text-red-600 dark:text-red-300/80">
         Could not load notifications
       </p>
 
-      <p className="mt-1 text-[11px] leading-4 text-white/45">
+      <p className="mt-1 text-[11px] leading-4 text-muted-foreground dark:text-white/45">
         {message}
       </p>
 
@@ -327,7 +327,7 @@ function NotificationError({
         type="button"
         onClick={onRetry}
         disabled={retrying}
-        className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-white/[0.07] bg-white/[0.025] px-2.5 py-1.5 text-[11px] text-white/50 transition hover:bg-white/[0.05] hover:text-white disabled:opacity-50"
+        className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-[11px] text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50 dark:border-white/[0.07] dark:bg-white/[0.025] dark:text-white/50 dark:hover:bg-white/[0.05] dark:hover:text-white"
       >
         <RefreshCw
           className={cn(
@@ -347,14 +347,14 @@ function NotificationSkeleton() {
       {Array.from({ length: 4 }).map((_, index) => (
         <div
           key={index}
-          className="flex items-start gap-3 border-b border-white/[0.055] px-3.5 py-3 last:border-0"
+          className="flex items-start gap-3 border-b border-border/60 px-3.5 py-3 last:border-0 dark:border-white/[0.055]"
         >
-          <span className="mt-1.5 size-2 shrink-0 rounded-full bg-white/[0.07]" />
+          <span className="mt-1.5 size-2 shrink-0 rounded-full bg-muted dark:bg-white/[0.07]" />
 
           <span className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <span className="h-3 w-40 max-w-full rounded bg-white/[0.06]" />
-            <span className="h-2.5 w-56 max-w-full rounded bg-white/[0.04]" />
-            <span className="h-2 w-16 rounded bg-white/[0.035]" />
+            <span className="h-3 w-40 max-w-full rounded bg-muted dark:bg-white/[0.06]" />
+            <span className="h-2.5 w-56 max-w-full rounded bg-muted/70 dark:bg-white/[0.04]" />
+            <span className="h-2 w-16 rounded bg-muted/60 dark:bg-white/[0.035]" />
           </span>
         </div>
       ))}

@@ -80,6 +80,22 @@ public class ExecutionEvent {
     @Column(name = "output_size")
     private Integer outputSize;
 
+    @Column(name = "item_count")
+    private Integer itemCount;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "output_signature")
+    private Map<String, Object> outputSignature;
+
+    @Column(name = "http_status")
+    private Integer httpStatus;
+
+    @Column(name = "data_completeness", length = 64)
+    private String dataCompleteness;
+
+    @Column(name = "run_index")
+    private Integer runIndex;
+
     @Column(name = "error_type", length = 64)
     private String errorType;
 
@@ -117,6 +133,57 @@ public class ExecutionEvent {
             Map<String, Object> metadata,
             UUID integrationId) {
 
+        return create(
+                organizationId,
+                workflowId,
+                source,
+                workflowExternalId,
+                executionExternalId,
+                stepExternalId,
+                stepName,
+                status,
+                startedAt,
+                finishedAt,
+                durationMs,
+                retryCount,
+                inputSize,
+                outputSize,
+                null, // itemCount
+                null, // outputSignature
+                null, // httpStatus
+                null, // dataCompleteness
+                0,    // runIndex
+                errorType,
+                errorMessage,
+                metadata,
+                integrationId);
+    }
+
+    public static ExecutionEvent create(
+            UUID organizationId,
+            UUID workflowId,
+            String source,
+            String workflowExternalId,
+            String executionExternalId,
+            String stepExternalId,
+            String stepName,
+            String status,
+            Instant startedAt,
+            Instant finishedAt,
+            Long durationMs,
+            Integer retryCount,
+            Integer inputSize,
+            Integer outputSize,
+            Integer itemCount,
+            Map<String, Object> outputSignature,
+            Integer httpStatus,
+            String dataCompleteness,
+            Integer runIndex,
+            String errorType,
+            String errorMessage,
+            Map<String, Object> metadata,
+            UUID integrationId) {
+
         ExecutionEvent event = new ExecutionEvent();
         event.id = UUID.randomUUID();
         event.organizationId = organizationId;
@@ -134,6 +201,11 @@ public class ExecutionEvent {
         event.retryCount = retryCount != null ? retryCount : 0;
         event.inputSize = inputSize;
         event.outputSize = outputSize;
+        event.itemCount = itemCount;
+        event.outputSignature = outputSignature;
+        event.httpStatus = httpStatus;
+        event.dataCompleteness = dataCompleteness;
+        event.runIndex = runIndex != null ? runIndex : 0;
         event.errorType = errorType;
         event.errorMessage = errorMessage;
         event.metadata = metadata;
@@ -205,6 +277,26 @@ public class ExecutionEvent {
 
     public Integer getOutputSize() {
         return outputSize;
+    }
+
+    public Integer getItemCount() {
+        return itemCount;
+    }
+
+    public Map<String, Object> getOutputSignature() {
+        return outputSignature;
+    }
+
+    public Integer getHttpStatus() {
+        return httpStatus;
+    }
+
+    public String getDataCompleteness() {
+        return dataCompleteness;
+    }
+
+    public Integer getRunIndex() {
+        return runIndex;
     }
 
     public String getErrorType() {

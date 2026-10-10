@@ -59,7 +59,13 @@ public class MakeProvider implements WorkflowProvider {
                 false,  // nodeExecutionData (Make's public API doesn't expose step data)
                 false,  // incrementalSync (no cursor; full-page fetch with idempotency)
                 false,  // webhooks
-                false   // tracing
+                false,  // tracing
+                false,  // outputItemCounts (Make public API does not provide item counts)
+                false,  // outputStructure (Make public API does not expose step payloads)
+                true,   // errorDetails (Scenario-level error message is reported)
+                false,  // scheduleDiscovery
+                true,   // rateLimits (Make enforces HTTP 429 with rate limits)
+                30      // dataRetentionDays (30-day default run history on Make)
         );
     }
 

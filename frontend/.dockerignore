@@ -1,11 +1,11 @@
 # Git & Tooling
 .git
+.gitignore
+.vscode
+.idea
 
 # Environment files and credentials (CRITICAL: never copy into images)
-.env
-.env.*
-!.env.example
-!.env.*.example
+.env*
 *.pem
 *.key
 *.p12
@@ -16,16 +16,25 @@ node_modules
 .next
 out
 frontend/dist
+dist
 .turbo
 *.tsbuildinfo
+
+# Dockerfiles and docker configs
+Dockerfile*
+docker-compose*.yml
+.dockerignore
 
 # Tests and testing tools
 test
 tests
+coverage
 vitest.config.ts
 
 # Logs and OS files
 *.log
 npm-debug.log*
+yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 .DS_Store

@@ -196,8 +196,8 @@ function AgentEditor({ agent }: { agent: AiAgentDetail }) {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Editor pane */}
-        <div className="space-y-4 rounded-xl border border-white/[0.065] bg-[#0a0a0c] p-5">
-          <h2 className="text-sm font-semibold text-white/90">Configuration</h2>
+        <div className="space-y-4 rounded-xl border border-border dark:border-white/[0.065] bg-card dark:bg-[#0a0a0c] p-5">
+          <h2 className="text-sm font-semibold text-foreground dark:text-white/90">Configuration</h2>
 
           <div className="space-y-1.5">
             <Label htmlFor="name">Name</Label>
@@ -256,7 +256,7 @@ function AgentEditor({ agent }: { agent: AiAgentDetail }) {
               }
               aria-invalid={!!errors.model}
             />
-            <p className="text-[11px] text-white/44">
+            <p className="text-[11px] text-muted-foreground dark:text-white/44">
               Leave blank to use the AI service&apos;s configured model.
             </p>
             {errors.model && (
@@ -264,9 +264,9 @@ function AgentEditor({ agent }: { agent: AiAgentDetail }) {
             )}
           </div>
 
-          <div className="space-y-2 border-t border-white/[0.06] pt-4">
+          <div className="space-y-2 border-t border-border dark:border-white/[0.06] pt-4">
             <Label>Tools</Label>
-            <p className="text-[11px] text-white/44">
+            <p className="text-[11px] text-muted-foreground dark:text-white/44">
               Allowlisted tools the agent may call. Only these are ever executed.
             </p>
             <div className="space-y-2">
@@ -276,7 +276,7 @@ function AgentEditor({ agent }: { agent: AiAgentDetail }) {
                   <label
                     key={tool.name}
                     htmlFor={`tool-${tool.name}`}
-                    className="flex cursor-pointer items-start gap-2 rounded-md border border-white/[0.08] p-2.5 text-sm"
+                    className="flex cursor-pointer items-start gap-2 rounded-md border border-border dark:border-white/[0.08] p-2.5 text-sm hover:bg-muted/40 dark:hover:bg-white/[0.02]"
                   >
                     <input
                       id={`tool-${tool.name}`}
@@ -286,8 +286,8 @@ function AgentEditor({ agent }: { agent: AiAgentDetail }) {
                       className="mt-0.5 size-4 rounded border-input accent-primary"
                     />
                     <span className="min-w-0">
-                      <span className="block font-medium text-white/90">{tool.label}</span>
-                      <span className="block text-[11px] text-white/44">
+                      <span className="block font-medium text-foreground dark:text-white/90">{tool.label}</span>
+                      <span className="block text-[11px] text-muted-foreground dark:text-white/44">
                         {tool.help}
                       </span>
                     </span>
@@ -331,9 +331,9 @@ function TestConsole({ agentId }: { agentId: string }) {
   });
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-white/[0.065] bg-[#0a0a0c] p-5">
+    <div className="flex flex-col gap-4 rounded-xl border border-border dark:border-white/[0.065] bg-card dark:bg-[#0a0a0c] p-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-white/90">Test console</h2>
+        <h2 className="text-sm font-semibold text-foreground dark:text-white/90">Test console</h2>
         <Button
           size="sm"
           onClick={() => runMutation.mutate()}
@@ -357,7 +357,7 @@ function TestConsole({ agentId }: { agentId: string }) {
           placeholder="Message to send to the agent…"
           onChange={(e) => setInput(e.target.value)}
         />
-        <p className="text-[11px] text-white/44">
+        <p className="text-[11px] text-muted-foreground dark:text-white/44">
           Runs the last saved version of this agent.
         </p>
       </div>
@@ -369,7 +369,7 @@ function TestConsole({ agentId }: { agentId: string }) {
             <Loader2 className="size-4 animate-spin" /> Running…
           </div>
         ) : result === null ? (
-          <p className="rounded-md border border-dashed border-white/[0.10] p-4 text-sm text-white/44">
+          <p className="rounded-md border border-dashed border-border dark:border-white/[0.10] p-4 text-sm text-muted-foreground dark:text-white/44">
             Run the agent to see its output here.
           </p>
         ) : !result.configured ? (
@@ -390,7 +390,7 @@ function TestConsole({ agentId }: { agentId: string }) {
                 {result.model}
               </Badge>
             )}
-            <pre className="whitespace-pre-wrap rounded-md border border-white/[0.08] bg-[#0a0a0a] p-3 text-sm font-mono">
+            <pre className="whitespace-pre-wrap rounded-md border border-border dark:border-white/[0.08] bg-muted/40 dark:bg-[#0a0a0a] p-3 text-sm font-mono text-foreground/80 dark:text-white/80">
               {result.output && result.output.length > 0
                 ? result.output
                 : "(empty completion)"}
@@ -402,13 +402,13 @@ function TestConsole({ agentId }: { agentId: string }) {
                   {result.toolCalls.map((call, i) => (
                     <li
                       key={i}
-                      className="rounded-md border border-white/[0.08] p-2.5 text-xs"
+                      className="rounded-md border border-border dark:border-white/[0.08] p-2.5 text-xs"
                     >
-                      <p className="font-mono font-medium text-white/90">{call.name}</p>
-                      <p className="mt-1 text-white/44">
+                      <p className="font-mono font-medium text-foreground dark:text-white/90">{call.name}</p>
+                      <p className="mt-1 text-muted-foreground dark:text-white/44">
                         args: {JSON.stringify(call.arguments)}
                       </p>
-                      <p className="mt-0.5 text-white/44">
+                      <p className="mt-0.5 text-muted-foreground dark:text-white/44">
                         → {call.result}
                       </p>
                     </li>
@@ -440,7 +440,7 @@ function DeleteAgentDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-white/[0.08] bg-[#0a0a0c] text-white">
+      <DialogContent className="border-border dark:border-white/[0.08] bg-card dark:bg-[#0a0a0c]">
         <DialogHeader>
           <DialogTitle>Delete agent</DialogTitle>
           <DialogDescription>

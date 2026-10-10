@@ -1,0 +1,43 @@
+{
+  "id": "exec-110",
+  "finished": false,
+  "mode": "webhook",
+  "retryOf": null,
+  "retrySuccessId": null,
+  "status": "waiting",
+  "startedAt": "2024-03-01T12:15:00.000Z",
+  "stoppedAt": null,
+  "workflowId": "wf-human-approval",
+  "data": {
+    "resultData": {
+      "runData": {
+        "Submit Request": [
+          {
+            "startTime": 1709295300000,
+            "executionTime": 10,
+            "executionStatus": "success",
+            "data": {
+              "main": [
+                [
+                  {
+                    "json": {
+                      "requestId": "req-88"
+                    }
+                  }
+                ]
+              ]
+            }
+          }
+        ],
+        "Wait For Approval": [
+          {
+            "startTime": 1709295300015,
+            "executionTime": 0,
+            "executionStatus": "waiting"
+          }
+        ]
+      },
+      "lastNodeExecuted": "Wait For Approval"
+    }
+  }
+}

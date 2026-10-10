@@ -142,14 +142,22 @@ public class AiServiceClient implements AiCompleter {
         Instant generatedAt = Instant.now();
 
         List<ReliabilityEnvelopes.LikelyCause> likelyCauses = new ArrayList<>();
-        JsonNode causesNode = response.get("likely_causes");
+        JsonNode causesNode = response.has("likelyCauses") ? response.get("likelyCauses") : response.get("likely_causes");
         if (causesNode != null && causesNode.isArray()) {
             for (JsonNode cause : causesNode) {
+                List<String> citations = new ArrayList<>();
+                JsonNode citNode = cause.get("citations");
+                if (citNode != null && citNode.isArray()) {
+                    for (JsonNode c : citNode) {
+                        citations.add(c.asText());
+                    }
+                }
                 likelyCauses.add(new ReliabilityEnvelopes.LikelyCause(
                         cause.path("cause").asText(""),
                         cause.path("category").asText(""),
                         cause.path("confidence").asDouble(0.0),
-                        cause.path("uncertainty").asText("")));
+                        cause.path("uncertainty").asText(""),
+                        citations));
             }
         }
 
@@ -166,7 +174,7 @@ public class AiServiceClient implements AiCompleter {
         }
 
         List<ReliabilityEnvelopes.RecommendedAction> recommendedActions = new ArrayList<>();
-        JsonNode actionsNode = response.get("recommended_actions");
+        JsonNode actionsNode = response.has("recommendedActions") ? response.get("recommendedActions") : response.get("recommended_actions");
         if (actionsNode != null && actionsNode.isArray()) {
             for (JsonNode action : actionsNode) {
                 recommendedActions.add(new ReliabilityEnvelopes.RecommendedAction(
@@ -177,9 +185,42 @@ public class AiServiceClient implements AiCompleter {
             }
         }
 
+        List<String> evidenceCitations = new ArrayList<>();
+        JsonNode citNode = response.has("evidenceCitations") ? response.get("evidenceCitations") : response.get("evidence_citations");
+        if (citNode != null && citNode.isArray()) {
+            for (JsonNode c : citNode) {
+                evidenceCitations.add(c.asText());
+            }
+        }
+
+        String suggestedFix = response.hasNonNull("suggestedFix") ? response.get("suggestedFix").asText()
+                : (response.hasNonNull("suggested_fix") ? response.get("suggested_fix").asText() : null);
+
+        List<String> verificationChecklist = new ArrayList<>();
+        JsonNode checkNode = response.has("verificationChecklist") ? response.get("verificationChecklist") : response.get("verification_checklist");
+        if (checkNode != null && checkNode.isArray()) {
+            for (JsonNode c : checkNode) {
+                verificationChecklist.add(c.asText());
+            }
+        }
+
+        boolean fallback = response.path("fallback").asBoolean(false);
+
+        if (response.hasNonNull("generatedAt")) {
+            try {
+                generatedAt = Instant.parse(response.get("generatedAt").asText());
+            } catch (Exception ignored) {
+            }
+        } else if (response.hasNonNull("generated_at")) {
+            try {
+                generatedAt = Instant.parse(response.get("generated_at").asText());
+            } catch (Exception ignored) {
+            }
+        }
+
         return new ReliabilityEnvelopes.AIInvestigationResult(
                 summary, likelyCauses, evidence, impact, recommendedActions, confidence, configured, model,
-                generatedAt);
+                generatedAt, evidenceCitations, suggestedFix, verificationChecklist, fallback);
     }
 
     private JsonNode post(String path, JsonNode body) {
@@ -190,12 +231,16 @@ public class AiServiceClient implements AiCompleter {
             throw new ApiException(ErrorCode.AI_SERVICE_ERROR);
         }
 
+        String reqId = currentRequestId();
         HttpRequest.Builder request = HttpRequest.newBuilder()
                 .uri(URI.create(properties.baseUrl() + path))
                 .timeout(properties.requestTimeout())
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(payload, StandardCharsets.UTF_8));
+        if (reqId != null && !reqId.isBlank()) {
+            request.header(com.flowops.common.error.RequestIdFilter.HEADER, reqId);
+        }
         if (!properties.token().isBlank()) {
             request.header("X-Service-Token", properties.token());
         }
@@ -205,22 +250,52 @@ public class AiServiceClient implements AiCompleter {
             response = client.send(request.build(), HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
         } catch (InterruptedException interrupted) {
             Thread.currentThread().interrupt();
-            throw new ApiException(ErrorCode.AI_SERVICE_ERROR);
+            throw new ApiException(ErrorCode.AI_SERVICE_ERROR, interrupted);
         } catch (IOException unreachable) {
-            log.warn("AI service call to {} failed: {}", path, unreachable.getClass().getSimpleName());
-            throw new ApiException(ErrorCode.AI_SERVICE_ERROR);
+            log.warn("AI service call to {} failed: {} requestId={}", path, unreachable.getClass().getSimpleName(), reqId);
+            throw new ApiException(ErrorCode.AI_SERVICE_ERROR, unreachable);
+        }
+
+        if (response.statusCode() == 422) {
+            String safeDetail = "validation failure";
+            try {
+                JsonNode errJson = mapper.readTree(response.body());
+                if (errJson.hasNonNull("detail")) {
+                    safeDetail = errJson.get("detail").asText();
+                } else if (errJson.hasNonNull("message")) {
+                    safeDetail = errJson.get("message").asText();
+                }
+            } catch (Exception ignored) {
+            }
+            log.warn("AI service call to {} returned HTTP 422: {} requestId={}", path, safeDetail, reqId);
+            if ("/ai/generate-workflow".equals(path)) {
+                throw new ApiException(ErrorCode.AI_GENERATION_FAILED, new RuntimeException("AI service 422: " + safeDetail));
+            }
+            throw new ApiException(ErrorCode.AI_SERVICE_ERROR, new RuntimeException("AI service 422: " + safeDetail));
         }
 
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            log.warn("AI service call to {} returned HTTP {}.", path, response.statusCode());
+            log.warn("AI service call to {} returned HTTP {}. requestId={}", path, response.statusCode(), reqId);
             throw new ApiException(ErrorCode.AI_SERVICE_ERROR);
         }
         try {
             return mapper.readTree(response.body());
         } catch (Exception unparseable) {
-            log.warn("AI service returned an unparseable body from {}", path);
-            throw new ApiException(ErrorCode.AI_SERVICE_ERROR);
+            log.warn("AI service returned an unparseable body from {} requestId={}", path, reqId);
+            throw new ApiException(ErrorCode.AI_SERVICE_ERROR, unparseable);
         }
+    }
+
+    private String currentRequestId() {
+        try {
+            org.springframework.web.context.request.RequestAttributes attrs =
+                    org.springframework.web.context.request.RequestContextHolder.getRequestAttributes();
+            if (attrs instanceof org.springframework.web.context.request.ServletRequestAttributes sra) {
+                return com.flowops.common.error.RequestIdFilter.currentRequestId(sra.getRequest());
+            }
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     /**

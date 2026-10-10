@@ -75,7 +75,7 @@ const statusVariant: Record<
 export function Toolbar(props: ToolbarProps) {
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex h-14 shrink-0 items-center gap-3 border-b border-white/[0.075] bg-[#0a0a0a] px-3">
+      <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-card px-3 dark:border-white/[0.075] dark:bg-[#0a0a0a]">
         <NameField
           name={props.name}
           pending={props.namePending}

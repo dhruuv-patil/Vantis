@@ -309,7 +309,7 @@ export default function DashboardPage() {
         description={`Monitor workflow health and reliability across ${organizationName}.`}
         actions={
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex h-10 items-center gap-1 rounded-lg border border-white/[0.08] bg-[#0a0a0c] p-1">
+            <div className="flex h-10 items-center gap-1 rounded-lg border border-border dark:border-white/[0.08] bg-muted/40 dark:bg-[#0a0a0c] p-1">
               {RANGE_OPTIONS.map((value) => {
                 const active = range === value;
 
@@ -321,8 +321,8 @@ export default function DashboardPage() {
                     className={cn(
                       "h-8 rounded-md px-3 text-xs font-medium transition-colors",
                       active
-                        ? "bg-white text-black font-semibold shadow-sm"
-                        : "text-white/45 hover:text-white/80 hover:bg-white/[0.04]",
+                        ? "bg-background text-foreground font-semibold shadow-sm dark:bg-white dark:text-black"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted dark:text-white/45 dark:hover:text-white/80 dark:hover:bg-white/[0.04]",
                     )}
                   >
                     {getRangeLabel(value)}
@@ -450,22 +450,22 @@ export default function DashboardPage() {
           ============================================================== */}
 
           <Reveal delay={0.06} distance={10}>
-  <Card className="flex h-full flex-col overflow-hidden rounded-xl border-white/[0.065] bg-[#0a0a0c] shadow-none">
+  <Card className="flex h-full flex-col overflow-hidden rounded-xl border border-border dark:border-white/[0.065] bg-card dark:bg-[#0a0a0c] shadow-none">
     <CardContent className="flex flex-1 flex-col p-0">
 
-      <div className="flex items-center justify-between border-b border-white/[0.055] px-5 py-4">
+      <div className="flex items-center justify-between border-b border-border dark:border-white/[0.055] px-5 py-4">
         <div>
-          <h2 className="text-sm font-medium text-white/80">
+          <h2 className="text-sm font-medium text-foreground/90 dark:text-white/80">
             Workflow health
           </h2>
-          <p className="mt-1 text-[11px] text-white/45">
+          <p className="mt-1 text-[11px] text-muted-foreground dark:text-white/45">
             Executions and failures over time
           </p>
         </div>
 
         <div className="flex items-center gap-4">
-          <ChartLegend label="Runs" color="bg-indigo-400" />
-          <ChartLegend label="Failed" color="bg-red-400" />
+          <ChartLegend label="Runs" color="bg-indigo-500 dark:bg-indigo-400" />
+          <ChartLegend label="Failed" color="bg-red-500 dark:bg-red-400" />
         </div>
       </div>
 
@@ -521,15 +521,15 @@ export default function DashboardPage() {
           delay={0.12}
           distance={10}
         >
-          <section className="mt-5 overflow-hidden rounded-xl border border-white/[0.065] bg-[#0D0D10]">
+          <section className="mt-5 overflow-hidden rounded-xl border border-border dark:border-white/[0.065] bg-card dark:bg-[#0D0D10]">
 
-            <div className="flex items-center justify-between border-b border-white/[0.055] px-5 py-4">
+            <div className="flex items-center justify-between border-b border-border dark:border-white/[0.055] px-5 py-4">
               <div>
-                <h2 className="text-sm font-medium text-white/80">
+                <h2 className="text-sm font-medium text-foreground/90 dark:text-white/80">
                   Recent executions
                 </h2>
 
-                <p className="mt-1 text-[11px] text-white/45">
+                <p className="mt-1 text-[11px] text-muted-foreground dark:text-white/45">
                   Latest workflow activity
                   across your workspace
                 </p>
@@ -537,7 +537,7 @@ export default function DashboardPage() {
 
               <Link
                 href="/executions"
-                className="flex items-center gap-1.5 text-[11px] text-white/45 transition-colors hover:text-white/85"
+                className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground dark:text-white/45 dark:hover:text-white/85 transition-colors"
               >
                 View all
                 <ArrowRight className="size-3" />
@@ -603,12 +603,12 @@ export default function DashboardPage() {
             FOOTER
         ================================================================ */}
 
-        <div className="mt-6 flex items-center justify-between border-t border-white/[0.045] pt-3">
-          <span className="text-caption text-white/40">
+        <div className="mt-6 flex items-center justify-between border-t border-border dark:border-white/[0.045] pt-3">
+          <span className="text-caption text-muted-foreground dark:text-white/40">
             {rangeLabel}
           </span>
 
-          <span className="font-mono text-caption uppercase tracking-[0.13em] text-white/45">
+          <span className="font-mono text-caption uppercase tracking-[0.13em] text-muted-foreground dark:text-white/45">
             Vantis / EXECUTION CONTROL
           </span>
         </div>
@@ -760,7 +760,7 @@ function ExecutionChart({
       {/* Floating Hover Tooltip */}
       {activePoint && (
         <div
-          className="pointer-events-none absolute -top-2 z-20 rounded-lg border border-white/[0.12] bg-[#0a0a0c] px-3 py-2 shadow-2xl backdrop-blur-md transition-all duration-75"
+          className="pointer-events-none absolute -top-2 z-20 rounded-lg border border-border dark:border-white/[0.12] bg-popover dark:bg-[#0a0a0c] px-3 py-2 shadow-2xl backdrop-blur-md transition-all duration-75"
           style={{
             left: `${(activePoint.x / width) * 100}%`,
             transform:
@@ -771,16 +771,16 @@ function ExecutionChart({
                 : "translateX(-50%)",
           }}
         >
-          <p className="font-mono text-[10px] uppercase tracking-wider text-white/40">
+          <p className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground dark:text-white/40">
             {activePoint.label}
           </p>
           <div className="mt-1 flex items-center gap-3 text-xs">
-            <span className="flex items-center gap-1.5 font-medium text-white/90">
-              <span className="size-1.5 rounded-full bg-indigo-400" />
+            <span className="flex items-center gap-1.5 font-medium text-foreground dark:text-white/90">
+              <span className="size-1.5 rounded-full bg-indigo-500 dark:bg-indigo-400" />
               {activePoint.total.toLocaleString()} runs
             </span>
-            <span className="flex items-center gap-1.5 font-medium text-red-400">
-              <span className="size-1.5 rounded-full bg-red-400" />
+            <span className="flex items-center gap-1.5 font-medium text-red-600 dark:text-red-400">
+              <span className="size-1.5 rounded-full bg-red-500 dark:bg-red-400" />
               {activePoint.failed.toLocaleString()} failed
             </span>
           </div>
@@ -811,7 +811,8 @@ function ExecutionChart({
               x2={width - 12}
               y1={y}
               y2={y}
-              stroke="rgba(255,255,255,0.04)"
+              stroke="currentColor"
+              className="stroke-border dark:stroke-white/[0.04]"
               strokeWidth="1"
               vectorEffect="non-scaling-stroke"
             />
@@ -856,7 +857,8 @@ function ExecutionChart({
             x2={activePoint.x}
             y1={paddingTop}
             y2={height - 12}
-            stroke="rgba(255,255,255,0.2)"
+            stroke="currentColor"
+            className="stroke-muted-foreground/30 dark:stroke-white/20"
             strokeDasharray="3 3"
             strokeWidth="1"
             vectorEffect="non-scaling-stroke"
@@ -870,7 +872,8 @@ function ExecutionChart({
             cy={activeTotalPoint.y}
             r="4"
             fill="rgb(129 140 248)"
-            stroke="#0a0a0c"
+            stroke="currentColor"
+            className="stroke-card dark:stroke-[#0a0a0c]"
             strokeWidth="2"
           />
         )}
@@ -881,7 +884,8 @@ function ExecutionChart({
             cy={activeFailedPoint.y}
             r="3.5"
             fill="rgb(248 113 113)"
-            stroke="#0a0a0c"
+            stroke="currentColor"
+            className="stroke-card dark:stroke-[#0a0a0c]"
             strokeWidth="2"
           />
         )}
@@ -889,7 +893,7 @@ function ExecutionChart({
 
       {/* Axis Labels: First, Middle, and Last bucket */}
       {points.length > 0 && (
-        <div className="mt-2 flex items-center justify-between border-t border-white/[0.045] pt-2 text-[10px] font-mono uppercase tracking-wider text-white/40">
+        <div className="mt-2 flex items-center justify-between border-t border-border dark:border-white/[0.045] pt-2 text-[10px] font-mono uppercase tracking-wider text-muted-foreground dark:text-white/40">
           <span>{points[0]?.label ?? "—"}</span>
           <span>{points[Math.floor((points.length - 1) / 2)]?.label ?? ""}</span>
           <span>{points[points.length - 1]?.label ?? "—"}</span>
@@ -960,15 +964,15 @@ function ReliabilityCard({
         circumference;
 
   return (
-    <Card className="h-full overflow-hidden rounded-xl border-white/[0.065] bg-[#0a0a0c] shadow-none">
+    <Card className="h-full overflow-hidden rounded-xl border border-border dark:border-white/[0.065] bg-card dark:bg-[#0a0a0c] shadow-none">
       <CardContent className="p-0">
 
-        <div className="border-b border-white/[0.055] px-5 py-4">
-          <h2 className="text-sm font-medium text-white/80">
+        <div className="border-b border-border dark:border-white/[0.055] px-5 py-4">
+          <h2 className="text-sm font-medium text-foreground/90 dark:text-white/80">
             Reliability
           </h2>
 
-          <p className="mt-1 text-[11px] text-white/45">
+          <p className="mt-1 text-[11px] text-muted-foreground dark:text-white/45">
             Execution health
           </p>
         </div>
@@ -986,7 +990,8 @@ function ReliabilityCard({
                   cy="56"
                   r={radius}
                   fill="none"
-                  stroke="rgba(255,255,255,0.055)"
+                  stroke="currentColor"
+                  className="stroke-muted dark:stroke-white/[0.055]"
                   strokeWidth="9"
                 />
 
@@ -998,7 +1003,7 @@ function ReliabilityCard({
                     fill="none"
                     stroke={
                       hasNoRuns
-                        ? "rgba(255,255,255,0.12)"
+                        ? "currentColor"
                         : getHealthStroke(successRate)
                     }
                     strokeWidth="9"
@@ -1009,13 +1014,16 @@ function ReliabilityCard({
                     strokeDashoffset={
                       offset
                     }
-                    className="transition-all duration-500"
+                    className={cn(
+                      "transition-all duration-500",
+                      hasNoRuns && "stroke-border dark:stroke-white/[0.12]",
+                    )}
                   />
                 )}
               </svg>
 
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-[19px] font-semibold tracking-[-0.04em] text-white">
+                <span className="text-[19px] font-semibold tracking-[-0.04em] text-foreground dark:text-white">
                   {loading || hasNoRuns
                     ? "—"
                     : `${successRate.toFixed(
@@ -1023,14 +1031,14 @@ function ReliabilityCard({
                       )}%`}
                 </span>
 
-                <span className="mt-0.5 font-mono text-[7px] uppercase tracking-[0.12em] text-white/35">
+                <span className="mt-0.5 font-mono text-[7px] uppercase tracking-[0.12em] text-muted-foreground dark:text-white/35">
                   {hasNoRuns ? "no data" : "success"}
                 </span>
               </div>
             </div>
 
             <div>
-              <p className="text-sm font-medium text-white/70">
+              <p className="text-sm font-medium text-foreground/80 dark:text-white/70">
                 {loading
                   ? "Loading"
                   : hasNoRuns
@@ -1040,7 +1048,7 @@ function ReliabilityCard({
                       )}
               </p>
 
-              <p className="mt-1 text-[11px] leading-5 text-white/40">
+              <p className="mt-1 text-[11px] leading-5 text-muted-foreground dark:text-white/40">
                 {hasNoRuns
                   ? "No workflow runs recorded"
                   : "Workflow execution reliability"}
@@ -1048,7 +1056,7 @@ function ReliabilityCard({
             </div>
           </div>
 
-          <div className="mt-6 border-t border-white/[0.05]">
+          <div className="mt-6 border-t border-border dark:border-white/[0.05]">
 
             <ReliabilityRow
               label="Succeeded"
@@ -1129,30 +1137,30 @@ function ReliabilityRow({
     | "neutral";
 }) {
   return (
-    <div className="flex items-center justify-between border-b border-white/[0.045] py-3 last:border-b-0">
+    <div className="flex items-center justify-between border-b border-border dark:border-white/[0.045] py-3 last:border-b-0">
       <div className="flex items-center gap-2">
         <span
           className={cn(
             "size-1.5 rounded-full",
             tone === "success" &&
-              "bg-emerald-400/75",
+              "bg-emerald-500 dark:bg-emerald-400/75",
             tone === "danger" &&
-              "bg-red-400/70",
+              "bg-red-500 dark:bg-red-400/70",
             tone === "warning" &&
-              "bg-amber-400/70",
+              "bg-amber-500 dark:bg-amber-400/70",
             tone === "active" &&
-              "bg-indigo-400/70",
+              "bg-indigo-500 dark:bg-indigo-400/70",
             tone === "neutral" &&
-              "bg-white/15",
+              "bg-muted-foreground/30 dark:bg-white/15",
           )}
         />
 
-        <span className="text-[11px] text-white/32">
+        <span className="text-[11px] text-muted-foreground dark:text-white/32">
           {label}
         </span>
       </div>
 
-      <span className="text-[11px] tabular-nums text-white/55">
+      <span className="text-[11px] tabular-nums text-foreground/80 dark:text-white/55">
         {value}
       </span>
     </div>
@@ -1174,7 +1182,7 @@ function ExecutionTable({
 
         {/* HEADER */}
 
-        <div className="grid grid-cols-[minmax(280px,1.8fr)_110px_90px_110px_100px] border-b border-white/[0.045] px-5 py-2.5">
+        <div className="grid grid-cols-[minmax(280px,1.8fr)_110px_90px_110px_100px] border-b border-border dark:border-white/[0.045] px-5 py-2.5">
           <TableHeader>
             Workflow
           </TableHeader>
@@ -1203,17 +1211,17 @@ function ExecutionTable({
             <Link
               key={execution.id}
               href={`/executions/${execution.id}`}
-              className="group grid grid-cols-[minmax(280px,1.8fr)_110px_90px_110px_100px] items-center border-b border-white/[0.04] px-5 py-3.5 transition-colors last:border-b-0 hover:bg-white/[0.018]"
+              className="group grid grid-cols-[minmax(280px,1.8fr)_110px_90px_110px_100px] items-center border-b border-border dark:border-white/[0.04] px-5 py-3.5 transition-colors last:border-b-0 hover:bg-muted/40 dark:hover:bg-white/[0.018]"
             >
               {/* WORKFLOW */}
 
               <div className="min-w-0">
-                <p className="truncate text-[12px] font-medium text-white/70 transition-colors group-hover:text-white">
+                <p className="truncate text-[12px] font-medium text-foreground/90 transition-colors group-hover:text-foreground dark:text-white/70 dark:group-hover:text-white">
                   {execution.workflowName ??
                     "Untitled workflow"}
                 </p>
 
-                <p className="mt-1 truncate font-mono text-[11px] text-white/45">
+                <p className="mt-1 truncate font-mono text-[11px] text-muted-foreground dark:text-white/45">
                   v
                   {
                     execution.versionNumber
@@ -1238,7 +1246,7 @@ function ExecutionTable({
 
               {/* DURATION */}
 
-              <span className="text-[11px] tabular-nums text-white/50">
+              <span className="text-[11px] tabular-nums text-muted-foreground dark:text-white/50">
                 {execution.durationMs !==
                 null
                   ? formatDuration(
@@ -1249,7 +1257,7 @@ function ExecutionTable({
 
               {/* STARTED */}
 
-              <span className="text-[11px] text-white/45">
+              <span className="text-[11px] text-muted-foreground dark:text-white/45">
                 {formatRelativeTime(
                   execution.createdAt,
                 )}
@@ -1257,7 +1265,7 @@ function ExecutionTable({
 
               {/* TRIGGER */}
 
-              <span className="truncate text-[11px] text-white/45">
+              <span className="truncate text-[11px] text-muted-foreground dark:text-white/45">
                 {formatTrigger(
                   execution.triggerType,
                 )}
@@ -1286,17 +1294,17 @@ function DashboardLink({
   return (
     <Link
       href={href}
-      className="group block rounded-xl border border-white/[0.065] bg-[#0a0a0c] px-4 py-3.5 transition-colors hover:border-white/[0.12] hover:bg-white/[0.03]"
+      className="group block rounded-xl border border-border dark:border-white/[0.065] bg-card dark:bg-[#0a0a0c] px-4 py-3.5 transition-colors hover:border-foreground/20 dark:hover:border-white/[0.12] hover:bg-muted/50 dark:hover:bg-white/[0.03]"
     >
       <div className="flex items-center justify-between">
-        <span className="text-[12px] font-medium text-white/70 transition-colors group-hover:text-white">
+        <span className="text-[12px] font-medium text-foreground/90 transition-colors group-hover:text-foreground dark:text-white/70 dark:group-hover:text-white">
           {title}
         </span>
 
-        <ArrowRight className="size-3 text-white/40 transition-all group-hover:translate-x-0.5 group-hover:text-white/70" />
+        <ArrowRight className="size-3 text-muted-foreground dark:text-white/40 transition-all group-hover:translate-x-0.5 group-hover:text-foreground dark:group-hover:text-white/70" />
       </div>
 
-      <p className="mt-1 text-[11px] text-white/45">
+      <p className="mt-1 text-[11px] text-muted-foreground dark:text-white/45">
         {description}
       </p>
     </Link>
@@ -1323,7 +1331,7 @@ function ChartLegend({
         )}
       />
 
-      <span className="text-[11px] text-white/45">
+      <span className="text-[11px] text-muted-foreground dark:text-white/45">
         {label}
       </span>
     </div>
@@ -1337,10 +1345,10 @@ function ChartLegend({
 function ChartSkeleton() {
   return (
     <div className="flex h-full flex-col justify-end gap-3 pb-8">
-      <Skeleton className="h-px w-full bg-white/[0.045]" />
-      <Skeleton className="h-px w-full bg-white/[0.045]" />
-      <Skeleton className="h-px w-full bg-white/[0.045]" />
-      <Skeleton className="h-20 w-full rounded-lg bg-white/[0.02]" />
+      <Skeleton className="h-px w-full bg-border dark:bg-white/[0.045]" />
+      <Skeleton className="h-px w-full bg-border dark:bg-white/[0.045]" />
+      <Skeleton className="h-px w-full bg-border dark:bg-white/[0.045]" />
+      <Skeleton className="h-20 w-full rounded-lg bg-muted dark:bg-white/[0.02]" />
     </div>
   );
 }
@@ -1353,20 +1361,20 @@ function ExecutionTableSkeleton() {
         (_, index) => (
           <div
             key={index}
-            className="grid grid-cols-[minmax(280px,1.8fr)_110px_90px_110px_100px] items-center gap-3 border-b border-white/[0.04] px-5 py-3.5"
+            className="grid grid-cols-[minmax(280px,1.8fr)_110px_90px_110px_100px] items-center gap-3 border-b border-border dark:border-white/[0.04] px-5 py-3.5"
           >
             <div>
-              <Skeleton className="h-3.5 w-36 bg-white/[0.045]" />
-              <Skeleton className="mt-1.5 h-2.5 w-24 bg-white/[0.025]" />
+              <Skeleton className="h-3.5 w-36 bg-muted dark:bg-white/[0.045]" />
+              <Skeleton className="mt-1.5 h-2.5 w-24 bg-muted/60 dark:bg-white/[0.025]" />
             </div>
 
-            <Skeleton className="h-5 w-16 rounded-md bg-white/[0.04]" />
+            <Skeleton className="h-5 w-16 rounded-md bg-muted dark:bg-white/[0.04]" />
 
-            <Skeleton className="h-3 w-10 bg-white/[0.03]" />
+            <Skeleton className="h-3 w-10 bg-muted/60 dark:bg-white/[0.03]" />
 
-            <Skeleton className="h-3 w-14 bg-white/[0.03]" />
+            <Skeleton className="h-3 w-14 bg-muted/60 dark:bg-white/[0.03]" />
 
-            <Skeleton className="h-3 w-14 bg-white/[0.03]" />
+            <Skeleton className="h-3 w-14 bg-muted/60 dark:bg-white/[0.03]" />
           </div>
         ),
       )}
@@ -1382,13 +1390,13 @@ function EmptyChart() {
   return (
     <div className="flex h-full items-center justify-center">
       <div className="text-center">
-        <Activity className="mx-auto size-5 text-white/30" />
+        <Activity className="mx-auto size-5 text-muted-foreground/50 dark:text-white/30" />
 
-        <p className="mt-2 text-xs font-medium text-white/60">
+        <p className="mt-2 text-xs font-medium text-foreground/80 dark:text-white/60">
           No execution activity
         </p>
 
-        <p className="mt-1 text-[11px] text-white/45">
+        <p className="mt-1 text-[11px] text-muted-foreground dark:text-white/45">
           Activity will appear here once
           workflows run.
         </p>
@@ -1400,15 +1408,15 @@ function EmptyChart() {
 function EmptyExecutions() {
   return (
     <div className="flex min-h-[180px] flex-col items-center justify-center px-5 text-center">
-      <div className="flex size-10 items-center justify-center rounded-lg border border-white/[0.07] bg-[#111114]">
-        <Activity className="size-4 text-white/40" />
+      <div className="flex size-10 items-center justify-center rounded-lg border border-border dark:border-white/[0.07] bg-muted/40 dark:bg-[#111114]">
+        <Activity className="size-4 text-muted-foreground dark:text-white/40" />
       </div>
 
-      <p className="mt-3 text-sm font-medium text-white/70">
+      <p className="mt-3 text-sm font-medium text-foreground/80 dark:text-white/70">
         No executions yet
       </p>
 
-      <p className="mt-1 text-[11px] text-white/45">
+      <p className="mt-1 text-[11px] text-muted-foreground dark:text-white/45">
         Run a workflow to start seeing
         activity here.
       </p>
@@ -1425,14 +1433,14 @@ function QueryError({
 }) {
   return (
     <div className="flex min-h-[160px] flex-col items-center justify-center px-5 text-center">
-      <p className="text-sm text-white/45">
+      <p className="text-sm text-muted-foreground dark:text-white/45">
         {message}
       </p>
 
       <button
         type="button"
         onClick={onRetry}
-        className="mt-3 text-[11px] text-white/35 underline underline-offset-4 hover:text-white/70"
+        className="mt-3 text-[11px] text-muted-foreground/80 underline underline-offset-4 hover:text-foreground dark:text-white/35 dark:hover:text-white/70"
       >
         Retry
       </button>
@@ -1503,7 +1511,7 @@ function TableHeader({
   children: ReactNode;
 }) {
   return (
-    <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-white/40">
+    <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground dark:text-white/40">
       {children}
     </span>
   );

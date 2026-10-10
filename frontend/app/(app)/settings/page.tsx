@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { AlertTriangle, ArrowRight, CreditCard, Loader2, Plug, Users } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -28,6 +29,7 @@ import {
   PageContainer,
   PageHeader,
 } from "@/components/app/page-primitives";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function SettingsPage() {
   return (
@@ -35,15 +37,47 @@ export default function SettingsPage() {
       <PageHeader
         eyebrow="Organization"
         title="Settings"
-        description="Manage your organization and your account security."
+        description="Manage your appearance theme, organization, and account security."
       />
 
       <div className="space-y-8">
+        <AppearanceSettings />
+        <Separator className="border-border dark:border-white/[0.065]" />
         <GeneralSettings />
-        <Separator className="border-white/[0.065]" />
+        <Separator className="border-border dark:border-white/[0.065]" />
+        <OrganizationResources />
+        <Separator className="border-border dark:border-white/[0.065]" />
         <SecuritySettings />
+        <Separator className="border-border dark:border-white/[0.065]" />
+        <DangerZone />
       </div>
     </PageContainer>
+  );
+}
+
+/* -------------------------------------------------------------- appearance */
+
+function AppearanceSettings() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Appearance & Theme</CardTitle>
+        <CardDescription>
+          Customize the visual appearance of the application. Toggle between dark and light modes.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-0.5">
+            <Label className="text-sm font-medium">Color theme</Label>
+            <p className="text-xs text-muted-foreground">
+              Select your preferred color theme across dashboards, builder, templates, and integrations.
+            </p>
+          </div>
+          <ThemeToggle variant="segmented" />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -236,6 +270,125 @@ function SecuritySettings() {
           </Button>
         </CardFooter>
       </form>
+    </Card>
+  );
+}
+
+/* ------------------------------------------------ organization resources */
+
+function OrganizationResources() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Workspace Areas</CardTitle>
+        <CardDescription>
+          Quick access to tenant-scoped resources, billing configurations, and team roles.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-3 sm:grid-cols-3">
+        <Link
+          href="/team"
+          className="group flex flex-col justify-between rounded-lg border border-border dark:border-white/[0.08] bg-muted/20 dark:bg-white/[0.02] p-4 transition-colors hover:bg-muted/50 dark:hover:bg-white/[0.05]"
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground dark:text-white/90">
+              <Users className="size-4 text-muted-foreground" />
+              <span>Team & Members</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Invite teammates, manage roles, and review pending invitations.
+            </p>
+          </div>
+          <div className="mt-3 flex items-center gap-1 text-xs text-primary group-hover:underline">
+            <span>Manage team</span>
+            <ArrowRight className="size-3" />
+          </div>
+        </Link>
+
+        <Link
+          href="/billing"
+          className="group flex flex-col justify-between rounded-lg border border-border dark:border-white/[0.08] bg-muted/20 dark:bg-white/[0.02] p-4 transition-colors hover:bg-muted/50 dark:hover:bg-white/[0.05]"
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground dark:text-white/90">
+              <CreditCard className="size-4 text-muted-foreground" />
+              <span>Billing & Plan</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Subscription tiers, usage quotas, currency, and invoices.
+            </p>
+          </div>
+          <div className="mt-3 flex items-center gap-1 text-xs text-primary group-hover:underline">
+            <span>View billing</span>
+            <ArrowRight className="size-3" />
+          </div>
+        </Link>
+
+        <Link
+          href="/integrations"
+          className="group flex flex-col justify-between rounded-lg border border-border dark:border-white/[0.08] bg-muted/20 dark:bg-white/[0.02] p-4 transition-colors hover:bg-muted/50 dark:hover:bg-white/[0.05]"
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground dark:text-white/90">
+              <Plug className="size-4 text-muted-foreground" />
+              <span>Integrations</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Connected providers, credentials, and webhook endpoints.
+            </p>
+          </div>
+          <div className="mt-3 flex items-center gap-1 text-xs text-primary group-hover:underline">
+            <span>Configure</span>
+            <ArrowRight className="size-3" />
+          </div>
+        </Link>
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ---------------------------------------------------------- danger zone */
+
+function DangerZone() {
+  const role = useAuthStore((s) => s.currentRole);
+  const org = useAuthStore((s) => s.currentOrganization);
+  const isOwner = role === "OWNER";
+
+  return (
+    <Card className="border-destructive/30 dark:border-red-500/20">
+      <CardHeader>
+        <div className="flex items-center gap-2 text-destructive">
+          <AlertTriangle className="size-4" />
+          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+        </div>
+        <CardDescription>
+          Actions that permanently impact access to this workspace and its resources.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-border dark:border-white/[0.08] p-3 text-xs">
+          <div className="space-y-0.5">
+            <p className="font-medium text-foreground dark:text-white/90">
+              Transfer Ownership or Leave Workspace
+            </p>
+            <p className="text-muted-foreground">
+              Each workspace requires at least one active Owner. To transfer ownership,
+              promote a team member to Owner in the Team settings before removing your membership.
+            </p>
+          </div>
+          <Link href="/team">
+            <Button variant="outline" size="sm" className="shrink-0 text-xs">
+              Go to Team
+            </Button>
+          </Link>
+        </div>
+
+        {!isOwner && (
+          <p className="text-xs text-muted-foreground">
+            Administrative danger zone controls are available exclusively to organization Owners.
+          </p>
+        )}
+      </CardContent>
     </Card>
   );
 }

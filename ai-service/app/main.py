@@ -6,6 +6,8 @@ and agent execution (`/ai/agent/run`), both backed by a pluggable LLM provider
 key configured they report "not configured" rather than fabricating output.
 """
 
+import logging
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
 from fastapi import FastAPI
@@ -13,6 +15,20 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.routes import ai as ai_routes
+
+logger = logging.getLogger("flowops.ai")
+logger.setLevel(logging.INFO)
+if not logger.handlers:
+    _handler = logging.StreamHandler()
+    _handler.setFormatter(logging.Formatter("%(levelname)s:     %(message)s"))
+    logger.addHandler(_handler)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    settings = get_settings()
+    logger.info("AI provider: %s", settings.ai_provider)
+    yield
 
 
 def create_app() -> FastAPI:
@@ -22,7 +38,8 @@ def create_app() -> FastAPI:
         title="Vantis AI Service",
         version=settings.version,
         description="AI workflow generation and agents for Vantis "
-        "(Google Gemini, bring-your-own-key).",
+        "(bring-your-own-key).",
+        lifespan=lifespan,
     )
 
     app.add_middleware(
@@ -35,12 +52,16 @@ def create_app() -> FastAPI:
 
     @app.get("/health", tags=["health"])
     def health() -> dict:
+        current_settings = get_settings()
         return {
             "status": "ok",
-            "service": settings.service_name,
-            "version": settings.version,
+            "service": current_settings.service_name,
+            "version": current_settings.version,
+            "ai_provider": current_settings.ai_provider,
+            "provider": current_settings.ai_provider,
             # Honest signal to the backend/UI without leaking the key.
-            "ai_configured": settings.ai_configured,
+            "ai_configured": current_settings.ai_configured,
+            "configured": current_settings.ai_configured,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 

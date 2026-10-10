@@ -68,7 +68,7 @@ public class OutputDetector {
         if (expected == null || actual == null) {
             return out;
         }
-        String obsForm = str(actual.get("form"));
+        String obsForm = getForm(actual);
         int sampleCount = base.getSampleCount();
 
         // Determine expected form from baseline - if baseline has fields, it's OBJECT
@@ -84,7 +84,7 @@ public class OutputDetector {
                     "output came back " + obsForm,
                     6.0, 0.9, map("kind", "output-" + obsForm.toLowerCase(),
                             "expectedForm", expForm, "actualForm", obsForm)));
-        } else if (!expForm.equals(obsForm)) {
+        } else if (!"UNKNOWN".equals(expForm) && !"UNKNOWN".equals(obsForm) && !expForm.equals(obsForm)) {
             // Form mismatch (e.g., expected OBJECT, got ARRAY)
             out.add(finding(base, obs, "output", null,
                     "expected " + expForm,
@@ -339,9 +339,13 @@ public class OutputDetector {
         if (form != null) {
             return str(form);
         }
-        // If no explicit form, infer from fields
+        // If no explicit form, infer from fields or shape
         Object fields = sig.get("fields");
         if (fields instanceof Map<?, ?> m && !m.isEmpty()) {
+            return "OBJECT";
+        }
+        Object shape = sig.get("shape");
+        if (shape instanceof Map<?, ?> sm && !sm.isEmpty()) {
             return "OBJECT";
         }
         return "UNKNOWN";
@@ -353,6 +357,25 @@ public class OutputDetector {
         Object fields = sig.get("fields");
         if (fields instanceof Map<?, ?> m) {
             return (Map<String, Object>) m;
+        }
+        Object shape = sig.get("shape");
+        if (shape instanceof Map<?, ?> sm) {
+            Map<String, Object> adapted = new LinkedHashMap<>();
+            for (Map.Entry<?, ?> e : sm.entrySet()) {
+                if (e.getValue() instanceof Map<?, ?> nested) {
+                    Map<String, Object> fieldMeta = new LinkedHashMap<>();
+                    fieldMeta.put("form", "OBJECT");
+                    fieldMeta.put("shape", nested);
+                    adapted.put(String.valueOf(e.getKey()), fieldMeta);
+                } else {
+                    Map<String, Object> fieldMeta = new LinkedHashMap<>();
+                    fieldMeta.put("type", String.valueOf(e.getValue()));
+                    fieldMeta.put("null", "null".equals(e.getValue()));
+                    fieldMeta.put("form", "SCALAR");
+                    adapted.put(String.valueOf(e.getKey()), fieldMeta);
+                }
+            }
+            return adapted;
         }
         return Map.of();
     }

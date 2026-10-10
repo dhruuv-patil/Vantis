@@ -59,5 +59,11 @@ export const queryKeys = {
       ["billing", "usage", workspaceId ?? "current"] as const,
     currency: (country?: string) =>
       ["billing", "currency", country ?? "default"] as const,
+    subscription: (workspaceId?: string) =>
+      ["billing", "subscription", workspaceId ?? "current"] as const,
+    invoices: (workspaceId?: string) =>
+      ["billing", "invoices", workspaceId ?? "current"] as const,
+    status: (workspaceId?: string) =>
+      ["billing", "status", workspaceId ?? "current"] as const,
   },
 } as const;

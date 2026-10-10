@@ -162,7 +162,7 @@ class TelemetryCollectorTest {
                         "transform",
                         mapper.createObjectNode()
                                 .put("company_size", 1200)
-                                .put("name", "Acme Corp"));
+                                .put("name", "Vantis"));
 
         when(store.getNodes(execId))
                 .thenReturn(List.of(node));
@@ -216,7 +216,7 @@ class TelemetryCollectorTest {
 
         // The signature and sizes must never leak the actual payload.
         assertThat(m.getOutputSignature().toString())
-                .doesNotContain("Acme Corp");
+                .doesNotContain("Vantis");
 
         assertThat(sig.toString())
                 .doesNotContain("1200");

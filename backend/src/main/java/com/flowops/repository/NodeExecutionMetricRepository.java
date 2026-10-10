@@ -58,4 +58,11 @@ public interface NodeExecutionMetricRepository
     long countDistinctExecutionsSince(
             UUID workflowId,
             Instant after);
+
+    List<NodeExecutionMetric> findTop30ByWorkflowIdOrderByStartedAtDesc(UUID workflowId);
+
+    long countByWorkflowIdAndStatusAndStartedAtAfter(
+            UUID workflowId,
+            com.flowops.domain.NodeRunStatus status,
+            Instant after);
 }

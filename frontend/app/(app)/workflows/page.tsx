@@ -269,7 +269,7 @@ export default function WorkflowsPage() {
         <div className="mt-6">
           <Toolbar>
             <div className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-white/40" />
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/60 dark:text-white/40" />
 
               <Input
                 value={search}
@@ -282,14 +282,14 @@ export default function WorkflowsPage() {
                 <button
                   type="button"
                   onClick={() => setSearch("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-white/40 hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-muted-foreground/60 hover:text-foreground dark:text-white/40 dark:hover:text-white"
                 >
                   Clear
                 </button>
               )}
             </div>
 
-            <div className="flex h-10 shrink-0 items-center gap-1 rounded-lg border border-white/[0.08] bg-[#0a0a0c] p-1">
+            <div className="flex h-10 shrink-0 items-center gap-1 rounded-lg border border-border dark:border-white/[0.08] bg-muted/40 dark:bg-[#0a0a0c] p-1">
               {(["ALL", "DRAFT", "PUBLISHED"] as const).map(status => {
                 const active = filter === status;
 
@@ -301,8 +301,8 @@ export default function WorkflowsPage() {
                     className={cn(
                       "flex h-8 items-center gap-1.5 rounded-md px-3 text-xs font-medium transition-colors",
                       active
-                        ? "bg-white text-black font-semibold shadow-sm"
-                        : "text-white/50 hover:bg-white/[0.04] hover:text-white/80",
+                        ? "bg-background text-foreground font-semibold shadow-sm dark:bg-white dark:text-black"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white/80",
                     )}
                   >
                     <span>
@@ -316,7 +316,7 @@ export default function WorkflowsPage() {
                     <span
                       className={cn(
                         "text-[11px] tabular-nums",
-                        active ? "text-black/70" : "text-white/45",
+                        active ? "text-foreground/80 dark:text-black/70" : "text-muted-foreground dark:text-white/45",
                       )}
                     >
                       {counts[status]}
@@ -331,13 +331,13 @@ export default function WorkflowsPage() {
                 value={sort}
                 onChange={event => setSort(event.target.value as SortKey)}
                 aria-label="Sort workflows"
-                className="h-10 appearance-none rounded-lg border border-white/[0.08] bg-[#0a0a0c] pl-3 pr-9 text-xs font-medium text-white/70 outline-none transition-colors hover:text-white focus:border-white/20"
+                className="h-10 appearance-none rounded-lg border border-border dark:border-white/[0.08] bg-background dark:bg-[#0a0a0c] pl-3 pr-9 text-xs font-medium text-foreground/80 dark:text-white/70 outline-none transition-colors hover:text-foreground dark:hover:text-white focus:border-foreground/30 dark:focus:border-white/20"
               >
                 <option value="UPDATED">Recently updated</option>
                 <option value="NAME">Name (A–Z)</option>
               </select>
 
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-white/40" />
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60 dark:text-white/40" />
             </div>
           </Toolbar>
         </div>
@@ -350,7 +350,7 @@ export default function WorkflowsPage() {
         !workflows.isError &&
         allWorkflows.length > 0 && (
           <div className="mt-4 flex items-center justify-between px-0.5">
-            <span className="text-[11px] text-white/45">
+            <span className="text-[11px] text-muted-foreground dark:text-white/45">
               Showing {items.length} of {allWorkflows.length} workflows
             </span>
 
@@ -358,7 +358,7 @@ export default function WorkflowsPage() {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="text-[11px] text-white/45 hover:text-white"
+                className="text-[11px] text-muted-foreground hover:text-foreground dark:text-white/45 dark:hover:text-white"
               >
                 Clear filters
               </button>
@@ -448,14 +448,14 @@ export default function WorkflowsPage() {
           }
         }}
       >
-        <AlertDialogContent className="border-white/[0.08] bg-[#0a0a0c] text-white sm:max-w-md">
+        <AlertDialogContent className="border-border bg-card dark:border-white/[0.08] dark:bg-[#0a0a0c] text-foreground dark:text-white sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-base font-semibold tracking-tight">
               Delete this workflow?
             </AlertDialogTitle>
 
-            <AlertDialogDescription className="text-sm leading-6 text-white/50">
-              <span className="font-medium text-white/90">
+            <AlertDialogDescription className="text-sm leading-6 text-muted-foreground dark:text-white/50">
+              <span className="font-medium text-foreground dark:text-white/90">
                 {toDelete?.name}
               </span>{" "}
               will be permanently removed. This can&apos;t be undone.
@@ -465,7 +465,7 @@ export default function WorkflowsPage() {
           {removeMutation.isError && (
             <p
               role="alert"
-              className="rounded-lg border border-red-500/20 bg-red-500/[0.06] px-3 py-2 text-xs text-red-300"
+              className="rounded-lg border border-red-500/20 bg-red-500/[0.06] px-3 py-2 text-xs text-red-600 dark:text-red-300"
             >
               Couldn&apos;t delete the workflow. Try again.
             </p>
@@ -487,7 +487,7 @@ export default function WorkflowsPage() {
                   removeMutation.mutate(toDelete.id);
                 }
               }}
-              className="gap-2 border border-red-500/25 bg-red-500/20 text-red-300 hover:bg-red-500/30 hover:text-red-200"
+              className="gap-2 border border-red-500/25 bg-red-500/10 text-red-600 hover:bg-red-500/20 dark:bg-red-500/20 dark:text-red-300 dark:hover:bg-red-500/30 dark:hover:text-red-200"
             >
               {removeMutation.isPending && (
                 <Loader2 className="size-4 animate-spin" />
@@ -518,18 +518,18 @@ function WorkflowCard({
     <article
       className={cn(
         "group relative flex h-full min-h-[176px] flex-col overflow-hidden rounded-xl",
-        "border border-white/[0.065] bg-[#0a0a0c]",
+        "border border-border dark:border-white/[0.065] bg-card dark:bg-[#0a0a0c]",
         "transition-[border-color,background-color,box-shadow] duration-200",
-        "hover:border-white/[0.12] hover:bg-[#111114]",
-        "hover:shadow-[0_18px_45px_rgba(0,0,0,0.3)]",
-        "focus-within:border-white/20",
+        "hover:border-foreground/20 dark:hover:border-white/[0.12] hover:bg-muted/30 dark:hover:bg-[#111114]",
+        "hover:shadow-[0_18px_45px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_18px_45px_rgba(0,0,0,0.3)]",
+        "focus-within:border-foreground/30 dark:focus-within:border-white/20",
       )}
     >
       {/* Whole card is clickable; the menu sits above this link */}
       <Link
         href={`/workflows/${workflow.id}`}
         aria-label={`Open ${workflow.name}`}
-        className="absolute inset-0 z-0 rounded-xl focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30"
+        className="absolute inset-0 z-0 rounded-xl focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/30 dark:focus-visible:ring-white/30"
       />
 
       {/* Top: status, name, description */}
@@ -543,7 +543,7 @@ function WorkflowCard({
 
         <h3
           title={workflow.name}
-          className="mt-3 truncate text-base font-medium tracking-tight text-white/90 group-hover:text-white"
+          className="mt-3 truncate text-base font-medium tracking-tight text-foreground/90 group-hover:text-foreground dark:text-white/90 dark:group-hover:text-white"
         >
           {workflow.name}
         </h3>
@@ -552,7 +552,7 @@ function WorkflowCard({
           title={workflow.description ?? undefined}
           className={cn(
             "mt-1.5 line-clamp-2 text-xs leading-relaxed",
-            workflow.description ? "text-white/60" : "text-white/45",
+            workflow.description ? "text-muted-foreground dark:text-white/60" : "text-muted-foreground/70 dark:text-white/45",
           )}
         >
           {workflow.description || "No description added."}
@@ -560,9 +560,9 @@ function WorkflowCard({
       </div>
 
       {/* Footer */}
-      <div className="pointer-events-none relative z-[1] flex items-center justify-between gap-3 border-t border-white/[0.065] bg-white/[0.015] px-5 py-3">
+      <div className="pointer-events-none relative z-[1] flex items-center justify-between gap-3 border-t border-border dark:border-white/[0.065] bg-muted/20 dark:bg-white/[0.015] px-5 py-3">
         <span
-          className="truncate text-[11px] text-white/40"
+          className="truncate text-[11px] text-muted-foreground dark:text-white/40"
           title={workflow.updatedAt ?? undefined}
         >
           {workflow.updatedAt
@@ -570,7 +570,7 @@ function WorkflowCard({
             : "No recent update"}
         </span>
 
-        <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-white/45 transition-colors group-hover:text-white">
+        <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-muted-foreground group-hover:text-foreground dark:text-white/45 dark:group-hover:text-white transition-colors">
           Open
           <ArrowUpRight className="size-3 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
         </span>
@@ -583,7 +583,7 @@ function WorkflowCard({
             <button
               type="button"
               aria-label={`Actions for ${workflow.name}`}
-              className="flex size-7 items-center justify-center rounded-md border border-transparent text-white/40 transition-colors hover:border-white/[0.09] hover:bg-white/[0.06] hover:text-white focus-visible:border-white/25 focus-visible:outline-none data-[state=open]:border-white/[0.09] data-[state=open]:bg-white/[0.06] data-[state=open]:text-white"
+              className="flex size-7 items-center justify-center rounded-md border border-transparent text-muted-foreground/60 transition-colors hover:border-border hover:bg-muted hover:text-foreground dark:text-white/40 dark:hover:border-white/[0.09] dark:hover:bg-white/[0.06] dark:hover:text-white focus-visible:border-foreground/30 dark:focus-visible:border-white/25 focus-visible:outline-none data-[state=open]:border-border dark:data-[state=open]:border-white/[0.09] data-[state=open]:bg-muted dark:data-[state=open]:bg-white/[0.06] data-[state=open]:text-foreground dark:data-[state=open]:text-white"
             >
               <MoreHorizontal className="size-4" />
             </button>
@@ -591,23 +591,23 @@ function WorkflowCard({
 
           <DropdownMenuContent
             align="end"
-            className="w-44 border-white/[0.08] bg-[#0a0a0c] text-white"
+            className="w-44 border-border bg-popover text-popover-foreground dark:border-white/[0.08] dark:bg-[#0a0a0c] dark:text-white"
           >
             <DropdownMenuItem
               asChild
-              className="cursor-pointer text-white/80 focus:bg-white/[0.06] focus:text-white"
+              className="cursor-pointer text-foreground/80 focus:bg-muted focus:text-foreground dark:text-white/80 dark:focus:bg-white/[0.06] dark:focus:text-white"
             >
               <Link href={`/workflows/${workflow.id}`}>
-                <ArrowUpRight className="mr-2 size-4 text-white/45" />
+                <ArrowUpRight className="mr-2 size-4 text-muted-foreground dark:text-white/45" />
                 Open workflow
               </Link>
             </DropdownMenuItem>
 
-            <DropdownMenuSeparator className="bg-white/[0.07]" />
+            <DropdownMenuSeparator className="bg-border dark:bg-white/[0.07]" />
 
             <DropdownMenuItem
               onSelect={onDelete}
-              className="cursor-pointer text-red-300 focus:bg-red-500/10 focus:text-red-200"
+              className="cursor-pointer text-red-600 focus:bg-red-500/10 focus:text-red-700 dark:text-red-300 dark:focus:text-red-200"
             >
               <Trash2 className="mr-2 size-4" />
               Delete

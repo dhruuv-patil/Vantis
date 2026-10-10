@@ -1,0 +1,26 @@
+{
+  "id": "exec-109",
+  "finished": true,
+  "mode": "trigger",
+  "retryOf": null,
+  "retrySuccessId": null,
+  "status": "success",
+  "startedAt": "2024-03-01T12:00:00.000Z",
+  "stoppedAt": "2024-03-01T12:00:10.000Z",
+  "workflowId": "wf-high-volume",
+  "data": {
+    "resultData": {
+      "runData": {
+        "High Volume Source": [
+          {
+            "startTime": 1709294400000,
+            "executionTime": 500,
+            "executionStatus": "success",
+            "data": null
+          }
+        ]
+      },
+      "lastNodeExecuted": "High Volume Source"
+    }
+  }
+}

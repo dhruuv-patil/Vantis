@@ -79,7 +79,7 @@ export function PageHeader({
         <div className="mb-3">
           <Link
             href={backLink.href}
-            className="inline-flex items-center gap-1.5 text-xs text-white/50 transition-colors hover:text-white"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground dark:text-white/50 dark:hover:text-white"
           >
             <ArrowLeft className="size-3.5" />
             <span>{backLink.label ?? "Back"}</span>
@@ -90,17 +90,17 @@ export function PageHeader({
       <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
           {eyebrow && (
-            <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-white/40">
+            <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground dark:text-white/40">
               {eyebrow}
             </p>
           )}
 
-          <h1 className="text-2xl font-semibold tracking-tight text-white">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground dark:text-white">
             {title}
           </h1>
 
           {description && (
-            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-white/50">
+            <p className="mt-1.5 max-w-2xl text-sm leading-6 text-muted-foreground dark:text-white/50">
               {description}
             </p>
           )}
@@ -188,14 +188,14 @@ export function getKpiItemClasses(index: number, total: number) {
     return cn(
       "min-h-[92px] p-4 flex flex-col justify-between",
       // Base mobile (1 col)
-      index < total - 1 ? "border-b border-white/[0.05]" : "border-b-0",
+      index < total - 1 ? "border-b border-border/60 dark:border-white/[0.05]" : "border-b-0",
       // sm (2 cols: 640px to 1024px)
-      isCol1Sm ? "sm:border-r sm:border-white/[0.05]" : "sm:border-r-0",
-      hasBottomBorderSm ? "sm:border-b sm:border-white/[0.05]" : "sm:border-b-0",
+      isCol1Sm ? "sm:border-r sm:border-border/60 dark:sm:border-white/[0.05]" : "sm:border-r-0",
+      hasBottomBorderSm ? "sm:border-b sm:border-border/60 dark:sm:border-white/[0.05]" : "sm:border-b-0",
       isLastSm ? "sm:col-span-2 lg:col-span-1" : "sm:col-span-1",
       // lg (5 cols: >= 1024px)
       "lg:border-b-0",
-      hasRightBorderLg ? "lg:border-r lg:border-white/[0.05]" : "lg:border-r-0",
+      hasRightBorderLg ? "lg:border-r lg:border-border/60 dark:lg:border-white/[0.05]" : "lg:border-r-0",
     );
   }
 
@@ -207,21 +207,21 @@ export function getKpiItemClasses(index: number, total: number) {
     return cn(
       "min-h-[92px] p-4 flex flex-col justify-between",
       // Base mobile (1 col)
-      index < total - 1 ? "border-b border-white/[0.05]" : "border-b-0",
+      index < total - 1 ? "border-b border-border/60 dark:border-white/[0.05]" : "border-b-0",
       // sm (2 cols: 640px to 1024px)
-      isCol1Sm ? "sm:border-r sm:border-white/[0.05]" : "sm:border-r-0",
-      hasBottomBorderSm ? "sm:border-b sm:border-white/[0.05]" : "sm:border-b-0",
+      isCol1Sm ? "sm:border-r sm:border-border/60 dark:sm:border-white/[0.05]" : "sm:border-r-0",
+      hasBottomBorderSm ? "sm:border-b sm:border-border/60 dark:sm:border-white/[0.05]" : "sm:border-b-0",
       // lg (4 cols: >= 1024px)
       "lg:border-b-0",
-      hasRightBorderLg ? "lg:border-r lg:border-white/[0.05]" : "lg:border-r-0",
+      hasRightBorderLg ? "lg:border-r lg:border-border/60 dark:lg:border-white/[0.05]" : "lg:border-r-0",
     );
   }
 
   // Fallback for 3 or arbitrary count
   return cn(
     "min-h-[92px] p-4 flex flex-col justify-between",
-    index < total - 1 ? "border-b border-white/[0.05]" : "border-b-0",
-    index < total - 1 ? "sm:border-r sm:border-white/[0.05] sm:border-b-0" : "sm:border-r-0 sm:border-b-0",
+    index < total - 1 ? "border-b border-border/60 dark:border-white/[0.05]" : "border-b-0",
+    index < total - 1 ? "sm:border-r sm:border-border/60 dark:sm:border-white/[0.05] sm:border-b-0" : "sm:border-r-0 sm:border-b-0",
   );
 }
 
@@ -242,7 +242,7 @@ export function KpiStrip({
   return (
     <dl
       className={cn(
-        "grid overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]",
+        "grid overflow-hidden rounded-xl border border-border bg-card shadow-sm dark:border-white/[0.065] dark:bg-[#0a0a0c]",
         defaultGridClass,
         className,
       )}
@@ -256,15 +256,15 @@ export function KpiStrip({
             className={getKpiItemClasses(index, items.length)}
           >
             <div>
-              <dt className="text-[10px] font-medium uppercase tracking-[0.10em] text-white/40">
+              <dt className="text-[10px] font-medium uppercase tracking-[0.10em] text-muted-foreground dark:text-white/40">
                 {item.label}
               </dt>
-              <dd className="mt-2 text-2xl font-semibold leading-none tracking-tight tabular-nums text-white/90">
+              <dd className="mt-2 text-2xl font-semibold leading-none tracking-tight tabular-nums text-foreground dark:text-white/90">
                 {item.value}
               </dd>
             </div>
             {item.detail && (
-              <div className="mt-2 flex items-center gap-1.5 text-[11px] text-white/45">
+              <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground dark:text-white/45">
                 {hasTone && <StatusDot tone={item.tone} />}
                 <span className="truncate">{item.detail}</span>
               </div>
@@ -345,10 +345,10 @@ export function CategoryPillsRow({
               aria-selected={isActive}
               onClick={() => onSelect(value)}
               className={cn(
-                "snap-start shrink-0 rounded-lg border px-3.5 py-1.5 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30",
+                "snap-start shrink-0 rounded-lg border px-3.5 py-1.5 text-xs font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/20",
                 isActive
-                  ? "border-white bg-white text-black font-semibold shadow-sm"
-                  : "border-white/[0.08] bg-white/[0.025] text-white/50 hover:border-white/[0.14] hover:bg-white/[0.05] hover:text-white/80",
+                  ? "border-foreground bg-foreground text-background font-semibold shadow-sm dark:border-white dark:bg-white dark:text-black"
+                  : "border-border bg-card text-muted-foreground hover:border-foreground/20 hover:bg-muted hover:text-foreground dark:border-white/[0.08] dark:bg-white/[0.025] dark:text-white/50 dark:hover:border-white/[0.14] dark:hover:bg-white/[0.05] dark:hover:text-white/80",
               )}
             >
               <span>{label}</span>
@@ -356,7 +356,7 @@ export function CategoryPillsRow({
                 <span
                   className={cn(
                     "ml-1.5 text-[10px] tabular-nums",
-                    isActive ? "text-black/60" : "text-white/35",
+                    isActive ? "text-background/70 dark:text-black/60" : "text-muted-foreground dark:text-white/35",
                   )}
                 >
                   {count}
@@ -390,18 +390,18 @@ export function AppPanel({
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]",
+        "overflow-hidden rounded-xl border border-border bg-card shadow-sm dark:border-white/[0.065] dark:bg-[#0a0a0c]",
         className,
       )}
     >
       {(title || description || actions) && (
-        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/[0.05] px-4 py-3.5">
+        <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border/60 px-4 py-3.5 dark:border-white/[0.05]">
           <div>
             {title && (
-              <h2 className="text-sm font-medium text-white/85">{title}</h2>
+              <h2 className="text-sm font-medium text-foreground dark:text-white/85">{title}</h2>
             )}
             {description && (
-              <p className="mt-1 text-xs text-white/40">{description}</p>
+              <p className="mt-1 text-xs text-muted-foreground dark:text-white/40">{description}</p>
             )}
           </div>
           {actions}
@@ -432,20 +432,20 @@ export function EmptyState({
   return (
     <section
       className={cn(
-        "flex flex-col items-center justify-center rounded-xl border border-dashed border-white/[0.08] bg-[#0a0a0c]/60 px-6 py-14 text-center",
+        "flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/60 px-6 py-14 text-center dark:border-white/[0.08] dark:bg-[#0a0a0c]/60",
         className,
       )}
     >
       {Icon && (
-        <div className="flex size-10 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.025] text-white/40">
+        <div className="flex size-10 items-center justify-center rounded-lg border border-border bg-muted/60 text-muted-foreground dark:border-white/[0.08] dark:bg-white/[0.025] dark:text-white/40">
           <Icon className="size-5" />
         </div>
       )}
-      <h3 className={cn("text-sm font-medium text-white/90", Icon && "mt-3")}>
+      <h3 className={cn("text-sm font-medium text-foreground dark:text-white/90", Icon && "mt-3")}>
         {title}
       </h3>
       {description && (
-        <p className="mt-1.5 max-w-sm text-xs leading-5 text-white/45">
+        <p className="mt-1.5 max-w-sm text-xs leading-5 text-muted-foreground dark:text-white/45">
           {description}
         </p>
       )}
@@ -473,12 +473,12 @@ export function ErrorState({
         className,
       )}
     >
-      <div className="flex size-9 items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-400">
+      <div className="flex size-9 items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 text-red-500 dark:text-red-400">
         <AlertCircle className="size-4" />
       </div>
-      <h3 className="mt-3 text-sm font-medium text-red-300">{title}</h3>
+      <h3 className="mt-3 text-sm font-medium text-red-700 dark:text-red-300">{title}</h3>
       {message && (
-        <p className="mx-auto mt-1.5 max-w-md text-xs leading-5 text-white/50">
+        <p className="mx-auto mt-1.5 max-w-md text-xs leading-5 text-muted-foreground dark:text-white/50">
           {message}
         </p>
       )}
@@ -487,7 +487,7 @@ export function ErrorState({
           variant="outline"
           size="sm"
           onClick={onRetry}
-          className="mt-4 gap-2 border-red-500/20 text-white/80 hover:bg-red-500/10"
+          className="mt-4 gap-2 border-red-500/20 text-red-700 hover:bg-red-500/10 dark:text-white/80"
         >
           <RefreshCw className="size-3.5" />
           <span>Try again</span>
@@ -498,6 +498,13 @@ export function ErrorState({
 }
 
 /** Backward compatibility alias */
+export const AppEmptyState = EmptyState;
+export const AppErrorState = ErrorState;
+
+/* -------------------------------------------------------------------------- */
+/* AppStateSurface                                                            */
+/* -------------------------------------------------------------------------- */
+
 export function AppStateSurface({
   kind,
   title,
@@ -525,13 +532,13 @@ export function AppStateSurface({
     <section
       className={cn(
         "flex flex-col items-center justify-center rounded-xl border px-6 py-14 text-center",
-        "border-dashed border-white/[0.08] bg-[#0a0a0c]/60",
+        "border-dashed border-border bg-card/60 dark:border-white/[0.08] dark:bg-[#0a0a0c]/60",
         className,
       )}
     >
-      <h2 className="text-sm font-medium text-white/85">{title}</h2>
+      <h2 className="text-sm font-medium text-foreground dark:text-white/85">{title}</h2>
       {description && (
-        <p className="mt-1.5 max-w-md text-xs leading-5 text-white/45">
+        <p className="mt-1.5 max-w-md text-xs leading-5 text-muted-foreground dark:text-white/45">
           {description}
         </p>
       )}
@@ -556,21 +563,21 @@ export function TableSkeleton({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]",
+        "overflow-hidden rounded-xl border border-border bg-card dark:border-white/[0.065] dark:bg-[#0a0a0c]",
         className,
       )}
     >
-      <div className="border-b border-white/[0.05] bg-white/[0.02] p-3.5">
-        <Skeleton className="h-4 w-48 rounded bg-white/[0.05]" />
+      <div className="border-b border-border/60 bg-muted/30 p-3.5 dark:border-white/[0.05] dark:bg-white/[0.02]">
+        <Skeleton className="h-4 w-48 rounded bg-muted dark:bg-white/[0.05]" />
       </div>
-      <div className="divide-y divide-white/[0.04]">
+      <div className="divide-y divide-border/40 dark:divide-white/[0.04]">
         {Array.from({ length: rows }).map((_, r) => (
           <div key={r} className="flex items-center gap-4 p-4">
             {Array.from({ length: cols }).map((_, c) => (
               <Skeleton
                 key={c}
                 className={cn(
-                  "h-4 rounded bg-white/[0.04]",
+                  "h-4 rounded bg-muted dark:bg-white/[0.04]",
                   c === 0 ? "w-1/4" : c === cols - 1 ? "w-16" : "w-1/3",
                 )}
               />
@@ -603,17 +610,17 @@ export function CardGridSkeleton({
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}
-          className="rounded-xl border border-white/[0.065] bg-[#0a0a0c] p-5"
+          className="rounded-xl border border-border bg-card p-5 dark:border-white/[0.065] dark:bg-[#0a0a0c]"
         >
           <div className="flex items-center justify-between">
-            <Skeleton className="h-4 w-28 rounded bg-white/[0.05]" />
-            <Skeleton className="size-5 rounded-full bg-white/[0.05]" />
+            <Skeleton className="h-4 w-28 rounded bg-muted dark:bg-white/[0.05]" />
+            <Skeleton className="size-5 rounded-full bg-muted dark:bg-white/[0.05]" />
           </div>
-          <Skeleton className="mt-3 h-3 w-3/4 rounded bg-white/[0.03]" />
-          <Skeleton className="mt-2 h-3 w-1/2 rounded bg-white/[0.03]" />
+          <Skeleton className="mt-3 h-3 w-3/4 rounded bg-muted/60 dark:bg-white/[0.03]" />
+          <Skeleton className="mt-2 h-3 w-1/2 rounded bg-muted/60 dark:bg-white/[0.03]" />
           <div className="mt-6 flex items-center justify-between">
-            <Skeleton className="h-5 w-16 rounded bg-white/[0.04]" />
-            <Skeleton className="h-3 w-20 rounded bg-white/[0.04]" />
+            <Skeleton className="h-5 w-16 rounded bg-muted dark:bg-white/[0.04]" />
+            <Skeleton className="h-3 w-20 rounded bg-muted dark:bg-white/[0.04]" />
           </div>
         </div>
       ))}
@@ -648,11 +655,11 @@ export function LoadMoreButton({
         className="gap-2 text-xs"
       >
         <span>Load more</span>
-        <span className="font-mono text-[11px] text-white/45">
+        <span className="font-mono text-[11px] text-muted-foreground dark:text-white/45">
           ({remaining} remaining)
         </span>
       </Button>
-      <span className="text-[11px] text-white/40">
+      <span className="text-[11px] text-muted-foreground dark:text-white/40">
         Showing {loadedCount} of {totalCount} items
       </span>
     </div>

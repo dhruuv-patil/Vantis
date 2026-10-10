@@ -201,16 +201,29 @@ public class TelemetryCollector {
                         mapStatus(event.getStatus()));
 
         if (event.getStartedAt() != null
-                && event.getFinishedAt() != null) {
+                || event.getFinishedAt() != null
+                || event.getDurationMs() != null) {
 
             metric.recordTiming(
                     event.getStartedAt(),
                     event.getFinishedAt(),
                     event.getDurationMs());
+        }
 
-            metric.recordSizes(
-                    event.getInputSize(),
-                    event.getOutputSize());
+        Integer sizeOrCount = event.getItemCount() != null
+                ? event.getItemCount()
+                : event.getOutputSize();
+
+        metric.recordSizes(
+                event.getInputSize(),
+                sizeOrCount);
+
+        if (event.getOutputSignature() != null) {
+            metric.recordSignature(event.getOutputSignature());
+        }
+
+        if (event.getHttpStatus() != null) {
+            metric.recordHttpStatus(event.getHttpStatus());
         }
 
         if ("FAILED".equalsIgnoreCase(event.getStatus())

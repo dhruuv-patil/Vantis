@@ -21,12 +21,21 @@ public interface IntegrationRepository extends JpaRepository<Integration, UUID> 
 
     Optional<Integration> findByOrganizationIdAndType(UUID organizationId, String type);
 
+    Optional<Integration> findByOrganizationIdAndTypeAndName(UUID organizationId, String type, String name);
+
+    List<Integration> findAllByOrganizationIdAndType(UUID organizationId, String type);
+
     Optional<Integration> findByOrganizationIdAndTypeAndStatus(
             UUID organizationId, String type, String status);
 
     /** All integrations of a status in one org (event dispatch, sync). */
     List<Integration> findByOrganizationIdAndStatus(UUID organizationId, String status);
 
-    /** All connected integrations (for the scheduler). */
+    /** Count connected integrations in an org for billing limits. */
+    long countByOrganizationIdAndStatus(UUID organizationId, String status);
+
+    /** All connected, non-disabled integrations (for the scheduler). */
     List<Integration> findByStatus(String status);
+
+    List<Integration> findByStatusAndDisabledAtIsNull(String status);
 }

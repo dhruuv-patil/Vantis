@@ -19,6 +19,7 @@ import {
   Plug,
   Search,
   Settings,
+  ShieldAlert,
   Users,
   Workflow,
   X,
@@ -33,6 +34,7 @@ import { LogoMark } from "@/components/brand/logo";
 import { OrgSwitcher } from "@/components/app/org-switcher";
 import { NotificationsMenu } from "@/components/app/notifications-menu";
 import { CommandPalette } from "@/components/app/command-palette";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -99,6 +101,11 @@ const NAV: NavGroup[] = [
         label: "Anomalies",
         href: "/reliability",
         icon: AlertTriangle,
+      },
+      {
+        label: "Incidents",
+        href: "/incidents",
+        icon: ShieldAlert,
       },
     ],
   },
@@ -254,7 +261,7 @@ export function AppShell({
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-black">
+    <div className="flex min-h-screen bg-background text-foreground">
       {/* Desktop Sidebar */}
       <Sidebar
         collapsed={collapsed}
@@ -298,7 +305,7 @@ function Sidebar({
   return (
     <aside
       className={cn(
-        "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-white/[0.075] bg-[#0a0a0c] transition-[width] duration-200 lg:flex",
+        "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-border bg-card/95 backdrop-blur-md transition-[width] duration-200 lg:flex dark:border-white/[0.075] dark:bg-[#0a0a0c]",
         collapsed ? "w-[68px]" : "w-60"
       )}
     >
@@ -307,7 +314,7 @@ function Sidebar({
           Expanded: logo + toggle on same row
           Collapsed: logo, then toggle underneath
          ===================================================== */}
-      <div className="shrink-0 border-b border-white/[0.075]">
+      <div className="shrink-0 border-b border-border dark:border-white/[0.075]">
         <div
           className={cn(
             "flex items-center",
@@ -318,12 +325,12 @@ function Sidebar({
         >
           <Link
             href="/dashboard"
-            className="flex min-w-0 items-center gap-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20 rounded"
+            className="flex min-w-0 items-center gap-2 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/20 rounded"
           >
             <LogoMark className="!h-6 !w-6 shrink-0" />
 
             {!collapsed && (
-              <span className="truncate text-sm font-semibold tracking-tight text-white/90">
+              <span className="truncate text-sm font-semibold tracking-tight text-foreground/90 dark:text-white/90">
                 Vantis
               </span>
             )}
@@ -338,12 +345,11 @@ function Sidebar({
               aria-label="Collapse sidebar"
               className={cn(
                 "!h-7 !w-7 shrink-0 rounded-lg",
-                "border border-white/[0.08]",
-                "bg-white/[0.025]",
-                "text-white/40",
-                "hover:bg-white/[0.07]",
-                "hover:text-white/80",
-                "focus-visible:ring-1 focus-visible:ring-white/20"
+                "border border-border dark:border-white/[0.08]",
+                "bg-muted/30 dark:bg-white/[0.025]",
+                "text-muted-foreground dark:text-white/40",
+                "hover:bg-muted hover:text-foreground dark:hover:bg-white/[0.07] dark:hover:text-white/80",
+                "focus-visible:ring-1 focus-visible:ring-primary/20 dark:focus-visible:ring-white/20"
               )}
             >
               <ChevronLeft className="size-3.5" />
@@ -361,12 +367,11 @@ function Sidebar({
               aria-label="Expand sidebar"
               className={cn(
                 "!h-7 !w-7 rounded-lg",
-                "border border-white/[0.08]",
-                "bg-white/[0.025]",
-                "text-white/40",
-                "hover:bg-white/[0.07]",
-                "hover:text-white/80",
-                "focus-visible:ring-1 focus-visible:ring-white/20"
+                "border border-border dark:border-white/[0.08]",
+                "bg-muted/30 dark:bg-white/[0.025]",
+                "text-muted-foreground dark:text-white/40",
+                "hover:bg-muted hover:text-foreground dark:hover:bg-white/[0.07] dark:hover:text-white/80",
+                "focus-visible:ring-1 focus-visible:ring-primary/20 dark:focus-visible:ring-white/20"
               )}
             >
               <ChevronLeft className="size-3.5 rotate-180" />
@@ -380,7 +385,7 @@ function Sidebar({
           Keep this visible only in expanded mode.
          ===================================================== */}
       {!collapsed && (
-        <div className="shrink-0 border-b border-white/[0.075] px-3 py-2.5">
+        <div className="shrink-0 border-b border-border dark:border-white/[0.075] px-3 py-2.5">
           <OrgSwitcher collapsed={false} />
         </div>
       )}
@@ -424,11 +429,11 @@ function Sidebar({
                       href={item.href}
                       aria-current={active ? "page" : undefined}
                       className={cn(
-                        "relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20",
+                        "relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/20 dark:focus-visible:ring-white/20",
                         collapsed && "justify-center px-2.5",
                         active
-                          ? "bg-white/[0.06] text-white/90 before:absolute before:left-0 before:top-1/2 before:h-5 before:w-[2px] before:-translate-y-1/2 before:rounded-r before:bg-white/80"
-                          : "text-white/45 hover:bg-white/[0.04] hover:text-white/80"
+                          ? "bg-muted text-foreground before:absolute before:left-0 before:top-1/2 before:h-5 before:w-[2px] before:-translate-y-1/2 before:rounded-r before:bg-foreground dark:bg-white/[0.06] dark:text-white/90 dark:before:bg-white/80"
+                          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground dark:text-white/45 dark:hover:bg-white/[0.04] dark:hover:text-white/80"
                       )}
                     >
                       {inner}
@@ -482,7 +487,7 @@ function MobileDrawer({
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm transition-opacity duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <DialogPrimitive.Content
-          className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-white/[0.08] bg-[#0a0a0c] p-0 shadow-2xl transition-transform duration-200 ease-out focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left"
+          className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-border bg-card text-card-foreground p-0 shadow-2xl transition-transform duration-200 ease-out focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left dark:border-white/[0.08] dark:bg-[#0a0a0c]"
           aria-describedby={undefined}
         >
           <DialogPrimitive.Title className="sr-only">
@@ -490,32 +495,36 @@ function MobileDrawer({
           </DialogPrimitive.Title>
 
           {/* Header */}
-          <div className="flex h-12 shrink-0 items-center justify-between border-b border-white/[0.075] px-4">
+          <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-4 dark:border-white/[0.075]">
             <Link
               href="/dashboard"
               onClick={() => onOpenChange(false)}
               className="flex items-center gap-2.5"
             >
               <LogoMark className="!h-6 !w-6 shrink-0" />
-              <span className="text-sm font-semibold tracking-tight text-white/90">
+              <span className="text-sm font-semibold tracking-tight text-foreground dark:text-white/90">
                 Vantis
               </span>
             </Link>
 
-            <DialogPrimitive.Close asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-7 rounded-lg border border-white/[0.08] bg-white/[0.025] text-white/50 hover:bg-white/[0.06] hover:text-white"
-                aria-label="Close navigation"
-              >
-                <X className="size-3.5" />
-              </Button>
-            </DialogPrimitive.Close>
+            <div className="flex items-center gap-1.5">
+              <ThemeToggle />
+
+              <DialogPrimitive.Close asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7 rounded-lg border border-border bg-background/50 text-muted-foreground hover:bg-muted hover:text-foreground dark:border-white/[0.08] dark:bg-white/[0.025] dark:text-white/50 dark:hover:bg-white/[0.06] dark:hover:text-white"
+                  aria-label="Close navigation"
+                >
+                  <X className="size-3.5" />
+                </Button>
+              </DialogPrimitive.Close>
+            </div>
           </div>
 
           {/* Org Switcher */}
-          <div className="shrink-0 border-b border-white/[0.075] px-3 py-2.5">
+          <div className="shrink-0 border-b border-border px-3 py-2.5 dark:border-white/[0.075]">
             <OrgSwitcher collapsed={false} />
           </div>
 
@@ -540,10 +549,10 @@ function MobileDrawer({
                           onClick={() => onOpenChange(false)}
                           aria-current={active ? "page" : undefined}
                           className={cn(
-                            "relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20",
+                            "relative flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/20 dark:focus-visible:ring-white/20",
                             active
-                              ? "bg-white/[0.06] text-white/90 before:absolute before:left-0 before:top-1/2 before:h-5 before:w-[2px] before:-translate-y-1/2 before:rounded-r before:bg-white/80"
-                              : "text-white/45 hover:bg-white/[0.04] hover:text-white/80"
+                              ? "bg-muted text-foreground before:absolute before:left-0 before:top-1/2 before:h-5 before:w-[2px] before:-translate-y-1/2 before:rounded-r before:bg-foreground dark:bg-white/[0.06] dark:text-white/90 dark:before:bg-white/80"
+                              : "text-muted-foreground hover:bg-muted/50 hover:text-foreground dark:text-white/45 dark:hover:bg-white/[0.04] dark:hover:text-white/80"
                           )}
                         >
                           <Icon className="size-4 shrink-0 opacity-60" />
@@ -581,7 +590,7 @@ function Topbar({
   const { title, section } = getPageTitle(pathname);
 
   return (
-    <header className="sticky top-0 z-30 flex h-12 shrink-0 items-center justify-between gap-3 border-b border-white/[0.075] bg-black/80 px-4 backdrop-blur-md lg:px-6">
+    <header className="sticky top-0 z-30 flex h-12 shrink-0 items-center justify-between gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-md lg:px-6 dark:border-white/[0.075] dark:bg-black/80">
       {/* Left: Mobile hamburger + breadcrumb / page title */}
       <div className="flex items-center gap-2.5 min-w-0">
         <Button
@@ -590,7 +599,7 @@ function Topbar({
           size="icon"
           onClick={onOpenMobile}
           aria-label="Open navigation menu"
-          className="size-8 shrink-0 rounded-lg border border-white/[0.08] bg-white/[0.025] text-white/50 hover:bg-white/[0.06] hover:text-white lg:hidden focus-visible:ring-1 focus-visible:ring-white/20"
+          className="size-8 shrink-0 rounded-lg border border-border bg-background/50 text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden focus-visible:ring-1 focus-visible:ring-primary/20 dark:border-white/[0.08] dark:bg-white/[0.025] dark:text-white/50 dark:hover:bg-white/[0.06] dark:hover:text-white"
         >
           <Menu className="size-4" />
         </Button>
@@ -601,37 +610,37 @@ function Topbar({
             <>
               <Link
                 href={getSectionHref(section)}
-                className="text-white/45 transition-colors hover:text-white/80 hover:underline"
+                className="text-muted-foreground transition-colors hover:text-foreground hover:underline dark:text-white/45 dark:hover:text-white/80"
               >
                 {section}
               </Link>
-              <span className="text-white/30" aria-hidden="true">
+              <span className="text-muted-foreground/60 dark:text-white/30" aria-hidden="true">
                 /
               </span>
-              <span className="font-medium text-white/90 truncate">
+              <span className="font-medium text-foreground truncate dark:text-white/90">
                 {title}
               </span>
             </>
           ) : (
-            <span className="font-medium text-white/90 truncate">
+            <span className="font-medium text-foreground truncate dark:text-white/90">
               {title}
             </span>
           )}
         </div>
       </div>
 
-      {/* Right / Search & Notifications */}
+      {/* Right / Search & Notifications & Theme */}
       <div className="flex items-center gap-2">
         {/* Desktop full search button */}
         <button
           type="button"
           onClick={onOpenPalette}
-          className="hidden lg:flex w-72 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-1.5 text-[13px] text-white/40 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white/70 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20"
+          className="hidden lg:flex w-72 items-center gap-2 rounded-lg border border-border bg-muted/30 px-3 py-1.5 text-[13px] text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/20 dark:border-white/[0.08] dark:bg-white/[0.03] dark:text-white/40 dark:hover:bg-white/[0.06] dark:hover:text-white/70"
           title="Search and commands"
         >
           <Search className="size-3.5 shrink-0" />
           <span className="truncate">Search or jump to…</span>
-          <kbd className="ml-auto rounded-md border border-white/[0.10] bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-white/35">
+          <kbd className="ml-auto rounded-md border border-border bg-background/80 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground dark:border-white/[0.10] dark:bg-white/[0.04] dark:text-white/35">
             ⌘K
           </kbd>
         </button>
@@ -643,10 +652,12 @@ function Topbar({
           size="icon"
           onClick={onOpenPalette}
           aria-label="Search and commands (⌘K)"
-          className="flex lg:hidden size-8 rounded-lg border border-white/[0.08] bg-white/[0.025] text-white/50 hover:bg-white/[0.06] hover:text-white focus-visible:ring-1 focus-visible:ring-white/20"
+          className="flex lg:hidden size-8 rounded-lg border border-border bg-background/50 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-1 focus-visible:ring-primary/20 dark:border-white/[0.08] dark:bg-white/[0.025] dark:text-white/50 dark:hover:bg-white/[0.06] dark:hover:text-white"
         >
           <Search className="size-4" />
         </Button>
+
+        <ThemeToggle />
 
         <NotificationsMenu />
       </div>
@@ -678,25 +689,25 @@ function UserBlock({
   }
 
   return (
-    <div className="border-t border-white/[0.075] p-2.5">
+    <div className="border-t border-border p-2.5 dark:border-white/[0.075]">
       <DropdownMenu>
         <DropdownMenuTrigger
           className={cn(
-            "flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-[13px] transition-colors duration-150 hover:bg-white/[0.04] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20",
+            "flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-[13px] transition-colors duration-150 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary/20 dark:hover:bg-white/[0.04]",
             collapsed && "justify-center px-0"
           )}
         >
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white/[0.06] text-[10px] font-semibold text-white/70">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted font-semibold text-[10px] text-foreground dark:bg-white/[0.06] dark:text-white/70">
             {initialsFrom(user.fullName)}
           </span>
 
           {!collapsed && (
             <span className="min-w-0 flex-1">
-              <span className="block truncate font-medium text-white/80">
+              <span className="block truncate font-medium text-foreground dark:text-white/80">
                 {user.fullName}
               </span>
 
-              <span className="block truncate text-[11px] text-white/40">
+              <span className="block truncate text-[11px] text-muted-foreground dark:text-white/40">
                 {role}
               </span>
             </span>
@@ -706,14 +717,14 @@ function UserBlock({
         <DropdownMenuContent
           align={collapsed ? "center" : "end"}
           side="top"
-          className="w-56 border-white/[0.08] bg-[#0a0a0c]"
+          className="w-56 border-border bg-popover text-popover-foreground shadow-xl dark:border-white/[0.08] dark:bg-[#0a0a0c]"
         >
           <DropdownMenuLabel className="font-normal">
-            <span className="block truncate font-medium text-white/80">
+            <span className="block truncate font-medium text-foreground dark:text-white/80">
               {user.fullName}
             </span>
 
-            <span className="block truncate text-xs text-white/40">
+            <span className="block truncate text-xs text-muted-foreground dark:text-white/40">
               {user.email}
             </span>
           </DropdownMenuLabel>
@@ -725,9 +736,9 @@ function UserBlock({
               onNavigate?.();
               router.push("/settings");
             }}
-            className="gap-2 cursor-pointer text-white/70 focus:text-white"
+            className="gap-2 cursor-pointer text-foreground/80 focus:text-foreground dark:text-white/70 dark:focus:text-white"
           >
-            <Settings className="size-4 text-white/50" />
+            <Settings className="size-4 text-muted-foreground dark:text-white/50" />
             Settings
           </DropdownMenuItem>
 
@@ -736,9 +747,9 @@ function UserBlock({
               onNavigate?.();
               router.push("/team");
             }}
-            className="gap-2 cursor-pointer text-white/70 focus:text-white"
+            className="gap-2 cursor-pointer text-foreground/80 focus:text-foreground dark:text-white/70 dark:focus:text-white"
           >
-            <Users className="size-4 text-white/50" />
+            <Users className="size-4 text-muted-foreground dark:text-white/50" />
             Team & Members
           </DropdownMenuItem>
 

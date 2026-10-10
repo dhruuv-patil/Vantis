@@ -87,11 +87,15 @@ import type {
   WorkflowHealth,
   WorkflowHealthResponse,
   WorkflowMetrics,
-  WorkflowMetricsResponse,
   AIInvestigationResult,
   InvestigateRequest,
   InvestigateResponse,
   SendTestResult,
+
+  // Incidents
+  Incident,
+  IncidentStatus,
+  IncidentsResponse,
 
   // Billing
   BillingCurrencyResponse,
@@ -101,6 +105,19 @@ import type {
   PlanId,
   SubscriptionRecord,
   WorkspaceUsageData,
+  PlanLimitDetail,
+  SubscriptionSummaryResponse,
+  BillingInvoice,
+  BillingStatusResponse,
+  FoundingOfferResponse,
+  CheckoutResponse,
+  PortalResponse,
+  ChangePlanResponse,
+  CancelSubscriptionResponse,
+  ResumeSubscriptionResponse,
+  RegisterResponse,
+  VerifyEmailResponse,
+  ResendVerificationResponse,
 } from "@/types";
 
 export const API_BASE_URL =
@@ -116,6 +133,8 @@ const NO_REFRESH_PATHS = [
   // stale-token refresh trigger.
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
+  "/api/auth/verify-email",
+  "/api/auth/resend-verification",
 ];
 
 /** 401 codes that are terminal: clear the store and go to /login, never retry. */
@@ -179,6 +198,18 @@ export function getErrorCode(error: unknown): ErrorCode | null {
 }
 
 /**
+ * Machine-readable details for PLAN_LIMIT_EXCEEDED errors.
+ * Never requires clients to parse human-facing message strings.
+ */
+export function getPlanLimitDetail(error: unknown): PlanLimitDetail | null {
+  const envelope = getApiError(error);
+  if (envelope?.code === "PLAN_LIMIT_EXCEEDED" && envelope.details) {
+    return envelope.details;
+  }
+  return null;
+}
+
+/**
  * A human-readable message safe to show in a toast. Falls back to a generic
  * line for transport-level failures, which carry no server message.
  */
@@ -192,6 +223,20 @@ export function getErrorMessage(
 
   if (axios.isAxiosError(error) && !error.response) {
     return "Cannot reach the Vantis API. Check that the server is running.";
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof (error as any).message === "string" &&
+    (error as any).message.trim().length > 0
+  ) {
+    return (error as any).message;
   }
 
   return fallback;
@@ -389,17 +434,20 @@ export interface LoginPayload {
   password: string;
 }
 
-/** `POST /api/auth/register` → 201 `AuthResponse` + refresh cookie. */
+/**
+ * `POST /api/auth/register` → 201 `RegisterResponse`.
+ *
+ * Registration no longer issues a session. The user must verify their email
+ * before they can log in. Callers should redirect to `/check-email` on success.
+ */
 export async function register(
   payload: RegisterPayload,
-): Promise<AuthResponse> {
-  const { data } = await api.post<AuthResponse>(
+): Promise<RegisterResponse> {
+  const { data } = await api.post<RegisterResponse>(
     "/api/auth/register",
     payload,
   );
-
-  useAuthStore.getState().setAuth(data);
-
+  // No setAuth — an unverified account must not gain access.
   return data;
 }
 
@@ -440,6 +488,39 @@ export async function resetPassword(payload: { token: string; newPassword: strin
   await api.post("/api/auth/reset-password", payload);
 }
 
+/**
+ * `POST /api/auth/verify-email` → 200 `VerifyEmailResponse`.
+ *
+ * Validates the single-use token from the email link and marks the account as
+ * verified. Safe to call even if the token has already been consumed (returns
+ * a `VERIFICATION_TOKEN_INVALID` error in that case).
+ */
+export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
+  const { data } = await api.post<VerifyEmailResponse>(
+    "/api/auth/verify-email",
+    { token },
+  );
+  return data;
+}
+
+/**
+ * `POST /api/auth/resend-verification` → 200 `ResendVerificationResponse`.
+ *
+ * Requests a fresh verification email for the given address. Always returns a
+ * generic success response regardless of whether the address is registered, to
+ * prevent email enumeration.
+ */
+export async function resendVerification(
+  email: string,
+): Promise<ResendVerificationResponse> {
+  const { data } = await api.post<ResendVerificationResponse>(
+    "/api/auth/resend-verification",
+    { email },
+  );
+  return data;
+}
+
+
 /** `GET /api/organizations` → every org the authenticated user belongs to. */
 export async function fetchOrganizations(): Promise<OrganizationsResponse> {
   const { data } =
@@ -468,6 +549,19 @@ export async function renameCurrentOrganization(
     await api.patch<CurrentOrganizationResponse>(
       "/api/organizations/current",
       { name },
+    );
+
+  return data;
+}
+
+/** `POST /api/organizations` → creates a new organization. */
+export async function createOrganization(payload: {
+  organizationName: string;
+}): Promise<CreateOrganizationResponse> {
+  const { data } =
+    await api.post<CreateOrganizationResponse>(
+      "/api/organizations",
+      payload,
     );
 
   return data;
@@ -1433,6 +1527,53 @@ export async function fetchRecoveryStatus(
   return data.snapshot;
 }
 
+/* ------------------------------------------------------------ incidents */
+
+/** `GET /api/incidents`. */
+export async function fetchIncidents(params?: {
+  workflowId?: string;
+  status?: IncidentStatus;
+}): Promise<Incident[]> {
+  const { data } = await api.get<Incident[]>(
+    "/api/incidents",
+    {
+      params: {
+        workflowId: params?.workflowId || undefined,
+        status: params?.status || undefined,
+      },
+    },
+  );
+
+  return data;
+}
+
+/** `GET /api/incidents/{id}`. */
+export async function fetchIncident(id: string): Promise<Incident> {
+  const { data } = await api.get<Incident>(
+    `/api/incidents/${id}`,
+  );
+
+  return data;
+}
+
+/** `POST /api/incidents/{id}/acknowledge`. */
+export async function acknowledgeIncident(id: string): Promise<Incident> {
+  const { data } = await api.post<Incident>(
+    `/api/incidents/${id}/acknowledge`,
+  );
+
+  return data;
+}
+
+/** `POST /api/incidents/{id}/resolve`. */
+export async function resolveIncident(id: string): Promise<Incident> {
+  const { data } = await api.post<Incident>(
+    `/api/incidents/${id}/resolve`,
+  );
+
+  return data;
+}
+
 /* ------------------------------------------------------------------ billing */
 
 export async function fetchBillingState(params?: {
@@ -1496,35 +1637,102 @@ export async function fetchBillingCurrency(country?: string): Promise<BillingCur
 }
 
 export async function createBillingCheckout(payload: {
-  workspaceId: string;
-  plan: PlanId;
-  interval: BillingInterval;
+  workspaceId?: string;
+  plan: string;
+  interval: string;
+  currency?: string;
   successUrl?: string;
   cancelUrl?: string;
-}): Promise<{ sessionId: string; url?: string; status: string; message?: string }> {
-  const res = await fetch("/api/billing/checkout", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message || "Checkout unavailable");
+}): Promise<CheckoutResponse> {
+  try {
+    const { data } = await api.post<CheckoutResponse>("/api/billing/checkout", payload);
+    return data;
+  } catch (err) {
+    const res = await fetch("/api/billing/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || "Checkout unavailable");
+    }
+    return {
+      sessionId: data.sessionId,
+      checkoutUrl: data.url || data.checkoutUrl,
+      provider: data.provider || "noop",
+      status: data.status,
+      message: data.message,
+    };
   }
-  return data;
 }
 
 export async function cancelBillingSubscription(
-  subscriptionId: string,
-): Promise<SubscriptionRecord> {
-  const res = await fetch("/api/billing/cancel", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ subscriptionId }),
-  });
-  const data = await res.json();
-  if (!res.ok) {
-    throw new Error(data.message || "Cancellation unavailable");
+  subscriptionIdOrOptions?: string | { atPeriodEnd?: boolean },
+): Promise<CancelSubscriptionResponse> {
+  const atPeriodEnd = typeof subscriptionIdOrOptions === "object" ? subscriptionIdOrOptions.atPeriodEnd : true;
+  try {
+    const { data } = await api.post<CancelSubscriptionResponse>("/api/billing/cancel", { atPeriodEnd });
+    return data;
+  } catch (err) {
+    const res = await fetch("/api/billing/cancel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subscriptionId: typeof subscriptionIdOrOptions === "string" ? subscriptionIdOrOptions : undefined,
+        atPeriodEnd,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || "Cancellation unavailable");
+    }
+    return {
+      status: data.status || "CANCELED",
+      cancelAtPeriodEnd: atPeriodEnd ?? true,
+      message: data.message || "Subscription cancelled",
+    };
   }
+}
+
+export async function fetchBillingSubscription(): Promise<SubscriptionSummaryResponse> {
+  const { data } = await api.get<SubscriptionSummaryResponse>("/api/billing/subscription");
+  return data;
+}
+
+export async function fetchBillingStatus(): Promise<BillingStatusResponse> {
+  const { data } = await api.get<BillingStatusResponse>("/api/billing/status");
+  return data;
+}
+
+export async function fetchBillingInvoices(): Promise<BillingInvoice[]> {
+  try {
+    const { data } = await api.get<BillingInvoice[]>("/api/billing/invoices");
+    return data;
+  } catch {
+    return [];
+  }
+}
+
+export async function createBillingPortalSession(returnUrl?: string): Promise<PortalResponse> {
+  const { data } = await api.post<PortalResponse>("/api/billing/portal", { returnUrl });
+  return data;
+}
+
+export async function changeBillingPlan(payload: {
+  plan: string;
+  interval?: string;
+}): Promise<ChangePlanResponse> {
+  const { data } = await api.post<ChangePlanResponse>("/api/billing/change-plan", payload);
+  return data;
+}
+
+export async function resumeBillingSubscription(): Promise<ResumeSubscriptionResponse> {
+  const { data } = await api.post<ResumeSubscriptionResponse>("/api/billing/resume", {});
+  return data;
+}
+
+export async function claimFoundingOffer(): Promise<FoundingOfferResponse> {
+  const { data } = await api.post<FoundingOfferResponse>("/api/billing/founding-offer", {});
   return data;
 }

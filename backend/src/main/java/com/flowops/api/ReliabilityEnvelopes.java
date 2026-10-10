@@ -208,14 +208,41 @@ public final class ReliabilityEnvelopes {
             double confidence,
             boolean configured,
             String model,
-            Instant generatedAt) {
+            Instant generatedAt,
+            List<String> evidenceCitations,
+            String suggestedFix,
+            List<String> verificationChecklist,
+            boolean fallback) {
+
+        public AIInvestigationResult(
+                String summary,
+                List<LikelyCause> likelyCauses,
+                List<EvidenceItem> evidence,
+                String impact,
+                List<RecommendedAction> recommendedActions,
+                double confidence,
+                boolean configured,
+                String model,
+                Instant generatedAt) {
+            this(summary, likelyCauses, evidence, impact, recommendedActions, confidence, configured, model, generatedAt,
+                    List.of(), null, List.of(), false);
+        }
     }
 
     public record LikelyCause(
             String cause,
             String category,
             double confidence,
-            String uncertainty) {
+            String uncertainty,
+            List<String> citations) {
+
+        public LikelyCause(
+                String cause,
+                String category,
+                double confidence,
+                String uncertainty) {
+            this(cause, category, confidence, uncertainty, List.of());
+        }
     }
 
     public record EvidenceItem(

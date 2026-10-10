@@ -42,11 +42,14 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "AI")
 public class AiController {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(AiController.class);
+
     private final AiServiceClient aiService;
     private final NodeRegistry nodeRegistry;
     private final ObjectMapper mapper;
     private final RateLimiter rateLimiter;
-    private final com.flowops.billing.BillingService billingService;
+    private final com.flowops.billing.service.EntitlementService entitlementService;
+    private final com.flowops.workflow.validation.WorkflowValidator validator;
 
     @org.springframework.beans.factory.annotation.Autowired
     public AiController(
@@ -54,12 +57,23 @@ public class AiController {
             NodeRegistry nodeRegistry,
             ObjectMapper mapper,
             RateLimiter rateLimiter,
-            com.flowops.billing.BillingService billingService) {
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.flowops.billing.service.EntitlementService entitlementService,
+            com.flowops.workflow.validation.WorkflowValidator validator) {
         this.aiService = aiService;
         this.nodeRegistry = nodeRegistry;
         this.mapper = mapper;
         this.rateLimiter = rateLimiter;
-        this.billingService = billingService;
+        this.entitlementService = entitlementService;
+        this.validator = validator != null ? validator : new com.flowops.workflow.validation.WorkflowValidator(nodeRegistry, mapper);
+    }
+
+    public AiController(
+            AiServiceClient aiService,
+            NodeRegistry nodeRegistry,
+            ObjectMapper mapper,
+            RateLimiter rateLimiter,
+            com.flowops.billing.service.EntitlementService entitlementService) {
+        this(aiService, nodeRegistry, mapper, rateLimiter, entitlementService, null);
     }
 
     public AiController(
@@ -67,40 +81,63 @@ public class AiController {
             NodeRegistry nodeRegistry,
             ObjectMapper mapper,
             RateLimiter rateLimiter) {
-        this(aiService, nodeRegistry, mapper, rateLimiter, null);
+        this(aiService, nodeRegistry, mapper, rateLimiter, (com.flowops.billing.service.EntitlementService) null, null);
     }
 
     @PostMapping(path = "/generate-workflow", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Turn a natural-language prompt into a draft workflow graph")
-    public GenerateWorkflowResponse generate(@Valid @RequestBody GenerateWorkflowRequest request) {
+    public GenerateWorkflowResponse generate(
+            @Valid @RequestBody GenerateWorkflowRequest request,
+            jakarta.servlet.http.HttpServletRequest servletRequest) {
         // Authenticated tenant context is required even though generation is stateless.
         FlowOpsPrincipal principal = AuthenticatedUser.requireRole(Role.MEMBER);
         rateLimiter.check("ai:generate:" + principal.userId(), 20, Duration.ofMinutes(1));
-        if (billingService != null) {
-            billingService.assertCanGenerateAi(principal.organizationId());
+
+        com.flowops.billing.model.ExecutionReservationTicket ticket = com.flowops.billing.model.ExecutionReservationTicket.notReserved();
+        if (entitlementService != null) {
+            ticket = entitlementService.reserveAiGeneration(principal.organizationId());
         }
 
-        AiServiceClient.Generation generation = aiService.generateWorkflow(request.prompt());
-        if (!generation.configured()) {
-            throw new ApiException(ErrorCode.AI_NOT_CONFIGURED);
-        }
+        boolean succeeded = false;
+        try {
+            String requestId = com.flowops.common.error.RequestIdFilter.currentRequestId(servletRequest);
+            log.info("Starting workflow generation requestId={} promptLength={}",
+                    requestId, request.prompt() != null ? request.prompt().length() : 0);
 
-        ObjectNode graph = sanitizeGraph(generation.graph());
-        if (graph.get("nodes").size() == 0) {
-            throw new ApiException(ErrorCode.AI_GENERATION_FAILED);
-        }
+            AiServiceClient.Generation generation = aiService.generateWorkflow(request.prompt());
 
-        if (billingService != null) {
-            billingService.recordAiUsage(
-                    principal.organizationId(),
-                    "AI_WORKFLOW_GENERATION",
-                    1,
-                    request.prompt() != null && request.prompt().length() > 100
-                            ? request.prompt().substring(0, 100)
-                            : request.prompt());
-        }
+            if (!generation.configured()) {
+                log.info("AI service reported not configured. requestId={}", requestId);
+                throw new ApiException(ErrorCode.AI_NOT_CONFIGURED);
+            }
 
-        return new GenerateWorkflowResponse(graph, generation.notes());
+            if (generation.graph() == null || generation.graph().isNull()) {
+                log.warn("AI service returned empty/null graph. requestId={}", requestId);
+                throw new ApiException(ErrorCode.AI_GENERATION_FAILED);
+            }
+
+            // Reshape and position graph for the canvas
+            ObjectNode graph = sanitizeGraph(generation.graph());
+            if (!graph.hasNonNull("nodes") || graph.get("nodes").isEmpty()) {
+                log.warn("Sanitized graph produced 0 valid nodes. requestId={}", requestId);
+                throw new ApiException(ErrorCode.AI_GENERATION_FAILED);
+            }
+
+            log.info("Workflow generation succeeded: nodes={} edges={} requestId={}",
+                    graph.get("nodes").size(), graph.get("edges").size(), requestId);
+
+            GenerateWorkflowResponse response = new GenerateWorkflowResponse(graph, generation.notes());
+            succeeded = true;
+            return response;
+        } finally {
+            if (!succeeded && ticket.reserved() && entitlementService != null) {
+                entitlementService.refundAiGeneration(principal.organizationId(), ticket);
+            }
+        }
+    }
+
+    public GenerateWorkflowResponse generate(GenerateWorkflowRequest request) {
+        return generate(request, null);
     }
 
     /**
@@ -135,12 +172,24 @@ public class AiController {
                 outNode.put("id", id);
                 outNode.put("type", type);
                 ObjectNode position = outNode.putObject("position");
-                position.put("x", 160);
-                position.put("y", 80 + index * 140);
+                if (node.has("position") && node.get("position").isObject()
+                        && node.get("position").has("x") && node.get("position").has("y")) {
+                    position.set("x", node.get("position").get("x"));
+                    position.set("y", node.get("position").get("y"));
+                } else {
+                    position.put("x", 160);
+                    position.put("y", 80 + index * 140);
+                }
                 ObjectNode data = outNode.putObject("data");
                 String label = text(node, "label");
+                if (label == null || label.isBlank()) {
+                    label = node.has("data") ? text(node.get("data"), "label") : null;
+                }
                 data.put("label", label == null || label.isBlank() ? definition.get().label() : label);
-                data.set("config", sanitizeConfig(definition.get(), node.get("config")));
+                JsonNode rawConfig = node.has("data") && node.get("data").has("config")
+                        ? node.get("data").get("config")
+                        : node.get("config");
+                data.set("config", sanitizeConfig(definition.get(), rawConfig));
                 index++;
             }
         }
@@ -164,7 +213,8 @@ public class AiController {
                     continue;
                 }
                 ObjectNode outEdge = outEdges.addObject();
-                outEdge.put("id", "e" + (seq++) + "-" + source + "-" + target);
+                String edgeId = text(edge, "id");
+                outEdge.put("id", edgeId != null && !edgeId.isBlank() ? edgeId : ("e" + (seq++) + "-" + source + "-" + target));
                 outEdge.put("source", source);
                 outEdge.put("target", target);
                 if (handle != null && !handle.isBlank()) {

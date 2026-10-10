@@ -67,27 +67,27 @@ const SEVERITY_CONFIG: Record<
 > = {
   LOW: {
     label: "Low",
-    bar: "bg-emerald-400/60",
-    dot: "bg-emerald-400",
-    text: "text-emerald-300",
+    bar: "bg-emerald-500/60 dark:bg-emerald-400/60",
+    dot: "bg-emerald-500 dark:bg-emerald-400",
+    text: "text-emerald-700 dark:text-emerald-300",
   },
   MEDIUM: {
     label: "Medium",
-    bar: "bg-amber-400/60",
-    dot: "bg-amber-400",
-    text: "text-amber-300",
+    bar: "bg-amber-500/60 dark:bg-amber-400/60",
+    dot: "bg-amber-500 dark:bg-amber-400",
+    text: "text-amber-700 dark:text-amber-300",
   },
   HIGH: {
     label: "High",
-    bar: "bg-orange-400/70",
-    dot: "bg-orange-400",
-    text: "text-orange-300",
+    bar: "bg-orange-500/70 dark:bg-orange-400/70",
+    dot: "bg-orange-500 dark:bg-orange-400",
+    text: "text-orange-700 dark:text-orange-300",
   },
   CRITICAL: {
     label: "Critical",
-    bar: "bg-red-400/80",
-    dot: "bg-red-400",
-    text: "text-red-300",
+    bar: "bg-red-500/80 dark:bg-red-400/80",
+    dot: "bg-red-500 dark:bg-red-400",
+    text: "text-red-700 dark:text-red-300",
   },
 };
 
@@ -95,24 +95,24 @@ const STATUS_CONFIG: Record<AnomalyStatus, { label: string; className: string }>
   {
     OPEN: {
       label: "Open",
-      className: "border-sky-400/20 bg-sky-400/[0.07] text-sky-300",
+      className: "border-sky-500/20 bg-sky-500/10 text-sky-700 dark:border-sky-400/20 dark:bg-sky-400/[0.07] dark:text-sky-300",
     },
     ACKNOWLEDGED: {
       label: "Acknowledged",
-      className: "border-violet-400/20 bg-violet-400/[0.07] text-violet-300",
+      className: "border-violet-500/20 bg-violet-500/10 text-violet-700 dark:border-violet-400/20 dark:bg-violet-400/[0.07] dark:text-violet-300",
     },
     VERIFYING_RECOVERY: {
       label: "Verifying recovery",
-      className: "border-amber-400/20 bg-amber-400/[0.07] text-amber-300",
+      className: "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:border-amber-400/20 dark:bg-amber-400/[0.07] dark:text-amber-300",
     },
     RESOLVED: {
       label: "Resolved",
       className:
-        "border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-300",
+        "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/[0.07] dark:text-emerald-300",
     },
     FALSE_POSITIVE: {
       label: "False positive",
-      className: "border-white/[0.10] bg-white/[0.035] text-white/50",
+      className: "border-border bg-muted/50 text-muted-foreground dark:border-white/[0.10] dark:bg-white/[0.035] dark:text-white/50",
     },
   };
 
@@ -153,8 +153,8 @@ function MetaChip({ children }: { children: React.ReactNode }) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md border border-white/[0.08]",
-        "bg-white/[0.025] px-2 py-1 text-[11px] leading-none text-white/60",
+        "inline-flex items-center rounded-md border border-border dark:border-white/[0.08]",
+        "bg-muted/40 dark:bg-white/[0.025] px-2 py-1 text-[11px] leading-none text-muted-foreground dark:text-white/60",
       )}
     >
       {children}
@@ -165,12 +165,12 @@ function MetaChip({ children }: { children: React.ReactNode }) {
 function RowSkeleton() {
   return (
     <div className="flex items-center gap-4 px-5 py-4">
-      <Skeleton className="h-10 w-1 rounded-full bg-white/[0.06]" />
+      <Skeleton className="h-10 w-1 rounded-full bg-muted dark:bg-white/[0.06]" />
       <div className="flex-1 space-y-2">
-        <Skeleton className="h-4 w-56 bg-white/[0.06]" />
-        <Skeleton className="h-3 w-80 max-w-full bg-white/[0.04]" />
+        <Skeleton className="h-4 w-56 bg-muted dark:bg-white/[0.06]" />
+        <Skeleton className="h-3 w-80 max-w-full bg-muted/60 dark:bg-white/[0.04]" />
       </div>
-      <Skeleton className="h-6 w-20 bg-white/[0.06]" />
+      <Skeleton className="h-6 w-20 bg-muted dark:bg-white/[0.06]" />
     </div>
   );
 }
@@ -282,10 +282,10 @@ export function WorkflowAnomaliesView({
       {/* Toolbar */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-white">
+          <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-foreground dark:text-white">
             Anomalies
           </h2>
-          <p className="mt-1 text-xs text-white/40">
+          <p className="mt-1 text-xs text-muted-foreground dark:text-white/40">
             {loading
               ? "Loading anomalies…"
               : `${filtered.length} of ${anomalies.length} shown, ${openCount} open`}
@@ -294,16 +294,16 @@ export function WorkflowAnomaliesView({
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-white/40" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60 dark:text-white/40" />
             <Input
               placeholder="Search anomalies…"
               aria-label="Search anomalies"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={cn(
-                "h-9 border-white/[0.08] bg-white/[0.025] pl-9 pr-8 text-[13px]",
-                "placeholder:text-white/45",
-                "focus-visible:border-white/[0.16] focus-visible:ring-0",
+                "h-9 border-input bg-background/50 dark:border-white/[0.08] dark:bg-white/[0.025] pl-9 pr-8 text-[13px]",
+                "placeholder:text-muted-foreground dark:placeholder:text-white/45",
+                "focus-visible:border-foreground/30 dark:focus-visible:border-white/[0.16] focus-visible:ring-0",
                 "focus-visible:ring-offset-0",
               )}
             />
@@ -312,7 +312,7 @@ export function WorkflowAnomaliesView({
                 type="button"
                 onClick={() => setSearchTerm("")}
                 aria-label="Clear search"
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-white/40 hover:text-white"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground/60 hover:text-foreground dark:text-white/40 dark:hover:text-white"
               >
                 <X className="size-3.5" />
               </button>
@@ -323,13 +323,13 @@ export function WorkflowAnomaliesView({
             <SelectTrigger
               aria-label="Filter by status"
               className={cn(
-                "h-9 w-[180px] border-white/[0.08] bg-white/[0.025] text-[13px]",
+                "h-9 w-[180px] border-input bg-background/50 dark:border-white/[0.08] dark:bg-white/[0.025] text-[13px]",
                 "focus:ring-0 focus:ring-offset-0",
               )}
             >
               <SelectValue placeholder="All statuses" />
             </SelectTrigger>
-            <SelectContent className="border-white/[0.08] bg-[#0f0f0f]">
+            <SelectContent className="border-border bg-popover dark:border-white/[0.08] dark:bg-[#0f0f0f]">
               {STATUS_FILTERS.map((f) => (
                 <SelectItem key={f.value} value={f.value}>
                   {f.label}
@@ -346,18 +346,18 @@ export function WorkflowAnomaliesView({
           role="alert"
           className={cn(
             "flex items-center justify-between gap-4 rounded-xl border",
-            "border-red-400/20 bg-red-400/[0.05] px-4 py-3",
+            "border-red-500/20 bg-red-500/10 dark:border-red-400/20 dark:bg-red-400/[0.05] px-4 py-3",
           )}
         >
           <div className="flex items-center gap-3">
-            <AlertTriangle className="size-4 shrink-0 text-red-300" />
-            <p className="text-sm text-red-200">{error}</p>
+            <AlertTriangle className="size-4 shrink-0 text-red-500 dark:text-red-300" />
+            <p className="text-sm text-red-700 dark:text-red-200">{error}</p>
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={() => void load()}
-            className="h-8 gap-1.5 border-white/[0.12] bg-transparent text-white hover:bg-white/[0.08] hover:text-white"
+            className="h-8 gap-1.5 border-border bg-transparent text-foreground hover:bg-muted hover:text-foreground dark:border-white/[0.12] dark:text-white dark:hover:bg-white/[0.08] dark:hover:text-white"
           >
             <RotateCw className="size-3.5" />
             Retry
@@ -368,12 +368,12 @@ export function WorkflowAnomaliesView({
       {/* List */}
       <div
         className={cn(
-          "overflow-hidden rounded-xl border border-white/[0.07]",
-          "bg-[#0a0a0a]",
+          "overflow-hidden rounded-xl border border-border dark:border-white/[0.07]",
+          "bg-card dark:bg-[#0a0a0a]",
         )}
       >
         {loading ? (
-          <div className="divide-y divide-white/[0.06]">
+          <div className="divide-y divide-border dark:divide-white/[0.06]">
             {Array.from({ length: 4 }).map((_, i) => (
               <RowSkeleton key={i} />
             ))}
@@ -383,19 +383,19 @@ export function WorkflowAnomaliesView({
             <div
               className={cn(
                 "mb-4 flex size-12 items-center justify-center rounded-xl",
-                "border border-white/[0.08] bg-white/[0.03]",
+                "border border-border dark:border-white/[0.08] bg-muted/40 dark:bg-white/[0.03]",
               )}
             >
               {hasFilters ? (
-                <Search className="size-5 text-white/40" />
+                <Search className="size-5 text-muted-foreground dark:text-white/40" />
               ) : (
-                <ShieldCheck className="size-5 text-emerald-300/80" />
+                <ShieldCheck className="size-5 text-emerald-600 dark:text-emerald-300/80" />
               )}
             </div>
-            <p className="text-sm font-medium text-white/90">
+            <p className="text-sm font-medium text-foreground dark:text-white/90">
               {hasFilters ? "No anomalies match your filters" : "No anomalies detected"}
             </p>
-            <p className="mt-1 max-w-sm text-xs leading-relaxed text-white/40">
+            <p className="mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground dark:text-white/40">
               {hasFilters
                 ? "Try a different search term or status."
                 : "Anomalies appear here once enough runs have been recorded to build a baseline."}
@@ -408,14 +408,14 @@ export function WorkflowAnomaliesView({
                   setSearchTerm("");
                   setStatusFilter("ALL");
                 }}
-                className="mt-4 h-8 text-white/60 hover:bg-white/[0.06] hover:text-white"
+                className="mt-4 h-8 text-muted-foreground hover:bg-muted hover:text-foreground dark:text-white/60 dark:hover:bg-white/[0.06] dark:hover:text-white"
               >
                 Clear filters
               </Button>
             )}
           </div>
         ) : (
-          <ul className="divide-y divide-white/[0.06]">
+          <ul className="divide-y divide-border dark:divide-white/[0.06]">
             {filtered.map((anomaly) => (
               <AnomalyRow
                 key={anomaly.id}
@@ -436,7 +436,7 @@ export function WorkflowAnomaliesView({
           if (!open) closeFalsePositiveDialog();
         }}
       >
-        <DialogContent className="border-white/[0.08] bg-[#0c0c0c]">
+        <DialogContent className="border-border bg-card dark:border-white/[0.08] dark:bg-[#0c0c0c]">
           <DialogHeader>
             <DialogTitle>Mark as false positive</DialogTitle>
             <DialogDescription>
@@ -446,7 +446,7 @@ export function WorkflowAnomaliesView({
           </DialogHeader>
 
           <div className="space-y-2">
-            <Label htmlFor="fp-reason" className="text-[13px] text-white/70">
+            <Label htmlFor="fp-reason" className="text-[13px] text-foreground/80 dark:text-white/70">
               Reason
             </Label>
             <Input
@@ -460,7 +460,7 @@ export function WorkflowAnomaliesView({
                 }
               }}
               placeholder="e.g. Expected during deploy window"
-              className="h-9 border-white/[0.08] bg-white/[0.025] text-[13px] focus-visible:ring-0"
+              className="h-9 border-input bg-background/50 dark:border-white/[0.08] dark:bg-white/[0.025] text-[13px] focus-visible:ring-0"
             />
           </div>
 
@@ -469,7 +469,7 @@ export function WorkflowAnomaliesView({
               type="button"
               variant="ghost"
               onClick={closeFalsePositiveDialog}
-              className="text-white/60 hover:bg-white/[0.06] hover:text-white"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground dark:text-white/60 dark:hover:bg-white/[0.06] dark:hover:text-white"
             >
               Cancel
             </Button>
@@ -477,7 +477,7 @@ export function WorkflowAnomaliesView({
               type="button"
               onClick={() => void submitFalsePositive()}
               disabled={!falsePositiveReason.trim() || actionPending}
-              className="gap-1.5 bg-white text-black hover:bg-white/90 disabled:bg-white/[0.08] disabled:text-white/25"
+              className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 dark:bg-white dark:text-black dark:hover:bg-white/90 disabled:opacity-50 dark:disabled:bg-white/[0.08] dark:disabled:text-white/25"
             >
               {actionPending && <Loader2 className="size-3.5 animate-spin" />}
               {actionPending ? "Saving" : "Mark as false positive"}
@@ -509,7 +509,7 @@ function AnomalyRow({
   const canAct = anomaly.status === "OPEN" || anomaly.status === "ACKNOWLEDGED";
 
   return (
-    <li className="group relative transition-colors hover:bg-white/[0.02]">
+    <li className="group relative transition-colors hover:bg-muted/40 dark:hover:bg-white/[0.02]">
       {/* Severity accent */}
       <span
         aria-hidden
@@ -530,7 +530,7 @@ function AnomalyRow({
               {severity.label}
             </span>
 
-            <span className="text-sm font-medium text-white/90">
+            <span className="text-sm font-medium text-foreground dark:text-white/90">
               {humanize(anomaly.type)} anomaly
             </span>
 
@@ -538,35 +538,35 @@ function AnomalyRow({
           </div>
 
           {/* Context row */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-white/40">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground dark:text-white/40">
             <Link
               href={`/workflows/${anomaly.workflowId}`}
-              className="max-w-[260px] truncate text-white/60 hover:text-white hover:underline"
+              className="max-w-[260px] truncate text-foreground/80 hover:text-foreground hover:underline dark:text-white/60 dark:hover:text-white"
             >
               {anomaly.workflowName}
             </Link>
 
             {anomaly.nodeId && (
               <>
-                <span aria-hidden className="text-white/20">/</span>
+                <span aria-hidden className="text-muted-foreground/40 dark:text-white/20">/</span>
                 <span className="font-mono">{anomaly.nodeId}</span>
               </>
             )}
 
             {anomaly.nodeType && (
               <>
-                <span aria-hidden className="text-white/20">/</span>
+                <span aria-hidden className="text-muted-foreground/40 dark:text-white/20">/</span>
                 <span>{humanize(anomaly.nodeType)}</span>
               </>
             )}
 
-            <span aria-hidden className="text-white/20">/</span>
+            <span aria-hidden className="text-muted-foreground/40 dark:text-white/20">/</span>
             <time dateTime={anomaly.detectedAt}>
               {format(new Date(anomaly.detectedAt), "MMM d, HH:mm")}
             </time>
 
-            <span aria-hidden className="text-white/20">/</span>
-            <span className="font-mono text-white/45">
+            <span aria-hidden className="text-muted-foreground/40 dark:text-white/20">/</span>
+            <span className="font-mono text-muted-foreground/60 dark:text-white/45">
               {anomaly.id.slice(0, 8)}
             </span>
           </div>
@@ -596,7 +596,7 @@ function AnomalyRow({
                 variant="ghost"
                 size="icon"
                 aria-label={`Actions for anomaly ${anomaly.id.slice(0, 8)}`}
-                className="size-8 text-white/40 hover:bg-white/[0.06] hover:text-white"
+                className="size-8 text-muted-foreground/60 hover:bg-muted hover:text-foreground dark:text-white/40 dark:hover:bg-white/[0.06] dark:hover:text-white"
               >
                 <MoreHorizontal className="size-4" />
               </Button>
@@ -604,12 +604,12 @@ function AnomalyRow({
 
             <DropdownMenuContent
               align="end"
-              className="w-48 border-white/[0.08] bg-[#0f0f0f]"
+              className="w-48 border-border bg-popover dark:border-white/[0.08] dark:bg-[#0f0f0f]"
             >
-              <DropdownMenuLabel className="text-xs font-normal text-white/40">
+              <DropdownMenuLabel className="text-xs font-normal text-muted-foreground dark:text-white/40">
                 Anomaly {anomaly.id.slice(0, 8)}
               </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-white/[0.07]" />
+              <DropdownMenuSeparator className="bg-border dark:bg-white/[0.07]" />
 
               <DropdownMenuItem asChild>
                 <Link
@@ -621,7 +621,7 @@ function AnomalyRow({
                 </Link>
               </DropdownMenuItem>
 
-              {canAct && <DropdownMenuSeparator className="bg-white/[0.07]" />}
+              {canAct && <DropdownMenuSeparator className="bg-border dark:bg-white/[0.07]" />}
 
               {anomaly.status === "OPEN" && (
                 <DropdownMenuItem

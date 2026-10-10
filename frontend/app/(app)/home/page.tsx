@@ -437,10 +437,10 @@ function StatusIndicator({
           "h-1.5 w-1.5 rounded-full",
 
           normalized === "PUBLISHED"
-            ? "bg-emerald-400"
+            ? "bg-emerald-500"
             : normalized === "DRAFT"
-              ? "bg-white/30"
-              : "bg-white/20",
+              ? "bg-muted-foreground/40 dark:bg-white/30"
+              : "bg-muted-foreground/30 dark:bg-white/20",
         )}
       />
 
@@ -449,8 +449,8 @@ function StatusIndicator({
           "text-[11px] font-medium capitalize",
 
           normalized === "PUBLISHED"
-            ? "text-emerald-400/90"
-            : "text-white/35",
+            ? "text-emerald-600 dark:text-emerald-400/90"
+            : "text-muted-foreground dark:text-white/35",
         )}
       >
         {status.toLowerCase()}
@@ -662,11 +662,11 @@ export default function HomePage() {
          ========================================================= */}
 
       <section className="flex flex-col items-center text-center">
-        <h1 className="text-[32px] font-semibold tracking-[-0.035em] text-white sm:text-[38px]">
+        <h1 className="text-[32px] font-semibold tracking-[-0.035em] text-foreground dark:text-white sm:text-[38px]">
           What do you want to build?
         </h1>
 
-        <p className="mt-2 max-w-xl text-sm leading-6 text-white/40">
+        <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground dark:text-white/40">
           Describe what you want to automate and Vantis will turn it into a
           workflow.
         </p>
@@ -679,24 +679,24 @@ export default function HomePage() {
       <section className="mx-auto mt-7 w-full max-w-[900px]">
         <div
           className={cn(
-            "overflow-hidden rounded-xl border bg-[#0b0b0b]",
-            "border-white/[0.09]",
-            "shadow-[0_20px_70px_rgba(0,0,0,0.22)]",
+            "overflow-hidden rounded-xl border bg-card border-border dark:bg-[#0b0b0b]",
+            "dark:border-white/[0.09]",
+            "shadow-sm dark:shadow-[0_20px_70px_rgba(0,0,0,0.22)]",
           )}
         >
           {/* Composer header */}
 
-          <div className="flex items-center gap-3 border-b border-white/[0.065] px-5 py-3.5">
-            <div className="flex size-7 items-center justify-center rounded-md border border-white/[0.09] bg-white/[0.035]">
-              <Sparkles className="size-3.5 text-white/75" />
+          <div className="flex items-center gap-3 border-b border-border dark:border-white/[0.065] px-5 py-3.5">
+            <div className="flex size-7 items-center justify-center rounded-md border border-border bg-muted/40 dark:border-white/[0.09] dark:bg-white/[0.035]">
+              <Sparkles className="size-3.5 text-foreground/75 dark:text-white/75" />
             </div>
 
             <div className="text-left">
-              <p className="text-sm font-medium text-white/90">
+              <p className="text-sm font-medium text-foreground/90 dark:text-white/90">
                 Build with AI
               </p>
 
-              <p className="mt-0.5 text-[11px] text-white/35">
+              <p className="mt-0.5 text-[11px] text-muted-foreground/60 dark:text-white/35">
                 Describe the workflow you want to create.
               </p>
             </div>
@@ -729,21 +729,17 @@ export default function HomePage() {
               placeholder="When a critical GitHub issue is created, analyze it with AI and notify Slack..."
               className={cn(
                 "block w-full resize-none rounded-lg",
-                "border border-white/[0.08]",
-                "bg-white/[0.02]",
+                "border border-input bg-background text-foreground placeholder:text-muted-foreground focus:border-ring",
+                "dark:border-white/[0.08] dark:bg-white/[0.02] dark:text-white dark:placeholder:text-white/40 dark:focus:border-white/[0.16] dark:focus:bg-white/[0.03]",
                 "px-4 py-3.5",
-                "text-sm leading-6 text-white",
-                "outline-none",
-                "placeholder:text-white/40",
-                "transition-colors",
-                "focus:border-white/[0.16]",
-                "focus:bg-white/[0.03]",
+                "text-sm leading-6",
+                "outline-none transition-colors",
               )}
             />
 
             <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-center gap-2">
-                <span className="hidden text-[11px] font-medium uppercase tracking-[0.12em] text-white/45 sm:block">
+                <span className="hidden text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground dark:text-white/45 sm:block">
                   Try
                 </span>
 
@@ -754,7 +750,7 @@ export default function HomePage() {
                       "When a critical GitHub issue is created, analyze it with AI and notify Slack.",
                     )
                   }
-                  className="truncate rounded-md border border-white/[0.07] bg-white/[0.02] px-2.5 py-1.5 text-xs text-white/50 transition-colors hover:border-white/[0.14] hover:bg-white/[0.04] hover:text-white/80"
+                  className="truncate rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-border/80 hover:bg-muted/60 hover:text-foreground dark:border-white/[0.07] dark:bg-white/[0.02] dark:text-white/50 dark:hover:border-white/[0.14] dark:hover:bg-white/[0.04] dark:hover:text-white/80"
                 >
                   GitHub → AI → Slack
                 </button>
@@ -766,14 +762,14 @@ export default function HomePage() {
                       "When a workflow fails, investigate the failure and notify the engineering team.",
                     )
                   }
-                  className="hidden truncate rounded-md border border-white/[0.07] bg-white/[0.02] px-2.5 py-1.5 text-xs text-white/50 transition-colors hover:border-white/[0.14] hover:bg-white/[0.04] hover:text-white/80 sm:block"
+                  className="hidden truncate rounded-md border border-border bg-muted/30 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-border/80 hover:bg-muted/60 hover:text-foreground dark:border-white/[0.07] dark:bg-white/[0.02] dark:text-white/50 dark:hover:border-white/[0.14] dark:hover:bg-white/[0.04] dark:hover:text-white/80 sm:block"
                 >
                   Failure investigation
                 </button>
               </div>
 
               <div className="flex items-center justify-between gap-3">
-                <span className="text-[11px] text-white/45">
+                <span className="text-[11px] text-muted-foreground dark:text-white/45">
                   ⌘/Ctrl + Enter
                 </span>
 
@@ -785,7 +781,7 @@ export default function HomePage() {
                     generating ||
                     !prompt.trim()
                   }
-                  className="h-9 rounded-md bg-white px-4 text-xs font-medium text-black transition-opacity hover:bg-white/90 disabled:opacity-30"
+                  className="h-9 rounded-md bg-foreground text-background transition-opacity hover:bg-foreground/90 disabled:opacity-30 dark:bg-white dark:text-black dark:hover:bg-white/90 px-4 text-xs font-medium"
                 >
                   <Sparkles className="mr-1.5 size-3.5" />
 
@@ -806,7 +802,7 @@ export default function HomePage() {
       {error && (
         <section className="mx-auto mt-4 w-full max-w-[900px]">
           <div className="flex items-center justify-between gap-4 rounded-lg border border-red-500/20 bg-red-500/[0.035] px-4 py-3">
-            <p className="text-xs text-red-300">
+            <p className="text-xs text-red-600 dark:text-red-300">
               {error}
             </p>
 
@@ -819,7 +815,7 @@ export default function HomePage() {
                 !prompt.trim() ||
                 generating
               }
-              className="shrink-0 text-xs text-red-300 underline-offset-4 hover:underline"
+              className="shrink-0 text-xs text-red-600 underline-offset-4 hover:underline dark:text-red-300"
             >
               Retry
             </button>
@@ -836,15 +832,15 @@ export default function HomePage() {
           <div className="flex flex-col gap-4 rounded-lg border border-emerald-500/20 bg-emerald-500/[0.025] px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
 
-                <p className="text-sm font-medium text-white">
+                <p className="text-sm font-medium text-foreground dark:text-white">
                   Workflow generated
                 </p>
               </div>
 
               {result.notes && (
-                <p className="mt-1 text-xs leading-5 text-white/40">
+                <p className="mt-1 text-xs leading-5 text-muted-foreground dark:text-white/40">
                   {result.notes}
                 </p>
               )}
@@ -858,7 +854,7 @@ export default function HomePage() {
                 disabled={
                   openingBuilder
                 }
-                className="h-9 shrink-0 rounded-md bg-white px-4 text-xs font-medium text-black hover:bg-white/90"
+                className="h-9 shrink-0 rounded-md bg-foreground text-background hover:bg-foreground/90 dark:bg-white dark:text-black dark:hover:bg-white/90 px-4 text-xs font-medium"
               >
                 {openingBuilder
                   ? "Opening..."
@@ -877,7 +873,7 @@ export default function HomePage() {
 
       <section className="mx-auto mt-11 w-full max-w-[1100px]">
         <div className="mb-3">
-          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/45">
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground dark:text-white/45">
             Start building
           </p>
         </div>
@@ -894,22 +890,22 @@ export default function HomePage() {
                   href={action.href}
                   className="group"
                 >
-                  <div className="flex h-[82px] items-center gap-3 rounded-lg border border-white/[0.075] bg-[#0a0a0a] px-4 transition-all duration-150 hover:border-white/[0.14] hover:bg-white/[0.025]">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-md border border-white/[0.08] bg-white/[0.025]">
-                      <Icon className="size-4 text-white/50 transition-colors group-hover:text-white/80" />
+                  <div className="flex h-[82px] items-center gap-3 rounded-lg border border-border bg-card px-4 transition-all duration-150 hover:border-border/80 hover:bg-muted/40 dark:border-white/[0.075] dark:bg-[#0a0a0a] dark:hover:border-white/[0.14] dark:hover:bg-white/[0.025]">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/40 dark:border-white/[0.08] dark:bg-white/[0.025]">
+                      <Icon className="size-4 text-muted-foreground transition-colors group-hover:text-foreground dark:text-white/50 dark:group-hover:text-white/80" />
                     </div>
 
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-white/85">
+                      <p className="text-sm font-medium text-foreground/85 dark:text-white/85">
                         {action.title}
                       </p>
 
-                      <p className="mt-1 text-xs text-white/50">
+                      <p className="mt-1 text-xs text-muted-foreground dark:text-white/50">
                         {action.description}
                       </p>
                     </div>
 
-                    <ArrowRight className="ml-auto size-3.5 text-white/30 transition-all group-hover:translate-x-0.5 group-hover:text-white/70" />
+                    <ArrowRight className="ml-auto size-3.5 text-muted-foreground/50 transition-all group-hover:translate-x-0.5 group-hover:text-foreground dark:text-white/30 dark:group-hover:text-white/70" />
                   </div>
                 </Link>
               );
@@ -924,13 +920,13 @@ export default function HomePage() {
 
       <section className="mx-auto mt-11 w-full max-w-[1100px]">
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-white/45">
+          <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground dark:text-white/45">
             Recent workflows
           </p>
 
           <Link
             href="/workflows"
-            className="flex items-center gap-1 text-xs text-white/45 transition-colors hover:text-white/80"
+            className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground dark:text-white/45 dark:hover:text-white/80"
           >
             View all
 
@@ -944,26 +940,26 @@ export default function HomePage() {
               (item) => (
                 <Skeleton
                   key={item}
-                  className="h-[70px] rounded-lg bg-white/[0.035]"
+                  className="h-[70px] rounded-lg bg-muted/40 dark:bg-white/[0.035]"
                 />
               ),
             )}
           </div>
         ) : workflowsQ.isError ? (
-          <div className="rounded-lg border border-white/[0.075] bg-[#0a0a0a] px-5 py-10 text-center">
-            <p className="text-sm text-white/50">
+          <div className="rounded-lg border border-border bg-card px-5 py-10 text-center dark:border-white/[0.075] dark:bg-[#0a0a0a]">
+            <p className="text-sm text-muted-foreground dark:text-white/50">
               Unable to load recent workflows.
             </p>
           </div>
         ) : workflows.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-white/[0.09] bg-[#0a0a0a] px-5 py-12 text-center">
-            <p className="text-sm text-white/60">
+          <div className="rounded-lg border border-dashed border-border bg-card px-5 py-12 text-center dark:border-white/[0.09] dark:bg-[#0a0a0a]">
+            <p className="text-sm text-muted-foreground dark:text-white/60">
               No workflows yet.
             </p>
 
             <Link
               href="/workflows/new"
-              className="mt-2 inline-flex items-center text-xs text-white/60 hover:text-white"
+              className="mt-2 inline-flex items-center text-xs text-muted-foreground hover:text-foreground dark:text-white/60 dark:hover:text-white"
             >
               Create your first workflow
 
@@ -971,7 +967,7 @@ export default function HomePage() {
             </Link>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-white/[0.075] bg-[#0a0a0a]">
+          <div className="overflow-hidden rounded-lg border border-border bg-card dark:border-white/[0.075] dark:bg-[#0a0a0a]">
             {workflows.map(
               (
                 workflow,
@@ -981,19 +977,19 @@ export default function HomePage() {
                   key={workflow.id}
                   href={`/workflows/${workflow.id}`}
                   className={cn(
-                    "group flex min-h-[70px] items-center gap-4 px-5 transition-colors hover:bg-white/[0.025]",
+                    "group flex min-h-[70px] items-center gap-4 px-5 transition-colors hover:bg-muted/40 dark:hover:bg-white/[0.025]",
 
                     index !==
                       workflows.length - 1 &&
-                      "border-b border-white/[0.06]",
+                      "border-b border-border dark:border-white/[0.06]",
                   )}
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-white/85 group-hover:text-white">
+                    <p className="truncate text-sm font-medium text-foreground/85 group-hover:text-foreground dark:text-white/85 dark:group-hover:text-white">
                       {workflow.name}
                     </p>
 
-                    <p className="mt-1 truncate text-xs text-white/50">
+                    <p className="mt-1 truncate text-xs text-muted-foreground dark:text-white/50">
                       {workflow.description ||
                         "No description"}
                     </p>
@@ -1007,7 +1003,7 @@ export default function HomePage() {
                     />
                   </div>
 
-                  <span className="hidden text-[11px] text-white/45 md:block">
+                  <span className="hidden text-[11px] text-muted-foreground dark:text-white/45 md:block">
                     {workflow.updatedAt
                       ? new Date(
                           workflow.updatedAt,
@@ -1015,7 +1011,7 @@ export default function HomePage() {
                       : "—"}
                   </span>
 
-                  <ArrowRight className="size-3.5 shrink-0 text-white/30 transition-all group-hover:translate-x-0.5 group-hover:text-white/70" />
+                  <ArrowRight className="size-3.5 shrink-0 text-muted-foreground/50 transition-all group-hover:translate-x-0.5 group-hover:text-foreground dark:text-white/30 dark:group-hover:text-white/70" />
                 </Link>
               ),
             )}

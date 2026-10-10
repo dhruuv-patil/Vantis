@@ -1,14 +1,14 @@
 # Git & Tooling
 .git
+.gitignore
 .github
 .claude
 .superpowers
+.vscode
+.idea
 
 # Environment files and credentials (CRITICAL: never copy into images)
-.env
-.env.*
-!.env.example
-!.env.*.example
+.env*
 *.pem
 *.key
 *.p12
@@ -22,8 +22,22 @@ __pycache__
 *.py[cod]
 .venv
 venv
+coverage
+
+# Dockerfiles and docker configs
+Dockerfile*
+docker-compose*.yml
+.dockerignore
 
 # Persistence and test directories
 postgres_data
 smtp-tls-test
 docs
+
+# Logs and OS files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.DS_Store

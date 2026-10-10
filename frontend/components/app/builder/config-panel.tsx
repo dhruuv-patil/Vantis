@@ -58,10 +58,10 @@ function NodeBrandIcon({
 }
 
 const fieldControlClass =
-  "h-9 w-full rounded-lg border-white/[0.09] bg-white/[0.035] text-white shadow-none transition-all placeholder:text-white/45 hover:border-white/[0.14] focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/10";
+  "h-9 w-full rounded-lg border-border bg-background text-foreground shadow-none transition-all placeholder:text-muted-foreground hover:border-foreground/20 focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/10 dark:border-white/[0.09] dark:bg-white/[0.035] dark:text-white dark:placeholder:text-white/45 dark:hover:border-white/[0.14]";
 
 const textAreaClass =
-  "w-full rounded-lg border-white/[0.09] bg-white/[0.035] text-white shadow-none transition-all placeholder:text-white/45 hover:border-white/[0.14] focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/10";
+  "w-full rounded-lg border-border bg-background text-foreground shadow-none transition-all placeholder:text-muted-foreground hover:border-foreground/20 focus-visible:border-primary/50 focus-visible:ring-2 focus-visible:ring-primary/10 dark:border-white/[0.09] dark:bg-white/[0.035] dark:text-white dark:placeholder:text-white/45 dark:hover:border-white/[0.14]";
 
 export function ConfigPanel({
   node,
@@ -72,23 +72,23 @@ export function ConfigPanel({
   onConfigChange,
 }: ConfigPanelProps) {
   const panelClassName =
-    "flex h-full w-[320px] max-w-[320px] min-w-0 shrink-0 flex-col overflow-hidden border-l border-white/[0.07] bg-[#08090b] shadow-[-18px_0_40px_-30px_rgba(0,0,0,0.9)]";
+    "flex h-full w-[320px] max-w-[320px] min-w-0 shrink-0 flex-col overflow-hidden border-l border-border bg-card shadow-lg dark:border-white/[0.07] dark:bg-[#08090b] dark:shadow-[-18px_0_40px_-30px_rgba(0,0,0,0.9)]";
 
   if (!node) {
     return (
       <aside className={panelClassName} aria-label="Inspector">
-        <div className="flex h-14 shrink-0 items-center border-b border-white/[0.07] px-4">
+        <div className="flex h-14 shrink-0 items-center border-b border-border px-4 dark:border-white/[0.07]">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex size-8 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.035]">
-              <Settings2 className="size-4 text-white/55" />
+            <div className="flex size-8 items-center justify-center rounded-xl border border-border bg-muted/60 dark:border-white/[0.08] dark:bg-white/[0.035]">
+              <Settings2 className="size-4 text-muted-foreground dark:text-white/55" />
             </div>
 
             <div className="min-w-0">
-              <p className="text-[13px] font-semibold tracking-[-0.01em] text-white/90">
+              <p className="text-[13px] font-semibold tracking-[-0.01em] text-foreground dark:text-white/90">
                 Inspector
               </p>
 
-              <p className="text-[11px] text-white/45">
+              <p className="text-[11px] text-muted-foreground dark:text-white/45">
                 Workflow node settings
               </p>
             </div>
@@ -97,15 +97,15 @@ export function ConfigPanel({
 
         <div className="flex min-h-0 flex-1 items-center justify-center p-7">
           <div className="max-w-[230px] text-center">
-            <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.025] shadow-[0_0_30px_-18px_rgba(255,255,255,0.35)]">
-              <Settings2 className="size-5 text-white/40" />
+            <div className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl border border-border bg-muted/40 shadow-sm dark:border-white/[0.08] dark:bg-white/[0.025] dark:shadow-[0_0_30px_-18px_rgba(255,255,255,0.35)]">
+              <Settings2 className="size-5 text-muted-foreground dark:text-white/40" />
             </div>
 
-            <p className="text-sm font-medium text-white/80">
+            <p className="text-sm font-medium text-foreground dark:text-white/80">
               Select a node
             </p>
 
-            <p className="mt-1.5 text-xs leading-relaxed text-white/45">
+            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground dark:text-white/45">
               Choose a node on the canvas to edit its configuration and inputs.
             </p>
           </div>
@@ -120,9 +120,9 @@ export function ConfigPanel({
 
   return (
     <aside className={panelClassName} aria-label="Inspector">
-      <div className="shrink-0 border-b border-white/[0.07] bg-gradient-to-b from-white/[0.02] to-transparent">
+      <div className="shrink-0 border-b border-border bg-card dark:border-white/[0.07] dark:bg-gradient-to-b dark:from-white/[0.02] dark:to-transparent">
         <div className="flex h-14 items-center gap-2.5 px-3.5">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-xl border border-white/[0.09] bg-white/[0.04] shadow-[0_8px_24px_-18px_rgba(255,255,255,0.45)]">
+          <div className="flex size-8 shrink-0 items-center justify-center rounded-xl border border-border bg-muted/60 dark:border-white/[0.09] dark:bg-white/[0.04]">
             <NodeBrandIcon
               type={node.type}
               label={title}
@@ -131,12 +131,12 @@ export function ConfigPanel({
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-semibold tracking-[-0.01em] text-white/90">
+            <p className="truncate text-[13px] font-semibold tracking-[-0.01em] text-foreground dark:text-white/90">
               {title}
             </p>
 
             <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
-              <span className="truncate font-mono text-[10px] uppercase tracking-[0.11em] text-white/45">
+              <span className="truncate font-mono text-[10px] uppercase tracking-[0.11em] text-muted-foreground dark:text-white/45">
                 {node.type}
               </span>
 
@@ -152,7 +152,7 @@ export function ConfigPanel({
           <Button
             variant="ghost"
             size="icon"
-            className="size-8 shrink-0 rounded-lg text-white/40 hover:bg-white/[0.06] hover:text-white/80"
+            className="size-8 shrink-0 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground dark:text-white/40 dark:hover:bg-white/[0.06] dark:hover:text-white/80"
             onClick={onClose}
             aria-label="Close inspector"
           >
@@ -164,30 +164,30 @@ export function ConfigPanel({
       <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
         <div className="space-y-3.5 p-3.5">
           {def?.description && (
-            <div className="rounded-xl border border-white/[0.07] bg-white/[0.022] p-3">
-              <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.13em] text-white/45">
+            <div className="rounded-xl border border-border bg-muted/40 p-3 dark:border-white/[0.07] dark:bg-white/[0.022]">
+              <div className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.13em] text-muted-foreground dark:text-white/45">
                 <Info className="size-3" />
                 About this node
               </div>
 
-              <p className="break-words text-[11px] leading-relaxed text-white/60">
+              <p className="break-words text-[11px] leading-relaxed text-foreground/80 dark:text-white/60">
                 {def.description}
               </p>
             </div>
           )}
 
-          <section className="rounded-xl border border-white/[0.07] bg-white/[0.018] p-3">
+          <section className="rounded-xl border border-border bg-card p-3 dark:border-white/[0.07] dark:bg-white/[0.018]">
             <div className="mb-3 flex items-center gap-2">
               <div className="flex size-6 items-center justify-center rounded-lg bg-primary/[0.12] text-primary">
                 <Settings2 className="size-3.5" />
               </div>
 
               <div>
-                <p className="text-[11px] font-semibold text-white/80">
+                <p className="text-[11px] font-semibold text-foreground dark:text-white/80">
                   General
                 </p>
 
-                <p className="text-[11px] text-white/45">
+                <p className="text-[11px] text-muted-foreground dark:text-white/45">
                   Identity and display
                 </p>
               </div>
@@ -196,7 +196,7 @@ export function ConfigPanel({
             <div className="space-y-1.5">
               <Label
                 htmlFor="node-label"
-                className="text-[10px] font-medium uppercase tracking-[0.1em] text-white/40"
+                className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground dark:text-white/40"
               >
                 Label
               </Label>
@@ -212,18 +212,18 @@ export function ConfigPanel({
           </section>
 
           {def && def.configFields.length > 0 && (
-            <section className="rounded-xl border border-white/[0.07] bg-white/[0.018] p-3">
+            <section className="rounded-xl border border-border bg-card p-3 dark:border-white/[0.07] dark:bg-white/[0.018]">
               <div className="mb-3 flex items-center gap-2">
-                <div className="flex size-6 items-center justify-center rounded-lg bg-white/[0.05] text-white/55">
+                <div className="flex size-6 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground dark:border-transparent dark:bg-white/[0.05] dark:text-white/55">
                   <Braces className="size-3.5" />
                 </div>
 
                 <div>
-                  <p className="text-[11px] font-semibold text-white/80">
+                  <p className="text-[11px] font-semibold text-foreground dark:text-white/80">
                     Configuration
                   </p>
 
-                  <p className="text-[11px] text-white/45">
+                  <p className="text-[11px] text-muted-foreground dark:text-white/45">
                     Runtime inputs for this node
                   </p>
                 </div>
@@ -246,13 +246,13 @@ export function ConfigPanel({
         </div>
       </div>
 
-      <div className="shrink-0 border-t border-white/[0.07] bg-[#08090b]/95 px-3.5 py-2.5 backdrop-blur">
+      <div className="shrink-0 border-t border-border bg-card/95 px-3.5 py-2.5 backdrop-blur dark:border-white/[0.07] dark:bg-[#08090b]/95">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/45">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground dark:text-white/45">
             Node ID
           </span>
 
-          <span className="min-w-0 truncate font-mono text-[11px] text-white/50">
+          <span className="min-w-0 truncate font-mono text-[11px] text-foreground/70 dark:text-white/50">
             {node.id}
           </span>
         </div>
@@ -277,7 +277,7 @@ function FieldControl({
       {field.type !== "boolean" && (
         <Label
           htmlFor={controlId}
-          className="flex min-w-0 items-center gap-1 text-[11px] font-medium uppercase tracking-[0.08em] text-white/60"
+          className="flex min-w-0 items-center gap-1 text-[11px] font-medium uppercase tracking-[0.08em] text-foreground/80 dark:text-white/60"
         >
           <span className="min-w-0 truncate">
             {field.label}
@@ -299,7 +299,7 @@ function FieldControl({
       />
 
       {field.help && (
-        <p className="break-words text-[11px] leading-relaxed text-white/45">
+        <p className="break-words text-[11px] leading-relaxed text-muted-foreground dark:text-white/45">
           {field.help}
         </p>
       )}
@@ -363,15 +363,15 @@ function FieldWidget({
       return (
         <label
           htmlFor={controlId}
-          className="flex cursor-pointer items-center justify-between rounded-lg border border-white/[0.07] bg-white/[0.025] px-3 py-2.5 transition-colors hover:border-white/[0.12] hover:bg-white/[0.035]"
+          className="flex cursor-pointer items-center justify-between rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:border-foreground/20 hover:bg-muted/50 dark:border-white/[0.07] dark:bg-white/[0.025] dark:hover:border-white/[0.12] dark:hover:bg-white/[0.035]"
         >
           <div className="min-w-0 pr-3">
-            <span className="block break-words text-xs font-medium text-white/75">
+            <span className="block break-words text-xs font-medium text-foreground dark:text-white/75">
               {field.label}
             </span>
 
             {field.help && (
-              <span className="mt-0.5 block break-words text-[11px] text-white/45">
+              <span className="mt-0.5 block break-words text-[11px] text-muted-foreground dark:text-white/45">
                 {field.help}
               </span>
             )}
@@ -482,13 +482,13 @@ function AgentSelect({
 
   if (!query.isPending && agents.length === 0) {
     return (
-      <div className="rounded-lg border border-white/[0.07] bg-white/[0.02] p-3">
-        <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-white/60">
+      <div className="rounded-lg border border-border bg-muted/30 p-3 dark:border-white/[0.07] dark:bg-white/[0.02]">
+        <div className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold text-foreground/70 dark:text-white/60">
           <Sparkles className="size-3" />
           No saved agents
         </div>
 
-        <p className="text-[11px] leading-relaxed text-white/45">
+        <p className="text-[11px] leading-relaxed text-muted-foreground dark:text-white/45">
           <Link
             href="/agents"
             className="text-primary underline-offset-2 hover:underline"
@@ -560,7 +560,7 @@ function IntegrationSelect({
 
   if (query.isPending) {
     return (
-      <div className="flex h-9 items-center rounded-lg border border-white/[0.07] bg-white/[0.025] px-3 text-[11px] text-white/45">
+      <div className="flex h-9 items-center rounded-lg border border-border bg-muted/30 px-3 text-[11px] text-muted-foreground dark:border-white/[0.07] dark:bg-white/[0.025] dark:text-white/45">
         Loading integrations…
       </div>
     );
@@ -576,8 +576,8 @@ function IntegrationSelect({
 
   if (integrations.length === 0) {
     return (
-      <div className="rounded-lg border border-white/[0.07] bg-white/[0.02] p-3">
-        <p className="text-[11px] leading-relaxed text-white/45">
+      <div className="rounded-lg border border-border bg-muted/30 p-3 dark:border-white/[0.07] dark:bg-white/[0.02]">
+        <p className="text-[11px] leading-relaxed text-muted-foreground dark:text-white/45">
           No connected integrations.{" "}
           <Link
             href="/integrations"
@@ -712,7 +712,7 @@ function JsonField({
           onBlur={commit}
         />
 
-        <Braces className="pointer-events-none absolute right-3 top-3 size-3.5 text-white/20" />
+        <Braces className="pointer-events-none absolute right-3 top-3 size-3.5 text-muted-foreground/40 dark:text-white/20" />
       </div>
 
       {error && (
@@ -734,26 +734,26 @@ function VariableHint({
   }
 
   return (
-    <div className="rounded-xl border border-primary/[0.12] bg-primary/[0.035] p-3">
+    <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
       <div className="mb-2 flex items-center gap-2">
-        <div className="flex size-6 items-center justify-center rounded-lg bg-primary/[0.12] text-primary">
+        <div className="flex size-6 items-center justify-center rounded-lg bg-primary/15 text-primary">
           <Variable className="size-3.5" />
         </div>
 
         <div>
-          <p className="text-[11px] font-semibold text-white/80">
+          <p className="text-[11px] font-semibold text-foreground dark:text-white/80">
             Available variables
           </p>
 
-          <p className="text-[11px] text-white/45">
+          <p className="text-[11px] text-muted-foreground dark:text-white/45">
             Use outputs from upstream nodes
           </p>
         </div>
       </div>
 
-      <p className="text-[11px] leading-relaxed text-white/45">
+      <p className="text-[11px] leading-relaxed text-muted-foreground dark:text-white/45">
         Reference upstream output with{" "}
-        <code className="rounded-md border border-white/[0.06] bg-black/20 px-1.5 py-0.5 font-mono text-[10px] text-primary/90">
+        <code className="rounded-md border border-border bg-muted px-1.5 py-0.5 font-mono text-[10px] text-primary dark:border-white/[0.06] dark:bg-black/20 dark:text-primary/90">
           {"{{nodeId.field}}"}
         </code>
       </p>
@@ -763,7 +763,7 @@ function VariableHint({
           <Badge
             key={id}
             variant="outline"
-            className="max-w-full break-all border-primary/[0.14] bg-primary/[0.04] font-mono text-[10px] font-normal text-white/60"
+            className="max-w-full break-all border-primary/20 bg-primary/5 font-mono text-[10px] font-normal text-foreground/80 dark:border-primary/[0.14] dark:bg-primary/[0.04] dark:text-white/60"
           >
             {`{{${id}}}`}
           </Badge>

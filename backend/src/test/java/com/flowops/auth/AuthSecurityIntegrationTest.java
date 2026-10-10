@@ -117,7 +117,7 @@ class AuthSecurityIntegrationTest {
     // =========================================================================
 
     @Test
-    void registerOpensSessionAndIssuesHttpOnlyRefreshCookie() throws Exception {
+    void registerCreatesUnverifiedUser_andDoesNotIssueTokensOrCookies() throws Exception {
         String email = "reg+" + UUID.randomUUID() + "@example.com";
 
         MvcResult result = mvc.perform(post("/api/auth/register")
@@ -128,29 +128,24 @@ class AuthSecurityIntegrationTest {
                                 "fullName", "Regina User",
                                 "organizationName", "Regina's Org")))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.currentRole").value("OWNER"))
-                .andExpect(jsonPath("$.memberships.length()").value(1))
-                .andExpect(jsonPath("$.user.email").value(email))
-                .andExpect(jsonPath("$.currentOrganization.name").value("Regina's Org"))
+                .andExpect(jsonPath("$.email").value(email))
+                .andExpect(jsonPath("$.emailVerified").value(false))
+                .andExpect(jsonPath("$.message").isNotEmpty())
                 .andReturn();
 
-        JsonNode body = MAPPER.readTree(result.getResponse().getContentAsString());
-        assertThat(body.get("accessToken").asText()).isNotBlank();
-        assertThat(body.get("expiresIn").asLong()).isPositive();
+        // No access token or refresh cookie must be issued on registration.
+        String responseBody = result.getResponse().getContentAsString();
+        assertThat(responseBody).doesNotContain("accessToken");
+        assertThat(responseBody).doesNotContain("refreshToken");
+        assertThat(result.getResponse().getHeader("Set-Cookie")).isNull();
 
-        // The refresh token must never appear in a response body.
-        assertThat(result.getResponse().getContentAsString())
-                .doesNotContain("refreshToken");
+        // User exists and is unverified in DB.
+        var user = users.findByEmailIgnoreCase(email).orElseThrow();
+        assertThat(user.isEmailVerified()).isFalse();
 
-        // The Set-Cookie is HttpOnly, path-scoped to the auth endpoints, Lax, and
-        // host-only (no Domain attribute).
-        String setCookie = result.getResponse().getHeader("Set-Cookie");
-        assertThat(setCookie).startsWith("flowops_refresh=");
-        assertThat(setCookie.toLowerCase()).contains("httponly");
-        assertThat(setCookie.toLowerCase()).contains("path=/api/auth");
-        assertThat(setCookie.toLowerCase()).contains("samesite=lax");
-        assertThat(setCookie.toLowerCase()).doesNotContain("domain=");
+        // Verification email was queued with a token.
+        assertThat(recordingSmtp.sent).anyMatch(mail ->
+                mail.to().equals(email) && mail.subject().contains("Verify") && mail.body().contains("/verify-email?token="));
     }
 
     @Test
@@ -651,17 +646,22 @@ class AuthSecurityIntegrationTest {
     private Session register(String email, String password, String name, String org)
             throws Exception {
 
-        MvcResult result = mvc.perform(post("/api/auth/register")
+        mvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(json(
                                 "email", email,
                                 "password", password,
                                 "fullName", name,
                                 "organizationName", org)))
-                .andExpect(status().isCreated())
-                .andReturn();
+                .andExpect(status().isCreated());
 
-        return sessionFrom(result, email);
+        users.findByEmailIgnoreCase(email).ifPresent(u -> {
+            u.markEmailVerified();
+            users.save(u);
+        });
+
+        MvcResult loginResult = login(email, password);
+        return sessionFrom(loginResult, email);
     }
 
     private MvcResult login(String email, String password) throws Exception {

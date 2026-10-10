@@ -13,17 +13,26 @@ public class ApiException extends RuntimeException {
     private final transient ErrorCode code;
     private final transient List<FieldErrorDetail> fieldErrors;
     private final transient Long retryAfterSeconds;
+    private final transient PlanLimitDetail details;
 
     public ApiException(ErrorCode code) {
-        this(code, code.defaultMessage(), null, null);
+        this(code, code.defaultMessage(), null, null, null, null);
+    }
+
+    public ApiException(ErrorCode code, Throwable cause) {
+        this(code, code.defaultMessage(), null, null, null, cause);
     }
 
     public ApiException(ErrorCode code, String message) {
-        this(code, message, null, null);
+        this(code, message, null, null, null, null);
+    }
+
+    public ApiException(ErrorCode code, String message, Throwable cause) {
+        this(code, message, null, null, null, cause);
     }
 
     public ApiException(ErrorCode code, String message, List<FieldErrorDetail> fieldErrors) {
-        this(code, message, fieldErrors, null);
+        this(code, message, fieldErrors, null, null, null);
     }
 
     public ApiException(
@@ -31,14 +40,38 @@ public class ApiException extends RuntimeException {
             String message,
             List<FieldErrorDetail> fieldErrors,
             Long retryAfterSeconds) {
-        super(message);
+        this(code, message, fieldErrors, retryAfterSeconds, null, null);
+    }
+
+    public ApiException(
+            ErrorCode code,
+            String message,
+            List<FieldErrorDetail> fieldErrors,
+            Long retryAfterSeconds,
+            Throwable cause) {
+        this(code, message, fieldErrors, retryAfterSeconds, null, cause);
+    }
+
+    public ApiException(
+            ErrorCode code,
+            String message,
+            List<FieldErrorDetail> fieldErrors,
+            Long retryAfterSeconds,
+            PlanLimitDetail details,
+            Throwable cause) {
+        super(message, cause);
         this.code = code;
         this.fieldErrors = fieldErrors;
         this.retryAfterSeconds = retryAfterSeconds;
+        this.details = details;
     }
 
     public ErrorCode code() {
         return code;
+    }
+
+    public PlanLimitDetail details() {
+        return details;
     }
 
     /** Non-null only for {@link ErrorCode#VALIDATION_ERROR}. */
@@ -66,5 +99,22 @@ public class ApiException extends RuntimeException {
                 "Too many attempts. Please try again in " + retryAfterSeconds + " seconds.",
                 null,
                 retryAfterSeconds);
+    }
+
+    /** A structured plan limit exceeded failure with machine-readable details. */
+    public static ApiException planLimitExceeded(
+            String limitKey,
+            long current,
+            long max,
+            String planId,
+            String suggestedPlan,
+            String message) {
+        return new ApiException(
+                ErrorCode.PLAN_LIMIT_EXCEEDED,
+                message,
+                null,
+                null,
+                new PlanLimitDetail(limitKey, current, max, planId, suggestedPlan),
+                null);
     }
 }

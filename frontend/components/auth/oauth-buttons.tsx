@@ -56,7 +56,7 @@ export function OAuthButtons({ next = "/dashboard", disabled = false }: OAuthBut
         variant="outline"
         disabled={disabled}
         onClick={() => handleOAuth("google")}
-        className="h-11 w-full justify-center gap-2.5 rounded-md border-white/[0.11] bg-[#0c0c0c] text-sm font-medium text-foreground hover:bg-[#161616] hover:text-white"
+        className="h-11 w-full justify-center gap-2.5 rounded-md border-border dark:border-white/[0.11] bg-card dark:bg-[#0c0c0c] text-sm font-medium text-foreground hover:bg-muted dark:hover:bg-[#161616] dark:hover:text-white"
       >
         <GoogleIcon className="size-4 shrink-0" />
         Continue with Google
@@ -67,7 +67,7 @@ export function OAuthButtons({ next = "/dashboard", disabled = false }: OAuthBut
         variant="outline"
         disabled={disabled}
         onClick={() => handleOAuth("github")}
-        className="h-11 w-full justify-center gap-2.5 rounded-md border-white/[0.11] bg-[#0c0c0c] text-sm font-medium text-foreground hover:bg-[#161616] hover:text-white"
+        className="h-11 w-full justify-center gap-2.5 rounded-md border-border dark:border-white/[0.11] bg-card dark:bg-[#0c0c0c] text-sm font-medium text-foreground hover:bg-muted dark:hover:bg-[#161616] dark:hover:text-white"
       >
         <GitHubIcon className="size-4 shrink-0" />
         Continue with GitHub

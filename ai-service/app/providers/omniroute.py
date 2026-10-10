@@ -10,12 +10,52 @@ No fake/fallback output is returned. Provider failures raise ProviderError.
 from __future__ import annotations
 
 import json
+import logging
+import re
 
-from openai import OpenAI
+from openai import (
+    APIConnectionError,
+    APITimeoutError,
+    AuthenticationError,
+    BadRequestError,
+    InternalServerError,
+    NotFoundError,
+    OpenAI,
+    OpenAIError,
+    RateLimitError,
+)
 
 from app.config import get_settings
 from app.providers.base import AgentResult, ProviderError, ToolInvocation
 from app.tools import execute_tool, function_specs
+
+logger = logging.getLogger("flowops.ai")
+
+
+def _safe_error_detail(exc: Exception) -> str:
+    """Return a safe error representation with any secrets redacted."""
+    msg = str(exc)
+    msg = re.sub(r"sk-[a-zA-Z0-9_\-]+", "sk-***", msg)
+    msg = re.sub(r"(bearer\s+)[a-zA-Z0-9_\.\-]+", r"\1***", msg, flags=re.IGNORECASE)
+    parts = [f"type={type(exc).__name__}"]
+    status_code = getattr(exc, "status_code", None)
+    if status_code is not None:
+        parts.append(f"code={status_code}")
+    parts.append(f"detail={msg[:200]}")
+    return " ".join(parts)
+
+
+def _clean_json_text(text: str) -> str:
+    """Strip markdown code block fences if returned by the model."""
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        lines = cleaned.splitlines()
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        cleaned = "\n".join(lines).strip()
+    return cleaned
 
 
 class OmniRouteProvider:
@@ -27,7 +67,10 @@ class OmniRouteProvider:
         self.settings = get_settings()
 
     def is_configured(self) -> bool:
-        return bool(self.settings.omniroute_api_key.strip())
+        return bool(
+            self.settings.omniroute_base_url.strip()
+            and self.settings.omniroute_api_key.strip()
+        )
 
     def default_model(self) -> str:
         return self.settings.omniroute_model
@@ -41,11 +84,39 @@ class OmniRouteProvider:
                 base_url=self.settings.omniroute_base_url,
                 api_key=self.settings.omniroute_api_key,
                 timeout=self.settings.provider_timeout_seconds,
+                max_retries=1,
             )
         except Exception as exc:
+            logger.warning("omniroute client init failed: %s", _safe_error_detail(exc))
             raise ProviderError(
                 f"Failed to initialize OmniRoute client: {type(exc).__name__}"
             ) from exc
+
+    def _handle_provider_error(self, exc: Exception, used_model: str) -> ProviderError:
+        """Map provider exceptions to appropriate ProviderError and log safely."""
+        if isinstance(exc, ProviderError):
+            return exc
+
+        logger.warning("omniroute request failed: %s", _safe_error_detail(exc))
+
+        if isinstance(exc, AuthenticationError):
+            return ProviderError("OmniRoute authentication failed: invalid or missing API key.")
+        if isinstance(exc, APITimeoutError):
+            return ProviderError("The OmniRoute AI provider timed out.")
+        if isinstance(exc, APIConnectionError):
+            return ProviderError("The OmniRoute AI provider could not be reached.")
+        if isinstance(exc, NotFoundError):
+            return ProviderError(f"OmniRoute model not found: {used_model}")
+        if isinstance(exc, RateLimitError):
+            return ProviderError("OmniRoute rate limit exceeded.")
+        if isinstance(exc, BadRequestError):
+            return ProviderError("OmniRoute request was invalid.")
+        if isinstance(exc, InternalServerError):
+            return ProviderError("OmniRoute provider encountered an internal server error.")
+        if isinstance(exc, OpenAIError):
+            return ProviderError(f"OmniRoute provider error: {type(exc).__name__}")
+
+        return ProviderError(f"OmniRoute workflow generation failed: {type(exc).__name__}")
 
     def generate_json(
         self,
@@ -82,22 +153,21 @@ class OmniRouteProvider:
             if not content or not content.strip():
                 raise ProviderError("OmniRoute returned an empty response.")
 
+            content = _clean_json_text(content)
+
             # Validate that the provider actually returned JSON.
             try:
                 json.loads(content)
             except json.JSONDecodeError as exc:
+                logger.warning("omniroute returned invalid JSON")
                 raise ProviderError(
                     "OmniRoute returned invalid JSON."
                 ) from exc
 
             return content
 
-        except ProviderError:
-            raise
         except Exception as exc:
-            raise ProviderError(
-                f"OmniRoute workflow generation failed: {type(exc).__name__}"
-            ) from exc
+            raise self._handle_provider_error(exc, used_model) from exc
 
     def run_agent(
         self,
@@ -233,12 +303,8 @@ class OmniRouteProvider:
                 "Agent exceeded the maximum number of tool-calling iterations."
             )
 
-        except ProviderError:
-            raise
         except Exception as exc:
-            raise ProviderError(
-                f"OmniRoute agent execution failed: {type(exc).__name__}"
-            ) from exc
+            raise self._handle_provider_error(exc, used_model) from exc
 
     def _build_tools(self, enabled_tools: list[str]) -> list[dict]:
         """Convert FlowOps tool specs into OpenAI-compatible schemas."""

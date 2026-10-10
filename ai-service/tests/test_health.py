@@ -12,4 +12,6 @@ def test_health_ok():
     assert body["service"] == "vantis-ai"
     assert body["status"] == "ok"
     assert "ai_configured" in body
+    assert "ai_provider" in body
+    assert "provider" in body
     assert "timestamp" in body

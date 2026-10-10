@@ -28,6 +28,7 @@ class AuthAndCryptoPropertiesSecurityTest {
                     Duration.ofMinutes(15),
                     Duration.ofDays(7),
                     Duration.ofHours(1),
+                    Duration.ofHours(24),
                     12,
                     new AuthProperties.RefreshCookie("flowops_refresh", "/api/auth", false, "Lax")
             );
@@ -48,6 +49,7 @@ class AuthAndCryptoPropertiesSecurityTest {
                     Duration.ofMinutes(15),
                     Duration.ofDays(7),
                     Duration.ofHours(1),
+                    Duration.ofHours(24),
                     12,
                     new AuthProperties.RefreshCookie("flowops_refresh", "/api/auth", false, "Lax")
             );
@@ -68,6 +70,7 @@ class AuthAndCryptoPropertiesSecurityTest {
                     Duration.ofMinutes(15),
                     Duration.ofDays(7),
                     Duration.ofHours(1),
+                    Duration.ofHours(24),
                     12,
                     new AuthProperties.RefreshCookie("flowops_refresh", "/api/auth", false, "Lax")
             );
@@ -95,6 +98,7 @@ class AuthAndCryptoPropertiesSecurityTest {
                     Duration.ofMinutes(15),
                     Duration.ofDays(7),
                     Duration.ofHours(1),
+                    Duration.ofHours(24),
                     12,
                     new AuthProperties.RefreshCookie("flowops_refresh", "/api/auth", false, "Lax")
             );
@@ -114,6 +118,7 @@ class AuthAndCryptoPropertiesSecurityTest {
                     Duration.ofMinutes(15),
                     Duration.ofDays(7),
                     Duration.ofHours(1),
+                    Duration.ofHours(24),
                     12,
                     new AuthProperties.RefreshCookie("flowops_refresh", "/api/auth", false, "None")
             );
@@ -134,6 +139,7 @@ class AuthAndCryptoPropertiesSecurityTest {
                     Duration.ofMinutes(15),
                     Duration.ofDays(7),
                     Duration.ofHours(1),
+                    Duration.ofHours(24),
                     12,
                     new AuthProperties.RefreshCookie("flowops_refresh", "/api/auth", true, "None")
             );

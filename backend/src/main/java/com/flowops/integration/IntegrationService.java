@@ -17,6 +17,7 @@ import com.flowops.repository.IntegrationRepository;
 import com.flowops.security.FlowOpsPrincipal;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +37,29 @@ public class IntegrationService {
     private final CredentialCipher cipher;
     private final AuditService audit;
     private final WorkflowProviderRegistry providerRegistry;
+    private final com.flowops.billing.service.EntitlementService entitlementService;
+    private final com.flowops.repository.IntegrationSyncStateRepository syncStateRepo;
+    private final com.flowops.integration.sync.IntegrationCircuitBreaker circuitBreaker;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public IntegrationService(
+            IntegrationRepository integrations,
+            IntegrationCredentialRepository credentials,
+            CredentialCipher cipher,
+            AuditService audit,
+            WorkflowProviderRegistry providerRegistry,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.flowops.billing.service.EntitlementService entitlementService,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.flowops.repository.IntegrationSyncStateRepository syncStateRepo,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.flowops.integration.sync.IntegrationCircuitBreaker circuitBreaker) {
+        this.integrations = integrations;
+        this.credentials = credentials;
+        this.cipher = cipher;
+        this.audit = audit;
+        this.providerRegistry = providerRegistry;
+        this.entitlementService = entitlementService;
+        this.syncStateRepo = syncStateRepo;
+        this.circuitBreaker = circuitBreaker;
+    }
 
     public IntegrationService(
             IntegrationRepository integrations,
@@ -43,11 +67,7 @@ public class IntegrationService {
             CredentialCipher cipher,
             AuditService audit,
             WorkflowProviderRegistry providerRegistry) {
-        this.integrations = integrations;
-        this.credentials = credentials;
-        this.cipher = cipher;
-        this.audit = audit;
-        this.providerRegistry = providerRegistry;
+        this(integrations, credentials, cipher, audit, providerRegistry, null, null, null);
     }
 
     @Transactional(readOnly = true)
@@ -99,12 +119,19 @@ public class IntegrationService {
                 cipher.encryptJson(credentialMap);
 
         Integration integration = integrations
-                .findByOrganizationIdAndType(
+                .findByOrganizationIdAndTypeAndName(
                         principal.organizationId(),
-                        Integration.TYPE_SLACK)
+                        Integration.TYPE_SLACK,
+                        displayName(Integration.TYPE_SLACK))
+                .or(() -> integrations.findByOrganizationIdAndType(
+                        principal.organizationId(),
+                        Integration.TYPE_SLACK))
                 .orElse(null);
 
         if (integration == null) {
+            if (entitlementService != null) {
+                entitlementService.assertCanConnectIntegration(principal.organizationId());
+            }
             integration = Integration.createConnected(
                     principal.organizationId(),
                     principal.userId(),
@@ -228,11 +255,24 @@ public class IntegrationService {
             Map<String, String> config,
             Set<String> sensitiveKeys) {
 
+        String resolvedName = (name != null && !name.isBlank()) ? name.strip() : displayName(type.wire());
+
+        // Multi-instance resolution: match on (organization_id, type, name)
         Integration integration = integrations
-                .findByOrganizationIdAndType(
+                .findByOrganizationIdAndTypeAndName(
                         principal.organizationId(),
-                        type.wire())
+                        type.wire(),
+                        resolvedName)
                 .orElse(null);
+
+        // Fallback for legacy single-instance row where name might match the provider wire string
+        if (integration == null && resolvedName.equalsIgnoreCase(type.wire())) {
+            integration = integrations
+                    .findByOrganizationIdAndType(
+                            principal.organizationId(),
+                            type.wire())
+                    .orElse(null);
+        }
 
         Map<String, String> nonSensitive =
                 nonSensitiveConfig(
@@ -240,11 +280,16 @@ public class IntegrationService {
                         sensitiveKeys);
 
         if (integration == null) {
+            // Check plan limits before creating a new instance
+            if (entitlementService != null) {
+                entitlementService.assertCanConnectIntegration(principal.organizationId());
+            }
+
             integration = Integration.createConnected(
                     principal.organizationId(),
                     principal.userId(),
                     type.wire(),
-                    name,
+                    resolvedName,
                     hint);
 
             if (nonSensitive != null) {
@@ -259,7 +304,10 @@ public class IntegrationService {
                             integration.getId(),
                             ciphertext));
         } else {
-            integration.connect(name, hint);
+            integration.connect(resolvedName, hint);
+            if (integration.isDisabled()) {
+                integration.enable();
+            }
 
             if (nonSensitive != null) {
                 integration.setMetadata(
@@ -282,17 +330,77 @@ public class IntegrationService {
             }
         }
 
+        if (circuitBreaker != null) {
+            circuitBreaker.reset(integration.getId());
+        }
+
         audit.record(
                 principal,
                 AuditAction.INTEGRATION_CONNECTED,
                 integration.getId().toString(),
                 "Connected the "
                         + type.wire()
-                        + " integration (••••"
+                        + " integration '"
+                        + resolvedName
+                        + "' (••••"
                         + hint
                         + ").");
 
         return integration;
+    }
+
+    @Transactional
+    public IntegrationResponse disable(
+            FlowOpsPrincipal principal,
+            UUID id) {
+
+        Integration integration = require(principal, id);
+        integration.disable();
+        integrations.save(integration);
+
+        audit.record(
+                principal,
+                AuditAction.INTEGRATION_DISCONNECTED,
+                integration.getId().toString(),
+                "Paused monitoring for the "
+                        + integration.getName()
+                        + " integration.");
+
+        return IntegrationResponse.of(integration);
+    }
+
+    @Transactional
+    public IntegrationResponse enable(
+            FlowOpsPrincipal principal,
+            UUID id) {
+
+        Integration integration = require(principal, id);
+        integration.enable();
+        integrations.save(integration);
+
+        audit.record(
+                principal,
+                AuditAction.INTEGRATION_CONNECTED,
+                integration.getId().toString(),
+                "Resumed monitoring for the "
+                        + integration.getName()
+                        + " integration.");
+
+        return IntegrationResponse.of(integration);
+    }
+
+    @Transactional(readOnly = true)
+    public com.flowops.domain.IntegrationSyncState getSyncState(
+            FlowOpsPrincipal principal,
+            UUID id) {
+
+        require(principal, id);
+        if (syncStateRepo == null) {
+            return null;
+        }
+        return syncStateRepo
+                .findByOrganizationIdAndIntegrationId(principal.organizationId(), id)
+                .orElse(null);
     }
 
     private static Map<String, String> nonSensitiveConfig(
@@ -338,5 +446,65 @@ public class IntegrationService {
                         cred.getCiphertext());
 
         return new DecryptedCredentials(decrypted);
+    }
+
+    @Transactional
+    public IntegrationResponse updateCredentials(
+            FlowOpsPrincipal principal,
+            UUID id,
+            Map<String, String> credentialsMap) {
+
+        Integration integration = require(principal, id);
+        if (credentialsMap == null || credentialsMap.isEmpty()) {
+            throw ApiException.validation("credentials", "Credentials map cannot be empty");
+        }
+
+        String ciphertext = cipher.encryptJson(credentialsMap);
+        IntegrationCredential credential = credentials.findByIntegrationId(integration.getId())
+                .orElse(null);
+
+        if (credential == null) {
+            credentials.save(IntegrationCredential.create(integration.getId(), ciphertext));
+        } else {
+            credential.updateCiphertext(ciphertext);
+        }
+
+        if (!integration.isConnected()) {
+            integration.connect(integration.getName(), integration.getHint());
+        }
+
+        if (circuitBreaker != null) {
+            circuitBreaker.reset(integration.getId());
+        }
+
+        audit.record(
+                principal,
+                AuditAction.INTEGRATION_CREDENTIAL_UPDATED,
+                integration.getId().toString(),
+                "Updated credentials for " + integration.getName() + " integration.");
+
+        return IntegrationResponse.of(integration);
+    }
+
+    @Transactional(readOnly = true)
+    public List<IntegrationController.IntegrationHealthSummary> getHealthSummaries(FlowOpsPrincipal principal) {
+        List<Integration> list = integrations.findByOrganizationIdOrderByUpdatedAtDesc(principal.organizationId());
+        List<IntegrationController.IntegrationHealthSummary> result = new ArrayList<>();
+        for (Integration item : list) {
+            com.flowops.domain.IntegrationSyncState state = syncStateRepo != null
+                    ? syncStateRepo.findByOrganizationIdAndIntegrationId(principal.organizationId(), item.getId()).orElse(null)
+                    : null;
+            result.add(new IntegrationController.IntegrationHealthSummary(
+                    item.getId(),
+                    item.getName(),
+                    item.getType(),
+                    state != null ? state.getHealthStatus() : "NEW",
+                    state != null ? state.getLastSuccessfulSyncAt() : null,
+                    state != null ? state.getLastErrorCategory() : null,
+                    item.isDisabled(),
+                    state != null && state.isBackfilling(),
+                    state != null ? state.getBackfillProgress() : 100));
+        }
+        return result;
     }
 }

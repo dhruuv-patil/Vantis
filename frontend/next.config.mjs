@@ -93,12 +93,20 @@ export function buildCspHeader() {
 }
 
 const nextConfig = {
+  output: "standalone",
   reactStrictMode: true,
 
   eslint: {
     // Lint is run explicitly via `npm run lint`;
     // don't fail production builds on it.
     ignoreDuringBuilds: true,
+  },
+
+  webpack: (config, { dev }) => {
+    if (!dev) {
+      config.cache = false;
+    }
+    return config;
   },
 
   async headers() {

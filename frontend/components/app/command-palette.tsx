@@ -105,7 +105,7 @@ export function CommandPalette({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="overflow-hidden p-0 sm:max-w-lg border-white/[0.08] bg-[#0a0a0c]"
+        className="overflow-hidden p-0 sm:max-w-lg border-border bg-card dark:border-white/[0.08] dark:bg-[#0a0a0c]"
         // The command input is the first focusable element; let cmdk own arrow keys.
       >
         <DialogTitle className="sr-only">Command palette</DialogTitle>
@@ -117,8 +117,8 @@ export function CommandPalette({
             return haystack.includes(search.toLowerCase()) ? 1 : 0;
           }}
         >
-          <div className="flex items-center gap-2 border-b border-white/[0.08] px-3">
-            <Search className="size-4 shrink-0 text-white/40" />
+          <div className="flex items-center gap-2 border-b border-border dark:border-white/[0.08] px-3">
+            <Search className="size-4 shrink-0 text-muted-foreground dark:text-white/40" />
             <Command.Input
   autoFocus
   placeholder="Search workflows, agents, templates…"
@@ -128,8 +128,10 @@ export function CommandPalette({
     border-0
     bg-transparent
     text-sm
-    text-white/80
-    placeholder:text-white/45
+    text-foreground
+    placeholder:text-muted-foreground
+    dark:text-white/80
+    dark:placeholder:text-white/45
     outline-none
     ring-0
     shadow-none
@@ -144,7 +146,7 @@ export function CommandPalette({
           </div>
 
           <Command.List className="overflow-y-auto p-1">
-            <Command.Empty className="px-3 py-6 text-center text-sm text-white/35">
+            <Command.Empty className="px-3 py-6 text-center text-sm text-muted-foreground dark:text-white/35">
               No matches.
             </Command.Empty>
 
@@ -158,7 +160,7 @@ export function CommandPalette({
                     onSelect={() => go(item.href)}
                     className={ITEM}
                   >
-                    <Icon className="size-4 shrink-0 text-white/40" />
+                    <Icon className="size-4 shrink-0 text-muted-foreground dark:text-white/40" />
                     <span className="flex-1">{item.label}</span>
                   </Command.Item>
                 );
@@ -245,7 +247,7 @@ export function CommandPalette({
 }
 
 const GROUP =
-  "px-1 py-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-white/40";
+  "px-1 py-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground dark:[&_[cmdk-group-heading]]:text-white/40";
 
 const ITEM =
-  "flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-[13px] text-white/60 outline-none transition-colors duration-200 data-[selected=true]:bg-white/[0.06] data-[selected=true]:text-white/90";
+  "flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-[13px] text-muted-foreground outline-none transition-colors duration-200 data-[selected=true]:bg-muted data-[selected=true]:text-foreground dark:text-white/60 dark:data-[selected=true]:bg-white/[0.06] dark:data-[selected=true]:text-white/90";

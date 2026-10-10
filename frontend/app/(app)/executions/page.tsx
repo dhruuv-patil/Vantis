@@ -320,11 +320,11 @@ export default function ExecutionsPage() {
               <div
                 role="status"
                 aria-live="polite"
-                className="flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.025] px-3 py-1.5"
+                className="flex items-center gap-2 rounded-lg border border-border dark:border-white/[0.08] bg-muted/30 dark:bg-white/[0.025] px-3 py-1.5"
                 title="Data up to date · Auto-polls when workflows run"
               >
-                <span className="size-1.5 rounded-full bg-white/35" />
-                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/50">
+                <span className="size-1.5 rounded-full bg-muted-foreground/40 dark:bg-white/35" />
+                <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground dark:text-white/50">
                   Monitoring idle
                 </span>
               </div>
@@ -413,7 +413,7 @@ export default function ExecutionsPage() {
           <Toolbar>
             {/* Search */}
             <div className="relative min-w-0 flex-1">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-white/40" />
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/60 dark:text-white/40" />
 
               <Input
                 value={search}
@@ -427,7 +427,7 @@ export default function ExecutionsPage() {
                   type="button"
                   onClick={() => setSearch("")}
                   aria-label="Clear search"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-foreground dark:text-white/40 dark:hover:text-white"
                 >
                   <X className="size-3.5" />
                 </button>
@@ -435,7 +435,7 @@ export default function ExecutionsPage() {
             </div>
 
             {/* Source Segmented Control */}
-            <div className="flex h-10 shrink-0 items-center gap-1 rounded-lg border border-white/[0.08] bg-[#0a0a0c] p-1">
+            <div className="flex h-10 shrink-0 items-center gap-1 rounded-lg border border-border dark:border-white/[0.08] bg-muted/40 dark:bg-[#0a0a0c] p-1">
               {(
                 [
                   ["ALL", "All"],
@@ -453,8 +453,8 @@ export default function ExecutionsPage() {
                     className={cn(
                       "h-8 rounded-md px-3 text-xs font-medium transition-colors",
                       active
-                        ? "bg-white text-black font-semibold shadow-sm"
-                        : "text-white/50 hover:bg-white/[0.04] hover:text-white/80",
+                        ? "bg-background text-foreground font-semibold shadow-sm dark:bg-white dark:text-black"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-white/50 dark:hover:bg-white/[0.04] dark:hover:text-white/80",
                     )}
                   >
                     {label}
@@ -471,7 +471,7 @@ export default function ExecutionsPage() {
                   setStatus(event.target.value as ExecutionStatus | "ALL")
                 }
                 aria-label="Filter by status"
-                className="h-10 appearance-none rounded-lg border border-white/[0.08] bg-[#0a0a0c] pl-3 pr-9 text-xs font-medium text-white/70 outline-none transition-colors hover:text-white focus:border-white/20"
+                className="h-10 appearance-none rounded-lg border border-border dark:border-white/[0.08] bg-background dark:bg-[#0a0a0c] pl-3 pr-9 text-xs font-medium text-foreground/80 dark:text-white/70 outline-none transition-colors hover:text-foreground dark:hover:text-white focus:border-foreground/30 dark:focus:border-white/20"
               >
                 {STATUS_FILTERS.map((filter) => (
                   <option key={filter.value} value={filter.value}>
@@ -479,7 +479,7 @@ export default function ExecutionsPage() {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-white/40" />
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60 dark:text-white/40" />
             </div>
 
             {/* Clear */}
@@ -501,10 +501,10 @@ export default function ExecutionsPage() {
       <div className="mt-6">
         <div className="mb-3 flex items-end justify-between px-0.5">
           <div>
-            <h2 className="text-sm font-medium text-white/80">
+            <h2 className="text-sm font-medium text-foreground/90 dark:text-white/80">
               Recent executions
             </h2>
-            <p className="mt-0.5 text-xs text-white/40">
+            <p className="mt-0.5 text-xs text-muted-foreground dark:text-white/40">
               {hasFilters
                 ? `${visibleExecutions.length} matching ${
                     visibleExecutions.length === 1 ? "run" : "runs"
@@ -514,7 +514,7 @@ export default function ExecutionsPage() {
           </div>
 
           {visibleExecutions.length > 0 && (
-            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-white/40">
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground dark:text-white/40">
               {visibleExecutions.length} shown
             </span>
           )}
@@ -560,9 +560,9 @@ export default function ExecutionsPage() {
           />
         ) : (
           <>
-            <div className="overflow-hidden rounded-xl border border-white/[0.065] bg-[#0a0a0c]">
+            <div className="overflow-hidden rounded-xl border border-border dark:border-white/[0.065] bg-card dark:bg-[#0a0a0c]">
               {/* TABLE HEADER */}
-              <div className="sticky top-0 z-10 hidden h-10 items-center border-b border-white/[0.05] bg-[#0c0c0e]/95 px-4 font-mono text-[10px] uppercase tracking-[0.12em] text-white/40 backdrop-blur-sm md:flex">
+              <div className="sticky top-0 z-10 hidden h-10 items-center border-b border-border dark:border-white/[0.05] bg-card/95 dark:bg-[#0c0c0e]/95 px-4 font-mono text-[10px] uppercase tracking-[0.12em] text-muted-foreground dark:text-white/40 backdrop-blur-sm md:flex">
                 <div className="w-[120px]">Status</div>
                 <div className="flex-1">Workflow</div>
                 <div className="w-[110px] text-right">Duration</div>
@@ -571,7 +571,7 @@ export default function ExecutionsPage() {
               </div>
 
               <StaggerGroup stagger={0.02}>
-                <ul className="divide-y divide-white/[0.05]">
+                <ul className="divide-y divide-border dark:divide-white/[0.05]">
                   {visibleExecutions.slice(0, pageSize).map((execution) => (
                     <StaggerItem
                       key={
@@ -610,7 +610,7 @@ function ExecutionRow({
       <li>
         <Link
           href={`/executions/${execution.id}`}
-          className="group flex min-w-0 items-center gap-3 px-4 py-3.5 transition-colors hover:bg-white/[0.025] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20 md:gap-4"
+          className="group flex min-w-0 items-center gap-3 px-4 py-3.5 transition-colors hover:bg-muted/40 dark:hover:bg-white/[0.025] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/20 dark:focus-visible:ring-white/20 md:gap-4"
         >
           <div className="w-[110px] shrink-0">
             <StatusBadge status={execution.status} />
@@ -620,19 +620,19 @@ function ExecutionRow({
             <div className="flex min-w-0 items-center gap-2">
               <span
                 title={execution.workflowName}
-                className="truncate text-sm font-medium text-white/85 group-hover:text-white"
+                className="truncate text-sm font-medium text-foreground/90 group-hover:text-foreground dark:text-white/85 dark:group-hover:text-white"
               >
                 {execution.workflowName}
               </span>
 
-              <span className="hidden rounded border border-white/[0.08] bg-white/[0.02] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white/50 lg:inline-flex">
+              <span className="hidden rounded border border-border dark:border-white/[0.08] bg-muted/50 dark:bg-white/[0.02] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground dark:text-white/50 lg:inline-flex">
                 Internal
               </span>
             </div>
 
             <div
               title={execution.error ? `Error: ${execution.error}` : undefined}
-              className="mt-0.5 truncate text-xs text-white/50"
+              className="mt-0.5 truncate text-xs text-muted-foreground dark:text-white/50"
             >
               v{execution.versionNumber} ·{" "}
               {execution.triggerType.toLowerCase()} trigger
@@ -645,7 +645,7 @@ function ExecutionRow({
             durationMs={execution.durationMs}
           />
 
-          <ArrowUpRight className="hidden size-4 shrink-0 text-white/35 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-white/70 md:block" />
+          <ArrowUpRight className="hidden size-4 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-foreground dark:text-white/35 dark:group-hover:text-white/70 md:block" />
         </Link>
       </li>
     );
@@ -659,7 +659,7 @@ function ExecutionRow({
         )}?workflowExternalId=${encodeURIComponent(
           execution.workflowExternalId,
         )}`}
-        className="group flex min-w-0 items-center gap-3 px-4 py-3.5 transition-colors hover:bg-white/[0.025] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/20 md:gap-4"
+        className="group flex min-w-0 items-center gap-3 px-4 py-3.5 transition-colors hover:bg-muted/40 dark:hover:bg-white/[0.025] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/20 dark:focus-visible:ring-white/20 md:gap-4"
       >
         <div className="w-[110px] shrink-0">
           <StatusBadge status={execution.status} />
@@ -669,23 +669,23 @@ function ExecutionRow({
           <div className="flex min-w-0 items-center gap-2">
             <span
               title={execution.workflowName}
-              className="truncate text-sm font-medium text-white/85 group-hover:text-white"
+              className="truncate text-sm font-medium text-foreground/90 group-hover:text-foreground dark:text-white/85 dark:group-hover:text-white"
             >
               {execution.workflowName}
             </span>
 
-            <span className="hidden rounded border border-white/[0.08] bg-white/[0.02] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-white/50 lg:inline-flex">
+            <span className="hidden rounded border border-border dark:border-white/[0.08] bg-muted/50 dark:bg-white/[0.02] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.1em] text-muted-foreground dark:text-white/50 lg:inline-flex">
               External
             </span>
 
-            <span className="hidden truncate font-mono text-[11px] uppercase tracking-[0.1em] text-white/45 xl:inline">
+            <span className="hidden truncate font-mono text-[11px] uppercase tracking-[0.1em] text-muted-foreground dark:text-white/45 xl:inline">
               {execution.source}
             </span>
           </div>
 
           <div
             title={`run ${execution.executionExternalId}`}
-            className="mt-0.5 truncate text-xs text-white/50"
+            className="mt-0.5 truncate text-xs text-muted-foreground dark:text-white/50"
           >
             run {execution.executionExternalId} · {execution.nodeCount}{" "}
             {execution.nodeCount === 1 ? "node" : "nodes"}
@@ -697,7 +697,7 @@ function ExecutionRow({
           durationMs={execution.durationMs}
         />
 
-        <ExternalLink className="hidden size-4 shrink-0 text-white/35 transition-colors group-hover:text-white/70 md:block" />
+        <ExternalLink className="hidden size-4 shrink-0 text-muted-foreground/50 transition-colors group-hover:text-foreground dark:text-white/35 dark:group-hover:text-white/70 md:block" />
       </Link>
     </li>
   );
@@ -712,11 +712,11 @@ function ExecutionMeta({
 }) {
   return (
     <div className="hidden w-[215px] shrink-0 items-center justify-end gap-6 font-mono text-xs md:flex">
-      <span className="w-[65px] text-right tabular-nums text-white/55">
+      <span className="w-[65px] text-right tabular-nums text-muted-foreground/90 dark:text-white/55">
         {formatDuration(durationMs)}
       </span>
 
-      <span className="w-[85px] text-right text-white/45">
+      <span className="w-[85px] text-right text-muted-foreground dark:text-white/45">
         {formatRelativeTime(createdAt)}
       </span>
     </div>

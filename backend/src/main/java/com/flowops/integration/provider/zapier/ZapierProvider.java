@@ -22,13 +22,10 @@ import org.springframework.stereotype.Component;
 /**
  * Zapier workflow provider — honest about capabilities.
  *
- * <p>Zapier's public API does not expose Zap discovery or run history. This provider
- * implements the <em>connect + test</em> path only (validating a webhook URL the
- * user creates in a "Catch Hook" Zap). It reports {@code executionHistory=false},
- * {@code workflowDiscovery=false}, so the sync scheduler skips it entirely and the
- * UI shows it as a one-way event sink. For telemetry from Zapier, users configure
- * their Zaps to POST to the FlowOps outbound webhook provider instead — a standard
- * webhook integration, not a Zapier-specific one.</p>
+ * <p>Zapier's public API does not expose Zap discovery or run history. Monitoring is
+ * achieved via inbound webhook instrumentation: users configure a Webhooks by Zapier
+ * POST step in their Zaps that targets {@code /api/webhooks/zapier/{integrationId}}
+ * with HMAC-SHA256 signature verification.</p>
  */
 @Component
 public class ZapierProvider implements WorkflowProvider {
@@ -53,50 +50,63 @@ public class ZapierProvider implements WorkflowProvider {
 
     @Override
     public String description() {
-        return "Connect Zapier zaps to receive FlowOps events. Run history is not "
-                + "exposed by Zapier's public API; use the outbound webhook integration "
-                + "to send events from Zapier into FlowOps.";
+        return "Zapier automation platform. Monitored via inbound webhook instrumentation: "
+                + "configure a Webhooks by Zapier action in your Zap to POST execution telemetry "
+                + "to /api/webhooks/zapier/{integrationId} with HMAC-SHA256 authentication.";
     }
 
     @Override
     public ProviderCapabilities capabilities() {
         return new ProviderCapabilities(
-                false,  // workflowDiscovery
-                false,  // executionHistory
-                false,  // nodeExecutionData
+                false,  // workflowDiscovery (Zapier API does not expose user Zaps)
+                false,  // executionHistory (Polling unsupported; uses inbound webhooks)
+                false,  // nodeExecutionData (Step-level execution data is not exposed unless provided in webhook)
                 false,  // incrementalSync
-                true,   // webhooks (one-way: FlowOps → Zapier via webhook URL)
-                false   // tracing
+                true,   // webhooks (Inbound instrumentation + outbound Catch Hook)
+                false,  // tracing
+                false,  // outputItemCounts (Not polled via Zapier API)
+                false,  // outputStructure (Not polled via Zapier API)
+                false,  // errorDetails (Not polled via Zapier API)
+                false,  // scheduleDiscovery
+                false,  // rateLimits (No polling API rate limits)
+                null    // dataRetentionDays
         );
     }
 
     @Override
     public List<CredentialField> credentialFields() {
-        // The Zapier client reads a single secret: a webhook URL the user pastes from
-        // a "Catch Hook" Zap (Zapier's public API exposes no API-key authentication).
         return List.of(
-                new CredentialField("webhookUrl", "Zapier webhook URL", true,
+                new CredentialField("webhookSecret", "Webhook HMAC Secret", true,
+                        "whsec_...", "whsec_...",
+                        "Shared secret for HMAC-SHA256 signature verification of inbound Zapier telemetry. Stored encrypted."),
+                new CredentialField("webhookUrl", "Outbound Zapier webhook URL (Optional)", false,
                         "https://hooks.zapier.com/hooks/catch/…",
                         "https://hooks.zapier.com/hooks/catch/…",
-                        "Create a Catch Hook Zap and paste its webhook URL. Stored encrypted; "
-                                + "never shown again."));
+                        "Optional: Create a Catch Hook Zap and paste its webhook URL to receive outbound FlowOps notifications."));
     }
 
     @Override
     public ConnectionTestResult testConnection(IntegrationContext context) {
-        try {
-            client.testWebhook(context);
-            return ConnectionTestResult.success("Webhook accepted the test event");
-        } catch (ProviderAuthenticationException e) {
-            return ConnectionTestResult.failure("Authentication failed: " + e.getMessage());
-        } catch (ProviderConfigurationException e) {
-            return ConnectionTestResult.failure("Configuration error: " + e.getMessage());
-        } catch (ProviderUnavailableException e) {
-            return ConnectionTestResult.failure("Provider unavailable: " + e.getMessage());
-        } catch (Exception e) {
-            log.warn("Zapier test connection failed", e);
-            return ConnectionTestResult.failure("Connection test failed: " + e.getMessage());
+        if (context == null || context.credentials() == null) {
+            return ConnectionTestResult.failure("Missing Zapier credentials");
         }
+        String secret = context.credentials().get("webhookSecret");
+        String webhookUrl = context.credentials().get("webhookUrl");
+
+        if ((secret == null || secret.isBlank()) && (webhookUrl == null || webhookUrl.isBlank())) {
+            return ConnectionTestResult.failure("Please provide either a webhook HMAC secret or an outbound webhook URL");
+        }
+
+        if (webhookUrl != null && !webhookUrl.isBlank()) {
+            try {
+                client.testWebhook(context);
+            } catch (Exception e) {
+                log.warn("Zapier outbound webhook test failed", e);
+                return ConnectionTestResult.failure("Outbound webhook test failed: " + e.getMessage());
+            }
+        }
+
+        return ConnectionTestResult.success("Zapier configuration valid and ready for telemetry");
     }
 
     @Override
@@ -108,7 +118,7 @@ public class ZapierProvider implements WorkflowProvider {
     @Override
     public ExecutionPage<ExternalExecution> fetchExecutions(
             IntegrationContext context, SyncCursor cursor) {
-        // Not supported by Zapier's public API. Return empty to avoid scheduler errors.
+        // Polling not supported by Zapier's public API. Telemetry arrives via inbound webhooks.
         return ExecutionPage.empty();
     }
 

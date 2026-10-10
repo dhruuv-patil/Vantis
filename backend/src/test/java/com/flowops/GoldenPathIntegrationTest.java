@@ -13,6 +13,7 @@ import com.flowops.domain.AnomalySeverity;
 import com.flowops.domain.AnomalyStatus;
 import com.flowops.domain.ExecutionStatus;
 import com.flowops.domain.NodeRunStatus;
+import com.flowops.repository.UserRepository;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -47,6 +48,9 @@ class GoldenPathIntegrationTest {
 
     @Autowired
     private MockMvc mvc;
+
+    @Autowired
+    private UserRepository users;
 
     @Test
     void registerCreateSavePublishAndRunToCompletion() throws Exception {
@@ -169,11 +173,14 @@ class GoldenPathIntegrationTest {
                 + "  {\"id\":\"h\",\"type\":\"human_approval\","
                 + "   \"data\":{\"config\":{\"prompt\":\"ship it?\"}}},"
                 + "  {\"id\":\"n\",\"type\":\"notification\","
-                + "   \"data\":{\"config\":{\"channel\":\"email\",\"message\":\"ok\"}}}"
+                + "   \"data\":{\"config\":{\"channel\":\"email\",\"message\":\"ok\"}}},"
+                + "  {\"id\":\"r\",\"type\":\"notification\","
+                + "   \"data\":{\"config\":{\"channel\":\"email\",\"message\":\"no\"}}}"
                 + "],"
                 + "\"edges\":["
                 + "  {\"id\":\"e1\",\"source\":\"t\",\"target\":\"h\"},"
-                + "  {\"id\":\"e2\",\"source\":\"h\",\"target\":\"n\",\"sourceHandle\":\"approved\"}"
+                + "  {\"id\":\"e2\",\"source\":\"h\",\"target\":\"n\",\"sourceHandle\":\"approved\"},"
+                + "  {\"id\":\"e3\",\"source\":\"h\",\"target\":\"r\",\"sourceHandle\":\"rejected\"}"
                 + "]"
                 + "}";
 
@@ -322,35 +329,47 @@ class GoldenPathIntegrationTest {
             String fullName,
             String orgName) throws Exception {
 
-        MvcResult result =
+        mvc.perform(
+                        post("/api/auth/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{"
+                                                + "\"email\":\""
+                                                + email
+                                                + "\","
+                                                + "\"password\":\""
+                                                + password
+                                                + "\","
+                                                + "\"fullName\":\""
+                                                + fullName
+                                                + "\","
+                                                + "\"organizationName\":\""
+                                                + orgName
+                                                + "\""
+                                                + "}"))
+                .andExpect(status().isCreated());
+
+        // Mark verified in-process (bypasses email delivery in tests).
+        users.findByEmailIgnoreCase(email).ifPresent(u -> {
+            u.markEmailVerified();
+            users.save(u);
+        });
+
+        MvcResult loginResult =
                 mvc.perform(
-                                post("/api/auth/register")
-                                        .contentType(
-                                                MediaType.APPLICATION_JSON)
+                                post("/api/auth/login")
+                                        .contentType(MediaType.APPLICATION_JSON)
                                         .content(
-                                                "{"
-                                                        + "\"email\":\""
+                                                "{\"email\":\""
                                                         + email
-                                                        + "\","
-                                                        + "\"password\":\""
+                                                        + "\",\"password\":\""
                                                         + password
-                                                        + "\","
-                                                        + "\"fullName\":\""
-                                                        + fullName
-                                                        + "\","
-                                                        + "\"organizationName\":\""
-                                                        + orgName
-                                                        + "\""
-                                                        + "}"))
-                        .andExpect(status().isCreated())
+                                                        + "\"}"))
+                        .andExpect(status().isOk())
                         .andReturn();
 
-        JsonNode body =
-                MAPPER.readTree(
-                        result.getResponse()
-                                .getContentAsString());
-
-        return body.get("accessToken").asText();
+        return MAPPER.readTree(loginResult.getResponse().getContentAsString())
+                .get("accessToken").asText();
     }
 
     private String createWorkflow(

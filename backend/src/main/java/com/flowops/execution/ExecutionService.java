@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -82,7 +83,8 @@ public class ExecutionService {
     private final NodeRegistry nodeRegistry;
     private final ObjectMapper mapper;
     private final IdempotencyKeyRepository idempotencyKeys;
-    private final com.flowops.billing.BillingService billingService;
+    private final com.flowops.billing.service.EntitlementService entitlementService;
+    private final com.flowops.billing.service.RejectedExecutionRecorder rejectedRecorder;
     private final NodeExecutionAttemptRepository nodeAttempts;
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -98,7 +100,8 @@ public class ExecutionService {
             NodeRegistry nodeRegistry,
             ObjectMapper mapper,
             IdempotencyKeyRepository idempotencyKeys,
-            com.flowops.billing.BillingService billingService,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.flowops.billing.service.EntitlementService entitlementService,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) com.flowops.billing.service.RejectedExecutionRecorder rejectedRecorder,
             NodeExecutionAttemptRepository nodeAttempts) {
         this.workflows = workflows;
         this.versions = versions;
@@ -111,7 +114,8 @@ public class ExecutionService {
         this.nodeRegistry = nodeRegistry;
         this.mapper = mapper;
         this.idempotencyKeys = idempotencyKeys;
-        this.billingService = billingService;
+        this.entitlementService = entitlementService;
+        this.rejectedRecorder = rejectedRecorder;
         this.nodeAttempts = nodeAttempts;
     }
 
@@ -127,7 +131,7 @@ public class ExecutionService {
             NodeRegistry nodeRegistry,
             ObjectMapper mapper,
             IdempotencyKeyRepository idempotencyKeys) {
-        this(workflows, versions, executions, nodes, logs, queue, events, properties, nodeRegistry, mapper, idempotencyKeys, null, null);
+        this(workflows, versions, executions, nodes, logs, queue, events, properties, nodeRegistry, mapper, idempotencyKeys, null, null, null);
     }
 
     public ExecutionService(
@@ -142,8 +146,9 @@ public class ExecutionService {
             NodeRegistry nodeRegistry,
             ObjectMapper mapper,
             IdempotencyKeyRepository idempotencyKeys,
-            com.flowops.billing.BillingService billingService) {
-        this(workflows, versions, executions, nodes, logs, queue, events, properties, nodeRegistry, mapper, idempotencyKeys, billingService, null);
+            com.flowops.billing.service.EntitlementService entitlementService,
+            com.flowops.billing.service.RejectedExecutionRecorder rejectedRecorder) {
+        this(workflows, versions, executions, nodes, logs, queue, events, properties, nodeRegistry, mapper, idempotencyKeys, entitlementService, rejectedRecorder, null);
     }
 
     // ---- start -----------------------------------------------------------
@@ -303,29 +308,109 @@ public class ExecutionService {
                     "Workflow concurrency limit of " + properties.maxWorkflowConcurrency() + " active executions reached.");
         }
 
-        if (billingService != null) {
-            billingService.assertCanExecute(workflow.getOrganizationId());
+        // Idempotency check before reserveExecution: if key matches an existing run, return without consuming quota
+        String idempotencyKey = null;
+        if (idempotencyKeys != null && payload != null) {
+            if (payload.hasNonNull("idempotencyKey")) {
+                idempotencyKey = payload.get("idempotencyKey").asText();
+            } else if (payload.hasNonNull("idempotency_key")) {
+                idempotencyKey = payload.get("idempotency_key").asText();
+            }
+            if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+                String key = "run:" + workflow.getId() + ":" + idempotencyKey;
+                var existing = idempotencyKeys.findByKey(key);
+                if (existing.isPresent()) {
+                    var match = executions.findById(existing.get().getExecutionId());
+                    if (match.isPresent()) {
+                        return match.get();
+                    }
+                }
+            }
         }
 
-        WorkflowExecution execution =
-                WorkflowExecution.create(
-                        workflow.getOrganizationId(),
-                        workflow.getId(),
-                        version.getId(),
-                        versionNumber,
-                        triggerTypeOf(graph),
-                        payload,
-                        createdByOrNull);
+        com.flowops.billing.model.ExecutionReservationTicket ticket = com.flowops.billing.model.ExecutionReservationTicket.notReserved();
+        if (entitlementService != null) {
+            try {
+                ticket = entitlementService.reserveExecution(workflow.getOrganizationId());
+            } catch (ApiException e) {
+                if (e.code() == ErrorCode.PLAN_LIMIT_EXCEEDED && rejectedRecorder != null) {
+                    rejectedRecorder.recordRejected(
+                            workflow.getOrganizationId(),
+                            workflow.getId(),
+                            version.getId(),
+                            versionNumber,
+                            triggerTypeOf(graph),
+                            createdByOrNull,
+                            "PLAN_LIMIT_EXCEEDED",
+                            e.getMessage());
+                }
+                throw e;
+            }
+        }
 
-        executions.save(execution);
+        WorkflowExecution execution;
+        try {
+            execution = WorkflowExecution.create(
+                    workflow.getOrganizationId(),
+                    workflow.getId(),
+                    version.getId(),
+                    versionNumber,
+                    triggerTypeOf(graph),
+                    payload,
+                    createdByOrNull);
 
-        for (GraphNode node : graph.nodes()) {
-            nodes.save(
-                    ExecutionNode.create(
-                            execution.getId(),
-                            node.id(),
-                            node.type(),
-                            labelOf(node)));
+            executions.save(execution);
+
+            for (GraphNode node : graph.nodes()) {
+                nodes.save(
+                        ExecutionNode.create(
+                                execution.getId(),
+                                node.id(),
+                                node.type(),
+                                labelOf(node)));
+            }
+
+            if (idempotencyKeys != null && idempotencyKey != null && !idempotencyKey.isBlank()) {
+                String key = "run:" + workflow.getId() + ":" + idempotencyKey;
+                Instant now = Instant.now();
+                int inserted = idempotencyKeys.insertIfNotExists(
+                        UUID.randomUUID(), key, execution.getId(), now.plus(Duration.ofHours(24)), now);
+                if (inserted == 0) {
+                    // Concurrent request with same key won the race:
+                    // 1. Delete this unneeded execution so exactly 1 run exists in DB
+                    executions.delete(execution);
+                    executions.flush();
+                    // 2. Refund extra reservation so net usage increment is exactly 1
+                    if (ticket.reserved() && entitlementService != null) {
+                        entitlementService.refundExecution(workflow.getOrganizationId(), ticket);
+                    }
+                    // 3. Return the winning execution (wait briefly for the winner's transaction to commit)
+                    for (int attempt = 0; attempt < 50; attempt++) {
+                        var existing = idempotencyKeys.findByKey(key);
+                        if (existing.isPresent()) {
+                            var match = executions.findById(existing.get().getExecutionId());
+                            if (match.isPresent()) {
+                                return match.get();
+                            }
+                        }
+                        try {
+                            Thread.sleep(20);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                    }
+                    var existing = idempotencyKeys.findByKey(key);
+                    if (existing.isPresent()) {
+                        var match = executions.findById(existing.get().getExecutionId());
+                        if (match.isPresent()) {
+                            return match.get();
+                        }
+                    }
+                }
+            }
+        } catch (RuntimeException creationError) {
+            throw creationError;
         }
 
         enqueueAfterCommit(execution.getId());
@@ -580,6 +665,12 @@ public class ExecutionService {
                         principal,
                         executionId);
 
+        if (execution.isLocked()) {
+            throw new ApiException(
+                    ErrorCode.EXECUTION_NOT_RETRYABLE,
+                    "Execution history is locked for retention compliance.");
+        }
+
         if (execution.getStatus() != ExecutionStatus.FAILED) {
             throw new ApiException(
                     ErrorCode.EXECUTION_NOT_RETRYABLE);
@@ -727,35 +818,59 @@ public class ExecutionService {
                     "Tenant concurrency limit of " + properties.maxTenantConcurrency() + " active executions reached.");
         }
 
-        if (billingService != null) {
-            billingService.assertCanExecute(workflow.getOrganizationId());
+        com.flowops.billing.model.ExecutionReservationTicket ticket = com.flowops.billing.model.ExecutionReservationTicket.notReserved();
+        if (entitlementService != null) {
+            try {
+                ticket = entitlementService.reserveExecution(workflow.getOrganizationId());
+            } catch (ApiException e) {
+                if (e.code() == ErrorCode.PLAN_LIMIT_EXCEEDED && rejectedRecorder != null) {
+                    rejectedRecorder.recordRejected(
+                            workflow.getOrganizationId(),
+                            workflow.getId(),
+                            version.getId(),
+                            execution.getVersionNumber(),
+                            execution.getTriggerType(),
+                            principal.userId(),
+                            "PLAN_LIMIT_EXCEEDED",
+                            e.getMessage());
+                }
+                throw e;
+            }
         }
 
-        WorkflowExecution newExecution = WorkflowExecution.create(
-                workflow.getOrganizationId(),
-                workflow.getId(),
-                version.getId(),
-                execution.getVersionNumber(),
-                execution.getTriggerType(),
-                payload,
-                principal.userId());
+        WorkflowExecution newExecution;
+        try {
+            newExecution = WorkflowExecution.create(
+                    workflow.getOrganizationId(),
+                    workflow.getId(),
+                    version.getId(),
+                    execution.getVersionNumber(),
+                    execution.getTriggerType(),
+                    payload,
+                    principal.userId());
 
-        executions.save(newExecution);
+            executions.save(newExecution);
 
-        for (GraphNode gn : graph.nodes()) {
-            ExecutionNode en = ExecutionNode.create(
-                    newExecution.getId(),
-                    gn.id(),
-                    gn.type(),
-                    labelOf(gn));
+            for (GraphNode gn : graph.nodes()) {
+                ExecutionNode en = ExecutionNode.create(
+                        newExecution.getId(),
+                        gn.id(),
+                        gn.type(),
+                        labelOf(gn));
 
-            if (fromFailed) {
-                ExecutionNode prev = originalNodeMap.get(gn.id());
-                if (prev != null && prev.getStatus() == NodeRunStatus.SUCCEEDED) {
-                    en.succeed(prev.getOutput(), prev.activeHandles());
+                if (fromFailed) {
+                    ExecutionNode prev = originalNodeMap.get(gn.id());
+                    if (prev != null && prev.getStatus() == NodeRunStatus.SUCCEEDED) {
+                        en.succeed(prev.getOutput(), prev.activeHandles());
+                    }
                 }
+                nodes.save(en);
             }
-            nodes.save(en);
+        } catch (RuntimeException creationError) {
+            if (!TransactionSynchronizationManager.isSynchronizationActive() && ticket.reserved() && entitlementService != null) {
+                entitlementService.refundExecution(workflow.getOrganizationId(), ticket);
+            }
+            throw creationError;
         }
 
         enqueueAfterCommit(newExecution.getId());

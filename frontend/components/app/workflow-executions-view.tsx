@@ -49,40 +49,40 @@ const STATUS_CONFIG: Record<
 > = {
   SUCCEEDED: {
     label: "Succeeded",
-    dot: "bg-emerald-400",
-    pill: "border-emerald-400/20 bg-emerald-400/[0.07] text-emerald-300",
+    dot: "bg-emerald-500 dark:bg-emerald-400",
+    pill: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/[0.07] dark:text-emerald-300",
   },
   FAILED: {
     label: "Failed",
-    dot: "bg-red-400",
-    pill: "border-red-400/20 bg-red-400/[0.07] text-red-300",
+    dot: "bg-red-500 dark:bg-red-400",
+    pill: "border-red-500/20 bg-red-500/10 text-red-700 dark:border-red-400/20 dark:bg-red-400/[0.07] dark:text-red-300",
   },
   RUNNING: {
     label: "Running",
-    dot: "bg-amber-400",
-    pill: "border-amber-400/20 bg-amber-400/[0.07] text-amber-300",
+    dot: "bg-amber-500 dark:bg-amber-400",
+    pill: "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:border-amber-400/20 dark:bg-amber-400/[0.07] dark:text-amber-300",
   },
   WAITING: {
     label: "Waiting",
-    dot: "bg-sky-400",
-    pill: "border-sky-400/20 bg-sky-400/[0.07] text-sky-300",
+    dot: "bg-sky-500 dark:bg-sky-400",
+    pill: "border-sky-500/20 bg-sky-500/10 text-sky-700 dark:border-sky-400/20 dark:bg-sky-400/[0.07] dark:text-sky-300",
   },
   QUEUED: {
     label: "Queued",
-    dot: "bg-violet-400",
-    pill: "border-violet-400/20 bg-violet-400/[0.07] text-violet-300",
+    dot: "bg-violet-500 dark:bg-violet-400",
+    pill: "border-violet-500/20 bg-violet-500/10 text-violet-700 dark:border-violet-400/20 dark:bg-violet-400/[0.07] dark:text-violet-300",
   },
   CANCELED: {
     label: "Canceled",
-    dot: "bg-white/30",
-    pill: "border-white/[0.10] bg-white/[0.035] text-white/50",
+    dot: "bg-muted-foreground/40 dark:bg-white/30",
+    pill: "border-border bg-muted/50 text-muted-foreground dark:border-white/[0.10] dark:bg-white/[0.035] dark:text-white/50",
   },
 };
 
 const FALLBACK_STATUS = {
   label: "Unknown",
-  dot: "bg-white/30",
-  pill: "border-white/[0.10] bg-white/[0.035] text-white/50",
+  dot: "bg-muted-foreground/40 dark:bg-white/30",
+  pill: "border-border bg-muted/50 text-muted-foreground dark:border-white/[0.10] dark:bg-white/[0.035] dark:text-white/50",
 };
 
 function getStatus(status: string) {
@@ -223,8 +223,8 @@ export function WorkflowExecutionsView({
       {/* Stats */}
       <div
         className={cn(
-          "grid grid-cols-2 overflow-hidden rounded-xl border border-white/[0.07]",
-          "bg-[#0a0a0a] sm:grid-cols-4",
+          "grid grid-cols-2 overflow-hidden rounded-xl border border-border dark:border-white/[0.07]",
+          "bg-card dark:bg-[#0a0a0a] sm:grid-cols-4",
         )}
       >
         {statItems.map((item, index) => (
@@ -232,16 +232,16 @@ export function WorkflowExecutionsView({
             key={item.label}
             className={cn(
               "px-5 py-4",
-              index % 2 === 1 && "border-l border-white/[0.06]",
-              index > 1 && "border-t border-white/[0.06] sm:border-t-0",
-              index > 0 && "sm:border-l sm:border-white/[0.06]",
+              index % 2 === 1 && "border-l border-border dark:border-white/[0.06]",
+              index > 1 && "border-t border-border dark:border-white/[0.06] sm:border-t-0",
+              index > 0 && "sm:border-l sm:border-border dark:sm:border-white/[0.06]",
             )}
           >
             <div className="flex items-center gap-2">
               <span className={cn("size-1.5 rounded-full", TONE_DOT[item.tone])} />
-              <p className="text-xs text-white/45">{item.label}</p>
+              <p className="text-xs text-muted-foreground dark:text-white/45">{item.label}</p>
             </div>
-            <p className="mt-2 text-xl font-semibold tabular-nums tracking-[-0.02em] text-white">
+            <p className="mt-2 text-xl font-semibold tabular-nums tracking-[-0.02em] text-foreground dark:text-white">
               {item.value}
             </p>
           </div>
@@ -251,10 +251,10 @@ export function WorkflowExecutionsView({
       {/* Toolbar */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-white">
+          <h2 className="text-[15px] font-semibold tracking-[-0.01em] text-foreground dark:text-white">
             Executions
           </h2>
-          <p className="mt-1 flex items-center gap-2 text-xs text-white/40">
+          <p className="mt-1 flex items-center gap-2 text-xs text-muted-foreground dark:text-white/40">
             {loading
               ? "Loading executions…"
               : hasFilters
@@ -265,8 +265,8 @@ export function WorkflowExecutionsView({
                   ? "No executions yet"
                   : `${visibleExecutions.length} shown, newest first`}
             {stats.active > 0 && (
-              <span className="inline-flex items-center gap-1.5 text-amber-300/90">
-                <span className="size-1.5 animate-pulse rounded-full bg-amber-400" />
+              <span className="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-300/90">
+                <span className="size-1.5 animate-pulse rounded-full bg-amber-500 dark:bg-amber-400" />
                 {stats.active} live
               </span>
             )}
@@ -275,16 +275,16 @@ export function WorkflowExecutionsView({
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative w-full sm:w-64">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-white/40" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/60 dark:text-white/40" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search ID, trigger, error…"
               aria-label="Search executions"
               className={cn(
-                "h-9 border-white/[0.08] bg-white/[0.025] pl-9 pr-8 text-[13px]",
-                "placeholder:text-white/45",
-                "focus-visible:border-white/[0.16] focus-visible:ring-0",
+                "h-9 border-input bg-background/50 dark:border-white/[0.08] dark:bg-white/[0.025] pl-9 pr-8 text-[13px]",
+                "placeholder:text-muted-foreground dark:placeholder:text-white/45",
+                "focus-visible:border-foreground/30 dark:focus-visible:border-white/[0.16] focus-visible:ring-0",
                 "focus-visible:ring-offset-0",
               )}
             />
@@ -293,7 +293,7 @@ export function WorkflowExecutionsView({
                 type="button"
                 onClick={() => setSearch("")}
                 aria-label="Clear search"
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-white/40 hover:text-white"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground/60 hover:text-foreground dark:text-white/40 dark:hover:text-white"
               >
                 <X className="size-3.5" />
               </button>
@@ -307,13 +307,13 @@ export function WorkflowExecutionsView({
             <SelectTrigger
               aria-label="Filter by status"
               className={cn(
-                "h-9 w-[160px] border-white/[0.08] bg-white/[0.025] text-[13px]",
+                "h-9 w-[160px] border-input bg-background/50 dark:border-white/[0.08] dark:bg-white/[0.025] text-[13px]",
                 "focus:ring-0 focus:ring-offset-0",
               )}
             >
               <SelectValue placeholder="All statuses" />
             </SelectTrigger>
-            <SelectContent className="border-white/[0.08] bg-[#0f0f0f]">
+            <SelectContent className="border-border bg-popover dark:border-white/[0.08] dark:bg-[#0f0f0f]">
               {STATUS_FILTERS.map((filter) => (
                 <SelectItem key={filter.value} value={filter.value}>
                   {filter.label}
@@ -327,7 +327,7 @@ export function WorkflowExecutionsView({
               variant="ghost"
               size="sm"
               onClick={clearFilters}
-              className="h-9 px-3 text-white/50 hover:bg-white/[0.06] hover:text-white"
+              className="h-9 px-3 text-muted-foreground hover:bg-muted hover:text-foreground dark:text-white/50 dark:hover:bg-white/[0.06] dark:hover:text-white"
             >
               Clear
             </Button>
@@ -351,8 +351,8 @@ export function WorkflowExecutionsView({
       ) : (
         <ul
           className={cn(
-            "overflow-hidden rounded-xl border border-white/[0.07]",
-            "divide-y divide-white/[0.06] bg-[#0a0a0a]",
+            "overflow-hidden rounded-xl border border-border dark:border-white/[0.07]",
+            "divide-y divide-border dark:divide-white/[0.06] bg-card dark:bg-[#0a0a0a]",
           )}
         >
           {visibleExecutions.map((execution) => (
@@ -371,10 +371,10 @@ export function WorkflowExecutionsView({
 type Tone = "neutral" | "success" | "danger" | "warning";
 
 const TONE_DOT: Record<Tone, string> = {
-  neutral: "bg-white/25",
-  success: "bg-emerald-400",
-  danger: "bg-red-400",
-  warning: "bg-amber-400",
+  neutral: "bg-muted-foreground/40 dark:bg-white/25",
+  success: "bg-emerald-500 dark:bg-emerald-400",
+  danger: "bg-red-500 dark:bg-red-400",
+  warning: "bg-amber-500 dark:bg-amber-400",
 };
 
 /* ================================================================
@@ -391,8 +391,8 @@ function ExecutionRow({ execution }: { execution: ExecutionSummary }) {
         href={`/executions/${execution.id}`}
         className={cn(
           "group flex min-w-0 items-center gap-4 px-5 py-4",
-          "transition-colors hover:bg-white/[0.02]",
-          "focus-visible:bg-white/[0.03] focus-visible:outline-none",
+          "transition-colors hover:bg-muted/40 dark:hover:bg-white/[0.02]",
+          "focus-visible:bg-muted/60 dark:focus-visible:bg-white/[0.03] focus-visible:outline-none",
         )}
       >
         <span
@@ -415,22 +415,22 @@ function ExecutionRow({ execution }: { execution: ExecutionSummary }) {
         </span>
 
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-white/90">
+          <span className="block truncate text-sm font-medium text-foreground dark:text-white/90">
             {execution.workflowName ?? "Untitled workflow"}
           </span>
 
-          <span className="mt-1 flex min-w-0 items-center gap-2 text-xs text-white/40">
+          <span className="mt-1 flex min-w-0 items-center gap-2 text-xs text-muted-foreground dark:text-white/40">
             <span className="shrink-0 font-mono">
               v{execution.versionNumber}
             </span>
-            <span aria-hidden className="text-white/20">/</span>
+            <span aria-hidden className="text-muted-foreground/40 dark:text-white/20">/</span>
             <span className="shrink-0">
               {humanize(execution.triggerType)} trigger
             </span>
             {execution.error && (
               <>
-                <span aria-hidden className="text-white/20">/</span>
-                <span className="truncate text-red-300/80">
+                <span aria-hidden className="text-muted-foreground/40 dark:text-white/20">/</span>
+                <span className="truncate text-red-600 dark:text-red-300/80">
                   {execution.error}
                 </span>
               </>
@@ -439,15 +439,15 @@ function ExecutionRow({ execution }: { execution: ExecutionSummary }) {
         </span>
 
         <span className="hidden shrink-0 text-right text-xs sm:block">
-          <span className="block text-white/60">
+          <span className="block text-muted-foreground/80 dark:text-white/60">
             {formatRelativeTime(execution.createdAt)}
           </span>
-          <span className="mt-1 block font-mono text-white/35">
+          <span className="mt-1 block font-mono text-muted-foreground/60 dark:text-white/35">
             {formatDuration(execution.durationMs)}
           </span>
         </span>
 
-        <ChevronRight className="size-4 shrink-0 text-white/20 transition-colors group-hover:text-white/50" />
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground/40 transition-colors group-hover:text-foreground dark:text-white/20 dark:group-hover:text-white/50" />
       </Link>
     </li>
   );
@@ -461,21 +461,21 @@ function ExecutionListSkeleton() {
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-xl border border-white/[0.07]",
-        "divide-y divide-white/[0.06] bg-[#0a0a0a]",
+        "overflow-hidden rounded-xl border border-border dark:border-white/[0.07]",
+        "divide-y divide-border dark:divide-white/[0.06] bg-card dark:bg-[#0a0a0a]",
       )}
     >
       {Array.from({ length: 6 }).map((_, index) => (
         <div key={index} className="flex items-center gap-4 px-5 py-4">
-          <Skeleton className="size-2 rounded-full bg-white/[0.06]" />
-          <Skeleton className="h-6 w-[88px] bg-white/[0.06]" />
+          <Skeleton className="size-2 rounded-full bg-muted dark:bg-white/[0.06]" />
+          <Skeleton className="h-6 w-[88px] bg-muted dark:bg-white/[0.06]" />
           <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <Skeleton className="h-3.5 w-48 max-w-full bg-white/[0.06]" />
-            <Skeleton className="h-3 w-64 max-w-full bg-white/[0.04]" />
+            <Skeleton className="h-3.5 w-48 max-w-full bg-muted dark:bg-white/[0.06]" />
+            <Skeleton className="h-3 w-64 max-w-full bg-muted/60 dark:bg-white/[0.04]" />
           </div>
           <div className="hidden flex-col items-end gap-2 sm:flex">
-            <Skeleton className="h-3 w-16 bg-white/[0.06]" />
-            <Skeleton className="h-3 w-12 bg-white/[0.04]" />
+            <Skeleton className="h-3 w-16 bg-muted dark:bg-white/[0.06]" />
+            <Skeleton className="h-3 w-12 bg-muted/60 dark:bg-white/[0.04]" />
           </div>
         </div>
       ))}
@@ -495,21 +495,21 @@ function ErrorState({
       role="alert"
       className={cn(
         "flex items-center justify-between gap-4 rounded-xl border",
-        "border-red-400/20 bg-red-400/[0.05] px-4 py-3",
+        "border-red-500/20 bg-red-500/10 dark:border-red-400/20 dark:bg-red-400/[0.05] px-4 py-3",
       )}
     >
       <div className="flex min-w-0 items-center gap-3">
-        <AlertTriangle className="size-4 shrink-0 text-red-300" />
+        <AlertTriangle className="size-4 shrink-0 text-red-500 dark:text-red-300" />
         <div className="min-w-0">
-          <p className="text-sm text-red-200">Unable to load executions.</p>
-          <p className="mt-0.5 truncate text-xs text-white/40">{message}</p>
+          <p className="text-sm text-red-700 dark:text-red-200">Unable to load executions.</p>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground dark:text-white/40">{message}</p>
         </div>
       </div>
       <Button
         variant="outline"
         size="sm"
         onClick={onRetry}
-        className="h-8 shrink-0 gap-1.5 border-white/[0.12] bg-transparent text-white hover:bg-white/[0.08] hover:text-white"
+        className="h-8 shrink-0 gap-1.5 border-border bg-transparent text-foreground hover:bg-muted hover:text-foreground dark:border-white/[0.12] dark:text-white dark:hover:bg-white/[0.08] dark:hover:text-white"
       >
         <RotateCw className="size-3.5" />
         Retry
@@ -529,26 +529,26 @@ function EmptyState({
     <div
       className={cn(
         "flex flex-col items-center justify-center rounded-xl border",
-        "border-white/[0.07] bg-[#0a0a0a] px-6 py-16 text-center",
+        "border-border dark:border-white/[0.07] bg-card dark:bg-[#0a0a0a] px-6 py-16 text-center",
       )}
     >
       <div
         className={cn(
           "mb-4 flex size-12 items-center justify-center rounded-xl",
-          "border border-white/[0.08] bg-white/[0.03]",
+          "border border-border dark:border-white/[0.08] bg-muted/40 dark:bg-white/[0.03]",
         )}
       >
         {filtered ? (
-          <Search className="size-5 text-white/40" />
+          <Search className="size-5 text-muted-foreground dark:text-white/40" />
         ) : (
-          <Play className="size-5 text-white/40" />
+          <Play className="size-5 text-muted-foreground dark:text-white/40" />
         )}
       </div>
 
-      <p className="text-sm font-medium text-white/90">
+      <p className="text-sm font-medium text-foreground dark:text-white/90">
         {filtered ? "No matching executions" : "No executions yet"}
       </p>
-      <p className="mt-1 max-w-sm text-xs leading-relaxed text-white/40">
+      <p className="mt-1 max-w-sm text-xs leading-relaxed text-muted-foreground dark:text-white/40">
         {filtered
           ? "Try a different status or search term."
           : "Publish this workflow and run it to see executions here."}
@@ -559,7 +559,7 @@ function EmptyState({
           variant="ghost"
           size="sm"
           onClick={onClear}
-          className="mt-4 h-8 text-white/60 hover:bg-white/[0.06] hover:text-white"
+          className="mt-4 h-8 text-muted-foreground hover:bg-muted hover:text-foreground dark:text-white/60 dark:hover:bg-white/[0.06] dark:hover:text-white"
         >
           Clear filters
         </Button>

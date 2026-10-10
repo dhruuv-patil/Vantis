@@ -28,6 +28,15 @@ public interface IncidentRepository extends JpaRepository<Incident, UUID> {
             UUID organizationId,
             UUID anomalyId);
 
+    Optional<Incident> findFirstByOrganizationIdAndFingerprintAndStatusInOrderByCreatedAtDesc(
+            UUID organizationId,
+            String fingerprint,
+            java.util.Collection<IncidentStatus> statuses);
+
+    Optional<Incident> findFirstByOrganizationIdAndFingerprintOrderByCreatedAtDesc(
+            UUID organizationId,
+            String fingerprint);
+
     long countByOrganizationIdAndStatus(
             UUID organizationId,
             IncidentStatus status);

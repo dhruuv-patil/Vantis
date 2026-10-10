@@ -1,0 +1,19 @@
+{
+  "id": "exec-105",
+  "finished": true,
+  "mode": "cli",
+  "retryOf": null,
+  "retrySuccessId": null,
+  "status": "error",
+  "startedAt": "2024-03-01T11:00:00.000Z",
+  "stoppedAt": "2024-03-01T11:00:00.150Z",
+  "workflowId": "wf-crashed",
+  "data": {
+    "resultData": {
+      "runData": {},
+      "error": {
+        "message": "Workflow execution crashed before any node completed"
+      }
+    }
+  }
+}

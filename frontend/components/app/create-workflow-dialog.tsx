@@ -6,7 +6,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { createWorkflow, getErrorMessage, getFieldErrors } from "@/lib/api";
+import { createWorkflow, getErrorMessage, getFieldErrors, getPlanLimitDetail } from "@/lib/api";
+import type { PlanLimitDetail } from "@/types";
+import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +39,7 @@ export function CreateWorkflowDialog({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [limitDetail, setLimitDetail] = useState<PlanLimitDetail | null>(null);
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -50,9 +53,19 @@ export function CreateWorkflowDialog({
       router.push(`/workflows/${workflow.id}`);
     },
     onError: (err) => {
+      // 1. Never block the failure notification
       const fieldErrors = getFieldErrors(err);
-      if (Object.keys(fieldErrors).length > 0) setErrors(fieldErrors);
-      else toast.error(getErrorMessage(err, "Could not create the workflow."));
+      if (Object.keys(fieldErrors).length > 0) {
+        setErrors(fieldErrors);
+      } else {
+        toast.error(getErrorMessage(err, "Could not create the workflow."));
+      }
+
+      // 2. Extract structured plan limit details for upgrade prompt
+      const planLimit = getPlanLimitDetail(err);
+      if (planLimit) {
+        setLimitDetail(planLimit);
+      }
     },
   });
 
@@ -76,6 +89,15 @@ export function CreateWorkflowDialog({
               Start with an empty canvas. You can rename it any time.
             </DialogDescription>
           </DialogHeader>
+
+          {limitDetail && (
+            <UpgradePrompt
+              trigger="workflows"
+              structuredError={limitDetail}
+              variant="inline"
+              onDismiss={() => setLimitDetail(null)}
+            />
+          )}
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
