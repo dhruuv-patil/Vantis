@@ -34,6 +34,7 @@ import com.flowops.security.FlowOpsPrincipal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -567,6 +568,22 @@ public class IntegrationSyncService {
         if (nodes.isEmpty()) {
             // When provider does not expose node details (e.g. Make scenarios),
             // ingest a workflow-level execution event so runs are monitored and observed.
+            Map<String, Object> eventMetadata = new LinkedHashMap<>();
+            if (exec.metadata() != null) {
+                eventMetadata.putAll(exec.metadata());
+            }
+            eventMetadata.put("nodeExecutionData", "UNAVAILABLE");
+            eventMetadata.put("nodeExecutionDataReason", "Provider does not expose step-level node execution payloads");
+
+            String errorMessage = null;
+            if (exec.metadata() != null && exec.metadata().get("errorMessage") != null) {
+                errorMessage = String.valueOf(exec.metadata().get("errorMessage"));
+            }
+            String errorCode = exec.status() == ExecutionStatus.FAILED ? "execution_failed" : null;
+            if (exec.metadata() != null && exec.metadata().get("errorCode") != null) {
+                errorCode = String.valueOf(exec.metadata().get("errorCode"));
+            }
+
             events.add(
                     new ExecutionEventEnvelopes.IngestExecutionEventRequest(
                             integration.getType(),
@@ -585,11 +602,11 @@ public class IntegrationSyncService {
                             null, // itemCount
                             null, // outputSignature
                             null, // httpStatus
-                            "COMPLETE", // dataCompleteness
+                            "NODE_DATA_UNAVAILABLE", // dataCompleteness
                             0,    // runIndex
-                            exec.status() == ExecutionStatus.FAILED ? "execution_failed" : null,
-                            null,
-                            exec.metadata(),
+                            errorCode,
+                            errorMessage,
+                            eventMetadata,
                             extWf.getName(),
                             integration.getId(),
                             extWf.getId()
