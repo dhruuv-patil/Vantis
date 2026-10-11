@@ -53,11 +53,23 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.test.context.ActiveProfiles;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @ActiveProfiles("test")
 class BillingSubscriptionLifecycleServiceTest {
+
+    @MockBean
+    private StringRedisTemplate redisTemplate;
 
     @Autowired
     private SubscriptionLifecycleService lifecycleService;
@@ -115,6 +127,25 @@ class BillingSubscriptionLifecycleServiceTest {
     @BeforeEach
     void setUp() {
         cleanData();
+
+        ValueOperations<String, String> valueOps = mock(ValueOperations.class);
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        java.util.concurrent.atomic.AtomicReference<String> heldLock = new java.util.concurrent.atomic.AtomicReference<>(null);
+
+        when(valueOps.setIfAbsent(anyString(), anyString(), any())).thenAnswer(inv -> {
+            String token = inv.getArgument(1);
+            return heldLock.compareAndSet(null, token);
+        });
+
+        when(redisTemplate.execute(any(RedisScript.class), anyList(), any())).thenAnswer(inv -> {
+            String token = inv.getArgument(2);
+            if (token != null && token.equals(heldLock.get())) {
+                heldLock.set(null);
+                return 1L;
+            }
+            return 0L;
+        });
+
         org1 = organizationRepository.save(Organization.create("Org Lifecycle 1", "org-life-1"));
         org2 = organizationRepository.save(Organization.create("Org Lifecycle 2", "org-life-2"));
         ownerUser = userRepository.save(UserAccount.create("owner-" + UUID.randomUUID() + "@test.local", "hashedpw", "Test Owner"));

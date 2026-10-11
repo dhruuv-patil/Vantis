@@ -70,6 +70,7 @@ public class BaselineEngine {
         this(metrics, baselines, properties, null);
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
     public BaselineEngine(
             NodeExecutionMetricRepository metrics,
             MetricBaselineRepository baselines,

@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,6 +59,7 @@ public class AnomalyRecorder {
     private final WebhookEventDispatcher webhookEvents;
     private final com.flowops.reliability.IncidentService incidentService;
 
+    @Autowired
     public AnomalyRecorder(
             AnomalyRepository anomalies,
             SeverityCalculator severityCalculator,
