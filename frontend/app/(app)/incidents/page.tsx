@@ -5,16 +5,13 @@ import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
-  CheckCircle2,
   ExternalLink,
   MoreHorizontal,
-  RefreshCw,
   Search,
-  ShieldAlert,
   ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
-import { formatDistanceToNowStrict, isValid } from "date-fns";
+import { format, formatDistanceToNowStrict, isValid } from "date-fns";
 
 import {
   acknowledgeIncident,
@@ -27,10 +24,14 @@ import type { Incident, IncidentStatus, AnomalySeverity } from "@/types";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   EmptyState,
   ErrorState,
   KpiStrip,
+  LoadMoreButton,
+  MetricItem,
   PageContainer,
   PageHeader,
   StatusBadge,
@@ -78,23 +79,23 @@ const SEVERITY_CONFIG: Record<
 > = {
   LOW: {
     label: "Low",
-    dot: "bg-green-500",
-    text: "text-muted-foreground dark:text-white/60",
+    dot: "bg-green-500 dark:bg-green-400",
+    text: "text-emerald-700 dark:text-white/60",
   },
   MEDIUM: {
     label: "Medium",
-    dot: "bg-yellow-500",
-    text: "text-foreground/80 dark:text-white/70",
+    dot: "bg-yellow-500 dark:bg-yellow-400",
+    text: "text-amber-700 dark:text-white/70",
   },
   HIGH: {
     label: "High",
-    dot: "bg-orange-500",
-    text: "text-foreground dark:text-white/80",
+    dot: "bg-orange-500 dark:bg-orange-400",
+    text: "text-orange-700 dark:text-white/80",
   },
   CRITICAL: {
     label: "Critical",
-    dot: "bg-red-500",
-    text: "text-red-600 dark:text-red-300",
+    dot: "bg-red-500 dark:bg-red-400",
+    text: "text-red-700 dark:text-red-300",
   },
 };
 
@@ -119,12 +120,54 @@ const STATUS_CONFIG: Record<
   },
 };
 
+function SeverityLabel({ severity }: { severity: AnomalySeverity }) {
+  const config = SEVERITY_CONFIG[severity];
+
+  if (!config) {
+    return (
+      <span className="text-muted-foreground dark:text-white/44">
+        {severity}
+      </span>
+    );
+  }
+
+  return (
+    <span className={`inline-flex items-center gap-2 text-sm ${config.text}`}>
+      <span className={`size-1.5 rounded-full ${config.dot}`} aria-hidden />
+      {config.label}
+    </span>
+  );
+}
+
+function DetectedAt({ value }: { value: string }) {
+  const date = new Date(value);
+
+  if (!isValid(date)) {
+    return (
+      <span className="text-muted-foreground dark:text-white/45">—</span>
+    );
+  }
+
+  return (
+    <time
+      dateTime={date.toISOString()}
+      title={format(date, "MMM d, yyyy 'at' HH:mm")}
+      className="whitespace-nowrap"
+    >
+      {formatDistanceToNowStrict(date, {
+        addSuffix: true,
+      })}
+    </time>
+  );
+}
+
 export default function IncidentsPage() {
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(ALL);
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>(ALL);
+  const [pageSize, setPageSize] = useState(25);
   const [recoveryBlockModalOpen, setRecoveryBlockModalOpen] = useState(false);
   const [blockedIncident, setBlockedIncident] = useState<Incident | null>(null);
 
@@ -136,7 +179,7 @@ export default function IncidentsPage() {
 
   const acknowledgeMutation = useMutation({
     mutationFn: (id: string) => acknowledgeIncident(id),
-    onSuccess: (updated) => {
+    onSuccess: () => {
       toast.success("Incident acknowledged");
       queryClient.invalidateQueries({ queryKey: ["incidents"] });
     },
@@ -171,264 +214,437 @@ export default function IncidentsPage() {
 
   const incidents = useMemo(() => incidentsQuery.data ?? [], [incidentsQuery.data]);
 
-  const kpis = useMemo(() => {
-    const open = incidents.filter((i) => i.status === "OPEN");
-    const criticalOrHigh = open.filter(
-      (i) => i.severity === "CRITICAL" || i.severity === "HIGH",
-    );
-    const acknowledged = incidents.filter((i) => i.status === "ACKNOWLEDGED");
-    const resolved = incidents.filter((i) => i.status === "RESOLVED");
+  const counts = useMemo(() => {
+    const openCount = incidents.filter((i) => i.status === "OPEN").length;
+    const criticalCount = incidents.filter(
+      (i) =>
+        (i.status === "OPEN" || i.status === "ACKNOWLEDGED") &&
+        (i.severity === "CRITICAL" || i.severity === "HIGH"),
+    ).length;
+    const acknowledgedCount = incidents.filter(
+      (i) => i.status === "ACKNOWLEDGED",
+    ).length;
+    const resolvedCount = incidents.filter(
+      (i) => i.status === "RESOLVED",
+    ).length;
+
+    return { openCount, criticalCount, acknowledgedCount, resolvedCount };
+  }, [incidents]);
+
+  const kpis: MetricItem[] = useMemo(() => {
+    const isPending = incidentsQuery.isPending;
+    const hasNone = incidents.length === 0;
 
     return [
       {
         label: "Active incidents",
-        value: open.length,
-        description: "Unresolved issues across workflows",
+        value: isPending ? (
+          <Skeleton className="h-7 w-14" />
+        ) : (
+          counts.openCount.toLocaleString()
+        ),
+        detail: isPending
+          ? "Loading"
+          : hasNone
+            ? "No incidents recorded"
+            : counts.openCount === 0
+              ? "All workflows normal"
+              : "Requires investigation",
+        tone:
+          hasNone || counts.openCount === 0
+            ? "neutral"
+            : "danger",
       },
       {
         label: "Critical / High",
-        value: criticalOrHigh.length,
-        description: "Require immediate operator attention",
+        value: isPending ? (
+          <Skeleton className="h-7 w-14" />
+        ) : (
+          counts.criticalCount.toLocaleString()
+        ),
+        detail: isPending
+          ? "Loading"
+          : hasNone
+            ? "No incidents recorded"
+            : counts.criticalCount === 0
+              ? "No critical items"
+              : "High priority",
+        tone:
+          hasNone || counts.criticalCount === 0
+            ? "neutral"
+            : "danger",
       },
       {
         label: "Acknowledged",
-        value: acknowledged.length,
-        description: "Under active investigation",
+        value: isPending ? (
+          <Skeleton className="h-7 w-14" />
+        ) : (
+          counts.acknowledgedCount.toLocaleString()
+        ),
+        detail: isPending
+          ? "Loading"
+          : hasNone
+            ? "No active investigations"
+            : counts.acknowledgedCount > 0
+              ? "Under investigation"
+              : "None active",
+        tone: counts.acknowledgedCount > 0 ? "warning" : "neutral",
       },
       {
         label: "Resolved",
-        value: resolved.length,
-        description: "Verified healthy by baseline telemetry",
+        value: isPending ? (
+          <Skeleton className="h-7 w-14" />
+        ) : (
+          counts.resolvedCount.toLocaleString()
+        ),
+        detail: isPending
+          ? "Loading"
+          : hasNone
+            ? "No resolved incidents"
+            : counts.resolvedCount > 0
+              ? "Verified healthy"
+              : "None resolved",
+        tone: counts.resolvedCount > 0 ? "success" : "neutral",
       },
     ];
-  }, [incidents]);
+  }, [counts, incidents.length, incidentsQuery.isPending]);
 
-  const filteredIncidents = useMemo(() => {
-    return incidents.filter((inc) => {
-      if (statusFilter !== ALL && inc.status !== statusFilter) return false;
-      if (severityFilter !== ALL && inc.severity !== severityFilter) return false;
-      if (search.trim()) {
-        const q = search.toLowerCase();
-        const matchTitle = inc.title.toLowerCase().includes(q);
-        const matchDesc = (inc.description ?? "").toLowerCase().includes(q);
-        const matchFingerprint = (inc.fingerprint ?? "").toLowerCase().includes(q);
-        if (!matchTitle && !matchDesc && !matchFingerprint) return false;
-      }
-      return true;
-    });
-  }, [incidents, statusFilter, severityFilter, search]);
+  const visibleIncidents = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    const matches = query
+      ? incidents.filter((inc) =>
+          [
+            inc.title,
+            inc.description,
+            inc.fingerprint,
+            inc.workflowId,
+          ].some((field) => field?.toLowerCase().includes(query)),
+        )
+      : incidents;
+
+    return matches
+      .filter((inc) => {
+        if (statusFilter !== ALL && inc.status !== statusFilter) return false;
+        if (severityFilter !== ALL && inc.severity !== severityFilter) return false;
+        return true;
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
+  }, [incidents, search, statusFilter, severityFilter]);
+
+  const isFiltered =
+    search.trim() !== "" ||
+    statusFilter !== ALL ||
+    severityFilter !== ALL;
+
+  const isInitialLoad = incidentsQuery.isPending && incidents.length === 0;
+
+  function clearFilters() {
+    setSearch("");
+    setStatusFilter(ALL);
+    setSeverityFilter(ALL);
+  }
 
   return (
-    <PageContainer>
+    <PageContainer variant="wide">
+      {/* Header */}
       <PageHeader
+        eyebrow="Reliability"
         title="Incidents"
         description="Unified reliability incident tracking for automated workflows. Incidents require baseline recovery verification before closing."
       />
 
-      <KpiStrip items={kpis} />
+      {/* KPI Strip */}
+      <div className="mb-6">
+        <KpiStrip items={kpis} />
+      </div>
 
-      <Toolbar className="mb-4">
+      {/* Toolbar */}
+      <Toolbar className="mb-6">
         <div className="relative min-w-0 flex-1">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground dark:text-white/40" />
+          <Label htmlFor="incident-search" className="sr-only">
+            Search incidents
+          </Label>
+
+          <Search
+            className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground dark:text-white/40"
+            aria-hidden
+          />
+
           <Input
-            placeholder="Filter incidents by title, description or fingerprint..."
+            id="incident-search"
+            type="search"
+            placeholder="Search workflow, title, or fingerprint..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10 text-sm"
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <Select
-            value={statusFilter}
-            onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+        <Select
+          value={statusFilter}
+          onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+        >
+          <SelectTrigger
+            className="w-full sm:w-[180px]"
+            aria-label="Filter by status"
           >
-            <SelectTrigger className="w-[140px] h-9 text-xs">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>All statuses</SelectItem>
-              <SelectItem value="OPEN">Open</SelectItem>
-              <SelectItem value="ACKNOWLEDGED">Acknowledged</SelectItem>
-              <SelectItem value="RESOLVED">Resolved</SelectItem>
-            </SelectContent>
-          </Select>
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
 
-          <Select
-            value={severityFilter}
-            onValueChange={(v) => setSeverityFilter(v as SeverityFilter)}
-          >
-            <SelectTrigger className="w-[140px] h-9 text-xs">
-              <SelectValue placeholder="Severity" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>All severities</SelectItem>
-              <SelectItem value="CRITICAL">Critical</SelectItem>
-              <SelectItem value="HIGH">High</SelectItem>
-              <SelectItem value="MEDIUM">Medium</SelectItem>
-              <SelectItem value="LOW">Low</SelectItem>
-            </SelectContent>
-          </Select>
+          <SelectContent>
+            <SelectItem value={ALL}>All statuses</SelectItem>
+            <SelectItem value="OPEN">Open</SelectItem>
+            <SelectItem value="ACKNOWLEDGED">Acknowledged</SelectItem>
+            <SelectItem value="RESOLVED">Resolved</SelectItem>
+          </SelectContent>
+        </Select>
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-9 px-2.5 text-xs gap-1.5"
-            onClick={() => queryClient.invalidateQueries({ queryKey: ["incidents"] })}
+        <Select
+          value={severityFilter}
+          onValueChange={(value) => setSeverityFilter(value as SeverityFilter)}
+        >
+          <SelectTrigger
+            className="w-full sm:w-[180px]"
+            aria-label="Filter by severity"
           >
-            <RefreshCw className="size-3.5" />
-            Refresh
-          </Button>
-        </div>
+            <SelectValue placeholder="All severities" />
+          </SelectTrigger>
+
+          <SelectContent>
+            <SelectItem value={ALL}>All severities</SelectItem>
+            <SelectItem value="CRITICAL">Critical</SelectItem>
+            <SelectItem value="HIGH">High</SelectItem>
+            <SelectItem value="MEDIUM">Medium</SelectItem>
+            <SelectItem value="LOW">Low</SelectItem>
+          </SelectContent>
+        </Select>
       </Toolbar>
 
-      {incidentsQuery.isPending ? (
-        <TableSkeleton rows={5} cols={6} />
-      ) : incidentsQuery.isError ? (
+      {/* Error when data exists */}
+      {incidentsQuery.isError && incidents.length > 0 && (
+        <ErrorState
+          title="Unable to refresh incidents"
+          message={getErrorMessage(incidentsQuery.error)}
+          onRetry={() => incidentsQuery.refetch()}
+          className="mb-6"
+        />
+      )}
+
+      {/* Main Content */}
+      {incidentsQuery.isError && incidents.length === 0 ? (
         <ErrorState
           title="Could not load incidents"
           message={getErrorMessage(incidentsQuery.error)}
           onRetry={() => incidentsQuery.refetch()}
         />
-      ) : filteredIncidents.length === 0 ? (
-        <EmptyState
-          icon={ShieldCheck}
-          title="No incidents found"
-          description={
-            search || statusFilter !== ALL || severityFilter !== ALL
-              ? "No incidents matched your selected filter criteria."
-              : "All workflows are currently performing reliably within expected baselines."
-          }
-        />
       ) : (
-        <div className="rounded-xl border border-border dark:border-white/[0.08] bg-card overflow-hidden">
-          <Table>
-            <TableHeader className="bg-muted/40 dark:bg-white/[0.02]">
-              <TableRow>
-                <TableHead className="w-[340px]">Incident</TableHead>
-                <TableHead className="w-[110px]">Severity</TableHead>
-                <TableHead className="w-[120px]">Status</TableHead>
-                <TableHead>Workflow / Anomaly</TableHead>
-                <TableHead className="w-[140px]">Detected</TableHead>
-                <TableHead className="w-[80px] text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredIncidents.map((incident) => {
-                const sev = SEVERITY_CONFIG[incident.severity] ?? SEVERITY_CONFIG.MEDIUM;
-                const stat = STATUS_CONFIG[incident.status] ?? STATUS_CONFIG.OPEN;
-
-                const detectedDate = new Date(incident.createdAt);
-                const timeAgo = isValid(detectedDate)
-                  ? formatDistanceToNowStrict(detectedDate, { addSuffix: true })
-                  : "recently";
-
-                return (
-                  <TableRow key={incident.id} className="group hover:bg-muted/30">
-                    <TableCell className="font-medium">
-                      <div className="flex flex-col gap-1">
-                        <Link
-                          href={`/incidents/${incident.id}`}
-                          className="hover:underline text-sm font-semibold text-foreground dark:text-white/90 line-clamp-1"
-                        >
-                          {incident.title}
-                        </Link>
-                        {incident.fingerprint && (
-                          <span className="text-[11px] font-mono text-muted-foreground dark:text-white/40 line-clamp-1">
-                            {incident.fingerprint}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <span className={`size-2 rounded-full ${sev.dot}`} />
-                        <span className={`text-xs font-medium ${sev.text}`}>
-                          {sev.label}
-                        </span>
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <span
-                        className={`inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium ${stat.className}`}
-                      >
-                        {stat.label}
-                      </span>
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-                        {incident.workflowId && (
-                          <span className="font-mono text-[11px]">
-                            wf: {incident.workflowId.slice(0, 8)}...
-                          </span>
-                        )}
-                        {incident.anomalyId && (
-                          <Link
-                            href={`/reliability/${incident.anomalyId}`}
-                            className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
-                          >
-                            <span>Triggering anomaly</span>
-                            <ExternalLink className="size-3" />
-                          </Link>
-                        )}
-                      </div>
-                    </TableCell>
-
-                    <TableCell className="text-xs text-muted-foreground">
-                      {timeAgo}
-                    </TableCell>
-
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8">
-                            <MoreHorizontal className="size-4" />
-                            <span className="sr-only">Open menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link href={`/incidents/${incident.id}`}>
-                              View incident
-                            </Link>
-                          </DropdownMenuItem>
-                          {incident.anomalyId && (
-                            <DropdownMenuItem asChild>
-                              <Link href={`/reliability/${incident.anomalyId}`}>
-                                View linked anomaly
-                              </Link>
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuSeparator />
-                          {incident.status === "OPEN" && (
-                            <DropdownMenuItem
-                              onSelect={() => acknowledgeMutation.mutate(incident.id)}
-                              onClick={() => acknowledgeMutation.mutate(incident.id)}
-                            >
-                              Acknowledge
-                            </DropdownMenuItem>
-                          )}
-                          {incident.status !== "RESOLVED" && (
-                            <DropdownMenuItem
-                              onSelect={() => resolveMutation.mutate(incident.id)}
-                              onClick={() => resolveMutation.mutate(incident.id)}
-                            >
-                              Resolve incident
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+        <div className="overflow-hidden rounded-xl border border-border dark:border-white/[0.065] bg-card dark:bg-[#0a0a0c]">
+          {isInitialLoad ? (
+            <TableSkeleton rows={6} />
+          ) : visibleIncidents.length === 0 ? (
+            <EmptyState
+              icon={ShieldCheck}
+              title={
+                isFiltered
+                  ? "No incidents match your filters"
+                  : "No incidents found"
+              }
+              description={
+                isFiltered
+                  ? "Try changing your status filter or search term."
+                  : "All workflows are currently performing reliably within expected baselines."
+              }
+              actions={
+                isFiltered ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearFilters}
+                  >
+                    Clear filters
+                  </Button>
+                ) : undefined
+              }
+            />
+          ) : (
+            <div
+              className={`overflow-x-auto transition-opacity ${
+                incidentsQuery.isFetching ? "opacity-60" : "opacity-100"
+              }`}
+              aria-busy={incidentsQuery.isFetching}
+            >
+              <Table>
+                <TableHeader className="sticky top-0 z-10 bg-card/95 dark:bg-[#0c0c0e]/95 backdrop-blur-sm">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="w-[340px]">Incident</TableHead>
+                    <TableHead className="w-[110px]">Severity</TableHead>
+                    <TableHead className="w-[120px]">Status</TableHead>
+                    <TableHead className="hidden lg:table-cell">
+                      Workflow / Anomaly
+                    </TableHead>
+                    <TableHead className="hidden md:table-cell w-[140px]">
+                      Detected
+                    </TableHead>
+                    <TableHead className="w-12 text-right">
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                  {visibleIncidents.slice(0, pageSize).map((incident) => {
+                    const stat =
+                      STATUS_CONFIG[incident.status] ?? STATUS_CONFIG.OPEN;
+
+                    return (
+                      <TableRow
+                        key={incident.id}
+                        className="hover:bg-muted/40 dark:hover:bg-white/[0.03]"
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex flex-col gap-1">
+                            <Link
+                              href={`/incidents/${incident.id}`}
+                              className="hover:underline text-sm font-semibold text-foreground dark:text-white/90 line-clamp-1"
+                            >
+                              {incident.title}
+                            </Link>
+                            {incident.fingerprint && (
+                              <span className="text-[11px] font-mono text-muted-foreground dark:text-white/40 line-clamp-1">
+                                {incident.fingerprint}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+
+                        <TableCell>
+                          <SeverityLabel severity={incident.severity} />
+                        </TableCell>
+
+                        <TableCell>
+                          <StatusBadge
+                            status={incident.status}
+                            label={stat.label}
+                          />
+                        </TableCell>
+
+                        <TableCell className="hidden lg:table-cell">
+                          <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                            {(incident as any).workflowName ? (
+                              <Link
+                                href={`/workflows/${incident.workflowId}`}
+                                className="truncate font-medium text-foreground/90 hover:underline"
+                              >
+                                {(incident as any).workflowName}
+                              </Link>
+                            ) : incident.workflowId ? (
+                              <Link
+                                href={`/workflows/${incident.workflowId}`}
+                                className="font-mono text-[11px] text-muted-foreground hover:underline"
+                              >
+                                wf: {incident.workflowId.slice(0, 8)}...
+                              </Link>
+                            ) : null}
+                            {incident.anomalyId && (
+                              <Link
+                                href={`/reliability/${incident.anomalyId}`}
+                                className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                              >
+                                <span>Triggering anomaly</span>
+                                <ExternalLink className="size-3" />
+                              </Link>
+                            )}
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="hidden text-sm text-muted-foreground dark:text-white/44 md:table-cell">
+                          <DetectedAt value={incident.createdAt} />
+                        </TableCell>
+
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-8 text-muted-foreground/60 hover:text-foreground"
+                                aria-label="Open menu"
+                              >
+                                <MoreHorizontal className="size-4" />
+                                <span className="sr-only">Open menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild>
+                                <Link href={`/incidents/${incident.id}`}>
+                                  View incident
+                                </Link>
+                              </DropdownMenuItem>
+                              {incident.anomalyId && (
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    href={`/reliability/${incident.anomalyId}`}
+                                  >
+                                    View linked anomaly
+                                  </Link>
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                              {incident.status === "OPEN" && (
+                                <DropdownMenuItem
+                                  onSelect={() =>
+                                    acknowledgeMutation.mutate(incident.id)
+                                  }
+                                  onClick={() =>
+                                    acknowledgeMutation.mutate(incident.id)
+                                  }
+                                >
+                                  Acknowledge
+                                </DropdownMenuItem>
+                              )}
+                              {incident.status !== "RESOLVED" && (
+                                <DropdownMenuItem
+                                  onSelect={() =>
+                                    resolveMutation.mutate(incident.id)
+                                  }
+                                  onClick={() =>
+                                    resolveMutation.mutate(incident.id)
+                                  }
+                                >
+                                  Resolve incident
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+
+          {!isInitialLoad && visibleIncidents.length > 0 && (
+            <div className="border-t border-border dark:border-white/[0.08] px-4 py-3 text-xs text-muted-foreground dark:text-white/44">
+              {isFiltered
+                ? `Showing ${visibleIncidents.length} of ${incidents.length}`
+                : `${incidents.length} ${
+                    incidents.length === 1 ? "incident" : "incidents"
+                  }`}
+            </div>
+          )}
         </div>
       )}
+
+      <LoadMoreButton
+        loadedCount={Math.min(pageSize, visibleIncidents.length)}
+        totalCount={visibleIncidents.length}
+        onLoadMore={() => setPageSize((prev) => prev + 25)}
+      />
 
       {/* Recovery Required Alert Dialog */}
       <Dialog

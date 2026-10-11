@@ -66,6 +66,7 @@ public class RecoveryVerificationService {
     private final ReliabilityProperties properties;
     private final IncidentService incidentService;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public RecoveryVerificationService(
             AnomalyRepository anomalies,
             NodeExecutionMetricRepository metrics,

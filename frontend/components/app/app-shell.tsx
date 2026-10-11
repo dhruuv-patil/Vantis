@@ -161,6 +161,8 @@ function getPageTitle(pathname: string): { title: string; section?: string } {
   if (pathname === "/templates") return { title: "Templates" };
   if (pathname === "/reliability") return { title: "Anomalies", section: "Reliability" };
   if (pathname.startsWith("/reliability/")) return { title: "Detail", section: "Reliability" };
+  if (pathname === "/incidents") return { title: "Incidents", section: "Reliability" };
+  if (pathname.startsWith("/incidents/")) return { title: "Detail", section: "Reliability" };
   if (pathname === "/agents") return { title: "AI Agents" };
   if (pathname.startsWith("/agents/")) return { title: "Agent", section: "AI Agents" };
   if (pathname === "/integrations") return { title: "Integrations" };

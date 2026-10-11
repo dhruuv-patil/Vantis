@@ -6,3 +6,15 @@ f1f15e39ee810774e1618bce715afd4bc7efff40:backend/src/main/java/com/flowops/integ
 # 2. Sanitized test fixture mock webhooks in historical test commits
 6571450492b96ea2cad5d7f8f6233ba856bb6b41:backend/src/test/java/com/flowops/common/crypto/CredentialCipherTest.java:slack-webhook-url:23
 3adb9b34ac1e84b7f1b479ddfe5e879f21092e2b:backend/src/test/java/com/flowops/integration/IntegrationServiceTest.java:slack-webhook-url:47
+
+# 3. Dummy mock test secrets in historical commits
+466fdd41bd87ed317cb372b3a7fa0aa4c0346866:backend/src/test/java/com/flowops/integration/provider/zapier/ZapierWebhookIngressTest.java:generic-api-key:66
+f4157994f620b5779010713a16381c71422bccbb:frontend/test/milestone7-monitoring-and-incidents.test.tsx:generic-api-key:121
+b78af061db31792bc5913f48be64b4e6c1c459c4:backend/src/test/java/com/flowops/reliability/SlackAlertServiceTest.java:generic-api-key:80
+873c21245df4012795b4fc74d957eac0779a6950:backend/src/test/java/com/flowops/integration/MultiInstanceIntegrationTest.java:generic-api-key:108
+f88ab30d8b7e2a7cf80bc7f93a1ffb4324d5da98:backend/src/test/java/com/flowops/billing/provider/RazorpayBillingProviderTest.java:generic-api-key:37
+f88ab30d8b7e2a7cf80bc7f93a1ffb4324d5da98:backend/src/test/java/com/flowops/integration/api/ProviderControllerTest.java:generic-api-key:190
+f88ab30d8b7e2a7cf80bc7f93a1ffb4324d5da98:backend/src/test/java/com/flowops/billing/provider/BillingWebhookIntegrationTest.java:generic-api-key:73
+f88ab30d8b7e2a7cf80bc7f93a1ffb4324d5da98:backend/src/test/java/com/flowops/billing/provider/StripeBillingProviderTest.java:stripe-access-token:39
+f88ab30d8b7e2a7cf80bc7f93a1ffb4324d5da98:backend/src/test/java/com/flowops/billing/provider/StripeBillingProviderTest.java:generic-api-key:38
+
