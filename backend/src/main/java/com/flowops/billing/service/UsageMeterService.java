@@ -228,12 +228,13 @@ public class UsageMeterService {
      */
     @Transactional(readOnly = true)
     public long getCurrentUsage(UUID orgId, Instant periodStart, String column) {
+        Instant normalizedStart = normalizeTimestamp(periodStart);
         String sql = "SELECT " + column + " FROM usage_counters WHERE organization_id = ? AND period_start = ?";
         try {
             Long count = jdbcTemplate.query(
                     sql,
                     rs -> rs.next() ? rs.getLong(1) : 0L,
-                    orgId, periodStart);
+                    orgId, normalizedStart);
             return count != null ? count : 0L;
         } catch (DataAccessException e) {
             log.warn("Failed to get usage for org={} column={}", orgId, column, e);
@@ -265,6 +266,8 @@ public class UsageMeterService {
             Instant periodEnd,
             String column,
             long limit) {
+        periodStart = normalizeTimestamp(periodStart);
+        periodEnd = normalizeTimestamp(periodEnd);
         if (!isPostgres) {
             return reserveMeterH2(orgId, periodStart, periodEnd, column, limit);
         }
@@ -382,6 +385,7 @@ public class UsageMeterService {
         if (periodStart == null) {
             return;
         }
+        Instant normalizedStart = normalizeTimestamp(periodStart);
         String sql = """
                 UPDATE usage_counters
                 SET %s = GREATEST(0, %s - 1),
@@ -389,9 +393,16 @@ public class UsageMeterService {
                 WHERE organization_id = ? AND period_start = ?
                 """.formatted(column, column);
         try {
-            jdbcTemplate.update(sql, orgId, periodStart);
+            jdbcTemplate.update(sql, orgId, normalizedStart);
         } catch (DataAccessException ex) {
             log.error("Failed to refund meter {} for org={}", column, orgId, ex);
         }
+    }
+
+    private static Instant normalizeTimestamp(Instant instant) {
+        if (instant == null) {
+            return null;
+        }
+        return instant.truncatedTo(java.time.temporal.ChronoUnit.MICROS);
     }
 }
