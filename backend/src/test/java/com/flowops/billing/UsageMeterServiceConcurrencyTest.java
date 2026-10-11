@@ -45,7 +45,7 @@ class UsageMeterServiceConcurrencyTest {
         org = organizationRepository.save(org);
         orgId = org.getId();
 
-        periodStart = Instant.now().minusSeconds(3600).with(java.time.temporal.ChronoField.NANO_OF_SECOND, 123456789);
+        periodStart = Instant.now().minusSeconds(3600);
         periodEnd = Instant.now().plusSeconds(86400 * 30);
     }
 

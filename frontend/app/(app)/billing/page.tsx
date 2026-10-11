@@ -709,7 +709,7 @@ export default function BillingPage() {
             <Info className="size-4 shrink-0 text-amber-400" />
             <p>
               Display currency is set to <span className="font-semibold text-amber-200">{activeDisplayCurrency}</span> for preview purposes.
-              Actual billing occurs in your region's currency: <span className="font-semibold text-amber-200">{billingCurrency} ({billingCountry})</span>.
+              Actual billing occurs in your region&apos;s currency: <span className="font-semibold text-amber-200">{billingCurrency} ({billingCountry})</span>.
             </p>
           </div>
         )}
