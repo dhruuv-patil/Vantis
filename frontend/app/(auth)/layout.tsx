@@ -1,5 +1,13 @@
 import type { ReactNode } from "react";
+import type { Metadata } from "next";
 import { ThemeToggle } from "@/components/theme-toggle";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function AuthLayout({
   children,

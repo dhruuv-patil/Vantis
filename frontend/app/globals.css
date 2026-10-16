@@ -88,6 +88,7 @@
 /* ─── shadcn/ui & Theme tokens ─── */
 @layer base {
   :root {
+    color-scheme: light;
     /* Light mode tokens (clean minimal monochrome system) */
     --background: 210 20% 98%;
     --foreground: 222 47% 11%;
@@ -147,6 +148,7 @@
   }
 
   .dark {
+    color-scheme: dark;
     /* Dark mode tokens */
     --background: 0 0% 0%;
     --foreground: 0 0% 96%;

@@ -1,7 +1,15 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { AppGuard } from "@/components/app/app-guard";
 import { AppShell } from "@/components/app/app-shell";
 import { SessionBootstrapper } from "@/components/session-bootstrapper";
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = cookies();

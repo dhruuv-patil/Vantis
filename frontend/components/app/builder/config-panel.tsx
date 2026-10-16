@@ -20,6 +20,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { resolveIcon, type FlowNode } from "@/components/app/builder/shared";
 import { BrandIcon, resolveTheSvgSlug } from "@/components/app/builder/node-visuals";
 
@@ -387,28 +394,42 @@ function FieldWidget({
         </label>
       );
 
-    case "select":
+    case "select": {
+      const selectedValue =
+        typeof value === "string" && value ? value : "__empty__";
       return (
-        <select
-          id={controlId}
-          value={typeof value === "string" ? value : ""}
-          onChange={(e) =>
-            onChange(e.target.value || null)
-          }
-          className={cn(
-            fieldControlClass,
-            "px-3 py-1 text-sm outline-none",
-          )}
+        <Select
+          value={selectedValue}
+          onValueChange={(val) => {
+            onChange(val === "__empty__" ? null : val);
+          }}
         >
-          <option value="">— Select —</option>
-
-          {field.options.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger
+            id={controlId}
+            className={cn(
+              fieldControlClass,
+              "h-9 px-3 text-sm font-normal",
+            )}
+          >
+            <SelectValue placeholder={field.placeholder ?? "— Select —"} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__empty__">
+              <span className="text-muted-foreground">
+                {field.placeholder ?? "— Select —"}
+              </span>
+            </SelectItem>
+            {field.options
+              ?.filter((opt) => Boolean(opt))
+              .map((opt) => (
+                <SelectItem key={opt} value={opt}>
+                  {opt}
+                </SelectItem>
+              ))}
+          </SelectContent>
+        </Select>
       );
+    }
 
     case "json":
       return (
@@ -501,36 +522,40 @@ function AgentSelect({
     );
   }
 
-  return (
-    <select
-      id={controlId}
-      value={current}
-      disabled={query.isPending}
-      onChange={(e) =>
-        onChange(e.target.value || null)
-      }
-      className={cn(
-        fieldControlClass,
-        "px-3 py-1 text-sm outline-none",
-      )}
-    >
-      <option value="">
-        — None (use inline instructions) —
-      </option>
+  const selectedAgent = current || "__none__";
 
-      {current &&
-        !agents.some((a) => a.id === current) && (
-          <option value={current}>
-            Unavailable agent
-          </option>
+  return (
+    <Select
+      value={selectedAgent}
+      disabled={query.isPending}
+      onValueChange={(val) => {
+        onChange(val === "__none__" ? null : val);
+      }}
+    >
+      <SelectTrigger
+        id={controlId}
+        className={cn(fieldControlClass, "h-9 px-3 text-sm font-normal")}
+      >
+        <SelectValue placeholder="— None (use inline instructions) —" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="__none__">
+          <span className="text-muted-foreground">
+            — None (use inline instructions) —
+          </span>
+        </SelectItem>
+
+        {current && !agents.some((a) => a.id === current) && (
+          <SelectItem value={current}>Unavailable agent</SelectItem>
         )}
 
-      {agents.map((a) => (
-        <option key={a.id} value={a.id}>
-          {a.name}
-        </option>
-      ))}
-    </select>
+        {agents.map((a) => (
+          <SelectItem key={a.id} value={a.id}>
+            {a.name}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -591,28 +616,35 @@ function IntegrationSelect({
     );
   }
 
-  return (
-    <select
-      id={controlId}
-      value={current}
-      onChange={(e) =>
-        onChange(e.target.value || null)
-      }
-      className={cn(
-        fieldControlClass,
-        "px-3 py-1 text-sm outline-none",
-      )}
-    >
-      <option value="">
-        — Select an integration —
-      </option>
+  const selectedIntegration = current || "__none__";
 
-      {integrations.map((i) => (
-        <option key={i.id} value={i.id}>
-          {i.name} ({i.type})
-        </option>
-      ))}
-    </select>
+  return (
+    <Select
+      value={selectedIntegration}
+      onValueChange={(val) => {
+        onChange(val === "__none__" ? null : val);
+      }}
+    >
+      <SelectTrigger
+        id={controlId}
+        className={cn(fieldControlClass, "h-9 px-3 text-sm font-normal")}
+      >
+        <SelectValue placeholder="— Select an integration —" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="__none__">
+          <span className="text-muted-foreground">
+            — Select an integration —
+          </span>
+        </SelectItem>
+
+        {integrations.map((i) => (
+          <SelectItem key={i.id} value={i.id}>
+            {i.name} ({i.type})
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
